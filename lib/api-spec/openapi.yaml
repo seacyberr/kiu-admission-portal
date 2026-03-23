@@ -1,22 +1,30 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: KIU Admission & Career Portal API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: admission
+    description: Admission application operations
+  - name: career
+    description: Career portal operations for finalists
+  - name: opportunities
+    description: Job and internship opportunity operations
+  - name: users
+    description: User management
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +32,484 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logoutUser
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admission/applications:
+    post:
+      operationId: createAdmissionApplication
+      tags: [admission]
+      summary: Submit a new admission application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdmissionApplicationRequest"
+      responses:
+        "201":
+          description: Application submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdmissionApplication"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    get:
+      operationId: listAdmissionApplications
+      tags: [admission]
+      summary: List all admission applications (admin)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, under_review, accepted, rejected, waitlisted]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of applications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdmissionApplicationList"
+
+  /admission/applications/my:
+    get:
+      operationId: getMyAdmissionApplication
+      tags: [admission]
+      summary: Get the current user's admission application
+      responses:
+        "200":
+          description: Application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdmissionApplication"
+        "404":
+          description: No application found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admission/applications/{id}:
+    get:
+      operationId: getAdmissionApplication
+      tags: [admission]
+      summary: Get an admission application by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Application
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdmissionApplication"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateAdmissionApplicationStatus
+      tags: [admission]
+      summary: Update application status (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateApplicationStatusRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdmissionApplication"
+
+  /admission/programs:
+    get:
+      operationId: listPrograms
+      tags: [admission]
+      summary: List available programs/courses
+      parameters:
+        - name: faculty
+          in: query
+          schema:
+            type: string
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [diploma, degree]
+      responses:
+        "200":
+          description: List of programs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgramList"
+
+  /career/paths:
+    get:
+      operationId: listCareerPaths
+      tags: [career]
+      summary: Get career paths for finalists based on their program
+      parameters:
+        - name: program
+          in: query
+          schema:
+            type: string
+        - name: faculty
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Career paths
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CareerPathList"
+
+  /career/my-profile:
+    get:
+      operationId: getFinalistProfile
+      tags: [career]
+      summary: Get the current finalist's profile
+      responses:
+        "200":
+          description: Finalist profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinalistProfile"
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: upsertFinalistProfile
+      tags: [career]
+      summary: Create or update the current finalist's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinalistProfileRequest"
+      responses:
+        "200":
+          description: Profile saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinalistProfile"
+
+  /opportunities:
+    get:
+      operationId: listOpportunities
+      tags: [opportunities]
+      summary: List available job/internship opportunities
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [job, internship]
+        - name: field
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of opportunities
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpportunityList"
+    post:
+      operationId: createOpportunity
+      tags: [opportunities]
+      summary: Post a new opportunity (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpportunityRequest"
+      responses:
+        "201":
+          description: Opportunity created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Opportunity"
+
+  /opportunities/{id}:
+    get:
+      operationId: getOpportunity
+      tags: [opportunities]
+      summary: Get an opportunity by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Opportunity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Opportunity"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateOpportunity
+      tags: [opportunities]
+      summary: Update an opportunity (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpportunityRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Opportunity"
+    delete:
+      operationId: deleteOpportunity
+      tags: [opportunities]
+      summary: Delete an opportunity (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /opportunities/{id}/apply:
+    post:
+      operationId: applyForOpportunity
+      tags: [opportunities]
+      summary: Apply for a job/internship opportunity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpportunityApplicationRequest"
+      responses:
+        "201":
+          description: Application submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpportunityApplication"
+        "409":
+          description: Already applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /opportunities/applications/my:
+    get:
+      operationId: listMyOpportunityApplications
+      tags: [opportunities]
+      summary: List the current user's opportunity applications
+      responses:
+        "200":
+          description: Applications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpportunityApplicationList"
+
+  /opportunities/applications/{id}:
+    patch:
+      operationId: updateOpportunityApplicationStatus
+      tags: [opportunities]
+      summary: Update opportunity application status (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOpportunityApplicationStatusRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpportunityApplication"
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users (admin)
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserList"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +520,610 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [applicant, finalist, admin]
+          default: applicant
+        nationalId:
+          type: string
+      required:
+        - email
+        - password
+        - firstName
+        - lastName
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+      required:
+        - user
+        - token
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [applicant, finalist, admin]
+        nationalId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - email
+        - firstName
+        - lastName
+        - role
+
+    UserList:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        total:
+          type: integer
+      required:
+        - users
+        - total
+
+    UnebGrade:
+      type: object
+      properties:
+        subject:
+          type: string
+        grade:
+          type: string
+        points:
+          type: integer
+      required:
+        - subject
+        - grade
+        - points
+
+    AdmissionApplicationRequest:
+      type: object
+      properties:
+        programId:
+          type: integer
+        examLevel:
+          type: string
+          enum: [o_level, a_level]
+        examYear:
+          type: integer
+        indexNumber:
+          type: string
+        unebGrades:
+          type: array
+          items:
+            $ref: "#/components/schemas/UnebGrade"
+        personalStatement:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        gender:
+          type: string
+          enum: [male, female, other]
+        nationality:
+          type: string
+          default: Ugandan
+        district:
+          type: string
+        nextOfKinName:
+          type: string
+        nextOfKinPhone:
+          type: string
+        nextOfKinRelationship:
+          type: string
+      required:
+        - programId
+        - examLevel
+        - examYear
+        - indexNumber
+        - unebGrades
+        - dateOfBirth
+        - gender
+
+    AdmissionApplication:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        programId:
+          type: integer
+        program:
+          $ref: "#/components/schemas/Program"
+        status:
+          type: string
+          enum: [pending, under_review, accepted, rejected, waitlisted]
+        examLevel:
+          type: string
+          enum: [o_level, a_level]
+        examYear:
+          type: integer
+        indexNumber:
+          type: string
+        unebGrades:
+          type: array
+          items:
+            $ref: "#/components/schemas/UnebGrade"
+        personalStatement:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        gender:
+          type: string
+        nationality:
+          type: string
+        district:
+          type: string
+        nextOfKinName:
+          type: string
+        nextOfKinPhone:
+          type: string
+        nextOfKinRelationship:
+          type: string
+        adminNotes:
+          type: string
+        applicationNumber:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        applicantName:
+          type: string
+        applicantEmail:
+          type: string
+      required:
+        - id
+        - userId
+        - programId
+        - status
+        - examLevel
+        - examYear
+        - indexNumber
+        - unebGrades
+        - applicationNumber
+
+    AdmissionApplicationList:
+      type: object
+      properties:
+        applications:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdmissionApplication"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required:
+        - applications
+        - total
+        - page
+        - limit
+
+    UpdateApplicationStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, under_review, accepted, rejected, waitlisted]
+        adminNotes:
+          type: string
+      required:
+        - status
+
+    Program:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        faculty:
+          type: string
+        department:
+          type: string
+        level:
+          type: string
+          enum: [diploma, degree]
+        duration:
+          type: string
+        description:
+          type: string
+        entryRequirements:
+          type: string
+        minOlevelPoints:
+          type: integer
+        minAlevelPoints:
+          type: integer
+        availableSlots:
+          type: integer
+      required:
+        - id
+        - name
+        - code
+        - faculty
+        - level
+
+    ProgramList:
+      type: object
+      properties:
+        programs:
+          type: array
+          items:
+            $ref: "#/components/schemas/Program"
+        total:
+          type: integer
+      required:
+        - programs
+        - total
+
+    CareerPath:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        relatedPrograms:
+          type: array
+          items:
+            type: string
+        skills:
+          type: array
+          items:
+            type: string
+        potentialRoles:
+          type: array
+          items:
+            type: string
+        averageSalaryRange:
+          type: string
+        growthOutlook:
+          type: string
+        industryField:
+          type: string
+      required:
+        - id
+        - title
+        - description
+        - relatedPrograms
+        - skills
+        - potentialRoles
+        - industryField
+
+    CareerPathList:
+      type: object
+      properties:
+        careerPaths:
+          type: array
+          items:
+            $ref: "#/components/schemas/CareerPath"
+        total:
+          type: integer
+      required:
+        - careerPaths
+        - total
+
+    FinalistProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        programId:
+          type: integer
+        program:
+          $ref: "#/components/schemas/Program"
+        studentNumber:
+          type: string
+        yearOfStudy:
+          type: integer
+        graduationYear:
+          type: integer
+        gpa:
+          type: number
+        skills:
+          type: array
+          items:
+            type: string
+        bio:
+          type: string
+        linkedinUrl:
+          type: string
+        cvUrl:
+          type: string
+        isFinalist:
+          type: boolean
+      required:
+        - id
+        - userId
+        - programId
+        - studentNumber
+        - yearOfStudy
+        - isFinalist
+
+    FinalistProfileRequest:
+      type: object
+      properties:
+        programId:
+          type: integer
+        studentNumber:
+          type: string
+        yearOfStudy:
+          type: integer
+        graduationYear:
+          type: integer
+        gpa:
+          type: number
+        skills:
+          type: array
+          items:
+            type: string
+        bio:
+          type: string
+        linkedinUrl:
+          type: string
+        cvUrl:
+          type: string
+      required:
+        - programId
+        - studentNumber
+        - yearOfStudy
+
+    Opportunity:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        organization:
+          type: string
+        type:
+          type: string
+          enum: [job, internship]
+        description:
+          type: string
+        requirements:
+          type: string
+        requiredPrograms:
+          type: array
+          items:
+            type: string
+        requiredSkills:
+          type: array
+          items:
+            type: string
+        location:
+          type: string
+        salaryRange:
+          type: string
+        applicationDeadline:
+          type: string
+          format: date
+        contactEmail:
+          type: string
+        isActive:
+          type: boolean
+        postedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        applicantCount:
+          type: integer
+      required:
+        - id
+        - title
+        - organization
+        - type
+        - description
+        - requirements
+        - applicationDeadline
+        - isActive
+
+    OpportunityList:
+      type: object
+      properties:
+        opportunities:
+          type: array
+          items:
+            $ref: "#/components/schemas/Opportunity"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required:
+        - opportunities
+        - total
+        - page
+        - limit
+
+    OpportunityRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        organization:
+          type: string
+        type:
+          type: string
+          enum: [job, internship]
+        description:
+          type: string
+        requirements:
+          type: string
+        requiredPrograms:
+          type: array
+          items:
+            type: string
+        requiredSkills:
+          type: array
+          items:
+            type: string
+        location:
+          type: string
+        salaryRange:
+          type: string
+        applicationDeadline:
+          type: string
+          format: date
+        contactEmail:
+          type: string
+        isActive:
+          type: boolean
+      required:
+        - title
+        - organization
+        - type
+        - description
+        - requirements
+        - applicationDeadline
+
+    OpportunityApplicationRequest:
+      type: object
+      properties:
+        coverLetter:
+          type: string
+        cvUrl:
+          type: string
+        additionalInfo:
+          type: string
+      required:
+        - coverLetter
+
+    OpportunityApplication:
+      type: object
+      properties:
+        id:
+          type: integer
+        opportunityId:
+          type: integer
+        opportunity:
+          $ref: "#/components/schemas/Opportunity"
+        userId:
+          type: integer
+        status:
+          type: string
+          enum: [applied, shortlisted, interview_scheduled, accepted, rejected]
+        coverLetter:
+          type: string
+        cvUrl:
+          type: string
+        additionalInfo:
+          type: string
+        adminNotes:
+          type: string
+        appliedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        applicantName:
+          type: string
+        applicantEmail:
+          type: string
+      required:
+        - id
+        - opportunityId
+        - userId
+        - status
+        - coverLetter
+
+    OpportunityApplicationList:
+      type: object
+      properties:
+        applications:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpportunityApplication"
+        total:
+          type: integer
+      required:
+        - applications
+        - total
+
+    UpdateOpportunityApplicationStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [applied, shortlisted, interview_scheduled, accepted, rejected]
+        adminNotes:
+          type: string
+      required:
+        - status
