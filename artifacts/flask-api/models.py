@@ -17,6 +17,7 @@ class User(db.Model):
     phone = db.Column(db.String(20))
     national_id = db.Column(db.String(50))
     role = db.Column(db.String(20), nullable=False, default="applicant")
+    is_verified = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -35,8 +36,22 @@ class User(db.Model):
             "phone": self.phone,
             "role": self.role,
             "nationalId": self.national_id,
+            "isVerified": self.is_verified,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
         }
+
+
+class OtpCode(db.Model):
+    __tablename__ = "otp_codes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    code = db.Column(db.String(6), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    is_used = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship("User", backref=db.backref("otp_codes", cascade="all, delete-orphan"))
 
 
 class Program(db.Model):
@@ -80,18 +95,32 @@ class AdmissionApplication(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     program_id = db.Column(db.Integer, db.ForeignKey("programs.id"), nullable=False)
     status = db.Column(db.String(30), nullable=False, default="pending")
+
+    # UNEB details (stored as structured JSON)
     exam_level = db.Column(db.String(20), nullable=False)
     exam_year = db.Column(db.Integer, nullable=False)
     index_number = db.Column(db.String(50), nullable=False)
-    uneb_grades = db.Column(db.JSON, nullable=False, default=list)
+    # uneb_grades format:
+    # { "olevel": [{"subject":"Mathematics","grade":"D1","points":1},...],
+    #   "alevel": [{"subject":"Mathematics","grade":"A","points":6,"subjectType":"principal"},...] }
+    uneb_grades = db.Column(db.JSON, nullable=False, default=dict)
+
+    # Uploaded files
+    olevel_certificate_path = db.Column(db.Text)
+    alevel_certificate_path = db.Column(db.Text)
+
+    # Personal info
     personal_statement = db.Column(db.Text)
     date_of_birth = db.Column(db.Date, nullable=False)
     gender = db.Column(db.String(20), nullable=False)
     nationality = db.Column(db.String(100), default="Ugandan")
     district = db.Column(db.String(100))
+
+    # Next of kin
     next_of_kin_name = db.Column(db.String(200))
     next_of_kin_phone = db.Column(db.String(20))
     next_of_kin_relationship = db.Column(db.String(50))
+
     admin_notes = db.Column(db.Text)
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -111,6 +140,8 @@ class AdmissionApplication(db.Model):
             "examYear": self.exam_year,
             "indexNumber": self.index_number,
             "unebGrades": self.uneb_grades,
+            "olevelCertificatePath": self.olevel_certificate_path,
+            "alevelCertificatePath": self.alevel_certificate_path,
             "personalStatement": self.personal_statement,
             "dateOfBirth": self.date_of_birth.isoformat() if self.date_of_birth else None,
             "gender": self.gender,
