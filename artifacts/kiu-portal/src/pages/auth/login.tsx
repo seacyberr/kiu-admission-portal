@@ -25,26 +25,43 @@ export default function Login() {
     resolver: zodResolver(loginSchema)
   });
 
-  const onSubmit = (data: LoginForm) => {
-    loginMutation.mutate({ data }, {
-      onSuccess: (res) => {
-        localStorage.setItem('kiu_token', res.token);
-        localStorage.setItem('kiu_user', JSON.stringify(res.user));
-        toast({ title: "Welcome back!", description: "Logged in successfully." });
-        
-        // Redirect based on role
-        if (res.user.role === 'admin') setLocation('/admin');
-        else if (res.user.role === 'finalist') setLocation('/career');
-        else setLocation('/dashboard');
-      },
-      onError: (err: any) => {
-        toast({ 
-          title: "Login failed", 
-          description: err.message || "Invalid credentials", 
-          variant: "destructive" 
+  const onSubmit = async (data: LoginForm) => {
+    const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+    try {
+      const res = await fetch(`${BASE}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+
+      // Account exists but email not verified
+      if (res.status === 403 && json.needsVerification) {
+        localStorage.setItem("kiu_pending_email", json.email);
+        toast({
+          title: "Email not verified",
+          description: "A new OTP has been sent. Please verify your account.",
+          variant: "destructive",
         });
+        setLocation("/verify-otp");
+        return;
       }
-    });
+
+      if (!res.ok) {
+        toast({ title: "Login failed", description: json.message || "Invalid credentials", variant: "destructive" });
+        return;
+      }
+
+      localStorage.setItem("kiu_token", json.token);
+      localStorage.setItem("kiu_user", JSON.stringify(json.user));
+      toast({ title: "Welcome back!", description: "Logged in successfully." });
+
+      if (json.user.role === "admin") setLocation("/admin");
+      else if (json.user.role === "finalist") setLocation("/career");
+      else setLocation("/dashboard");
+    } catch {
+      toast({ title: "Network error", description: "Could not connect to the server.", variant: "destructive" });
+    }
   };
 
   return (

@@ -21,9 +21,9 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
 
   const response = await originalFetch(input, init);
 
-  // Handle global 401s to force logout — but NOT on public pages
-  const publicPaths = ['/', '/login', '/register'];
-  const isPublicPage = publicPaths.includes(window.location.pathname);
+  // Handle global 401s — force logout on protected pages only
+  const publicPaths = ['/', '/login', '/register', '/verify-otp'];
+  const isPublicPage = publicPaths.some(p => window.location.pathname === p || window.location.pathname.startsWith(p + '/'));
   if (response.status === 401 && !isPublicPage && localStorage.getItem('kiu_token')) {
     localStorage.removeItem('kiu_token');
     localStorage.removeItem('kiu_user');
