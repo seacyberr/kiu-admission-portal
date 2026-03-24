@@ -1,6 +1,7 @@
 import os
 import random
 import smtplib
+import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
@@ -9,14 +10,16 @@ import jwt
 from flask import Blueprint, request, jsonify
 from models import db, User, OtpCode
 
+log = logging.getLogger(__name__)
+
 auth_bp = Blueprint("auth", __name__)
 
-JWT_SECRET = os.environ.get("JWT_SECRET", "kiu-portal-secret-key-2024")
+JWT_SECRET = os.environ.get("JWT_SECRET", "")
 
 # Brevo SMTP configuration
 BREVO_SMTP_HOST = "smtp-relay.brevo.com"
 BREVO_SMTP_PORT = 587
-BREVO_SMTP_USER = os.environ.get("BREVO_SMTP_USER", "a5914e001@smtp-brevo.com")
+BREVO_SMTP_USER = os.environ.get("BREVO_SMTP_USER", "")
 BREVO_SMTP_KEY = os.environ.get("BREVO_SMTP_KEY", "")
 EMAIL_FROM = "KIU Portal <noreply@kiu.ac.ug>"
 
@@ -65,21 +68,27 @@ def _generate_otp():
 def _print_otp_to_terminal(email, otp, full_name=""):
     """Always dump OTP to terminal so dev can use it during testing."""
     line = "=" * 56
-    print(f"\n{line}", flush=True)
-    print(f"  KIU PORTAL — OTP VERIFICATION CODE", flush=True)
-    print(f"{line}", flush=True)
+    msg = (
+        f"\n{line}\n"
+        f"  KIU PORTAL — OTP VERIFICATION CODE\n"
+        f"{line}\n"
+    )
     if full_name:
-        print(f"  Name    : {full_name}", flush=True)
-    print(f"  Email   : {email}", flush=True)
-    print(f"  OTP     : {otp}", flush=True)
-    print(f"  Expires : {OTP_EXPIRY_MINUTES} minutes", flush=True)
-    print(f"{line}\n", flush=True)
+        msg += f"  Name    : {full_name}\n"
+    msg += (
+        f"  Email   : {email}\n"
+        f"  OTP     : {otp}\n"
+        f"  Expires : {OTP_EXPIRY_MINUTES} minutes\n"
+        f"{line}\n"
+    )
+    print(msg, flush=True)
+    log.info("OTP generated for %s (terminal output)", email)
 
 
 def _send_otp_email(to_email, otp, full_name=""):
     """Send OTP via Brevo SMTP. Silently skips if key not configured."""
     if not BREVO_SMTP_KEY:
-        print("[OTP] BREVO_SMTP_KEY not set — email not sent (see terminal for OTP).", flush=True)
+        log.warning("BREVO_SMTP_KEY not set — email not sent (see terminal for OTP)")
         return False
 
     greeting = f"Dear {full_name}," if full_name else "Hello,"
@@ -124,10 +133,10 @@ def _send_otp_email(to_email, otp, full_name=""):
             smtp.starttls()
             smtp.login(BREVO_SMTP_USER, BREVO_SMTP_KEY)
             smtp.sendmail(EMAIL_FROM, to_email, msg.as_string())
-        print(f"[OTP] Email sent to {to_email} via Brevo.", flush=True)
+        log.info("Email sent to %s via Brevo", to_email)
         return True
     except Exception as exc:
-        print(f"[OTP] Brevo email failed ({exc}). OTP still visible in terminal.", flush=True)
+        log.error("Brevo email failed for %s: %s", to_email, exc)
         return False
 
 
@@ -175,6 +184,13 @@ def register():
     if not email or not password or not first_name or not last_name:
         return jsonify({"error": "Validation error", "message": "email, password, firstName and lastName are required"}), 400
 
+    # Validate email format (basic check — don't require DNS resolution for dev)
+    from email_validator import validate_email, EmailNotValidError
+    try:
+        validate_email(email, check_deliverability=False)
+    except EmailNotValidError:
+        return jsonify({"error": "Validation error", "message": "Invalid email address"}), 400
+
     if len(password) < 6:
         return jsonify({"error": "Validation error", "message": "Password must be at least 6 characters"}), 400
 
@@ -184,6 +200,7 @@ def register():
 
     existing = User.query.filter_by(email=email).first()
     if existing:
+        log.info("Registration attempt for existing email: %s", email)
         return jsonify({"error": "Conflict", "message": "An account with this email already exists"}), 409
 
     user = User(

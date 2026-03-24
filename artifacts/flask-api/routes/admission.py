@@ -12,6 +12,69 @@ admission_bp = Blueprint("admission", __name__)
 
 ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png"}
 
+# ── UNEB Grading System ──────────────────────────────────────────────────────
+# O-Level (UCE): D1 (best) → D9 (worst). Pass: D1-D6 (points: 1-6)
+# A-Level (UACE): A (6 pts), B (5), C (4), D (3), E (2), O (1), F (0, fail)
+
+VALID_OLEVEL_GRADES = ["D1", "D2", "C3", "C4", "C5", "C6", "P7", "P8", "F9"]
+VALID_ALEVEL_GRADES = ["A", "B", "C", "D", "E", "O", "F"]
+
+# O-Level grade to points (lower is better for admission)
+OLEVEL_GRADE_POINTS = {"D1": 1, "D2": 2, "C3": 3, "C4": 4, "C5": 5, "C6": 6, "P7": 7, "P8": 8, "F9": 9}
+# A-Level grade to points (higher is better for admission)
+ALEVEL_GRADE_POINTS = {"A": 6, "B": 5, "C": 4, "D": 3, "E": 2, "O": 1, "F": 0}
+
+
+def calculate_olevel_points(olevel_grades):
+    """Calculate total O-Level points (sum of all subject points)."""
+    total = 0
+    for grade_entry in olevel_grades:
+        grade = grade_entry.get("grade", "").upper()
+        if grade in OLEVEL_GRADE_POINTS:
+            total += OLEVEL_GRADE_POINTS[grade]
+    return total
+
+
+def calculate_alevel_points(alevel_grades):
+    """Calculate total A-Level points (sum of principal subject points only)."""
+    total = 0
+    for grade_entry in alevel_grades:
+        grade = grade_entry.get("grade", "").upper()
+        subject_type = grade_entry.get("subjectType", "").lower()
+        if grade in ALEVEL_GRADE_POINTS and subject_type == "principal":
+            total += ALEVEL_GRADE_POINTS[grade]
+    return total
+
+
+def validate_uneb_grades(uneb_grades, exam_level):
+    """Validate UNEB grades are valid and meet minimum requirements."""
+    errors = []
+
+    # Validate O-Level grades
+    olevel_grades = uneb_grades.get("olevel", [])
+    for grade_entry in olevel_grades:
+        grade = grade_entry.get("grade", "").upper()
+        subject = grade_entry.get("subject", "")
+        if grade not in VALID_OLEVEL_GRADES:
+            errors.append(f"Invalid O-Level grade '{grade}' for {subject}. Valid grades: {', '.join(VALID_OLEVEL_GRADES)}")
+        if not subject:
+            errors.append("Each O-Level grade entry must have a 'subject' field")
+
+    # Validate A-Level grades
+    alevel_grades = uneb_grades.get("alevel", [])
+    for grade_entry in alevel_grades:
+        grade = grade_entry.get("grade", "").upper()
+        subject = grade_entry.get("subject", "")
+        subject_type = grade_entry.get("subjectType", "").lower()
+        if grade not in VALID_ALEVEL_GRADES:
+            errors.append(f"Invalid A-Level grade '{grade}' for {subject}. Valid grades: {', '.join(VALID_ALEVEL_GRADES)}")
+        if subject_type not in ("principal", "subsidiary"):
+            errors.append(f"A-Level subject type for {subject} must be 'principal' or 'subsidiary'")
+        if not subject:
+            errors.append("Each A-Level grade entry must have a 'subject' field")
+
+    return errors
+
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -62,14 +125,28 @@ def create_application():
     if not data:
         return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
 
-    required = ["programId", "examLevel", "examYear", "indexNumber", "unebGrades", "dateOfBirth", "gender"]
+    required = ["programIds", "examLevel", "examYear", "indexNumber", "unebGrades", "dateOfBirth", "gender", "nationality"]
     for field in required:
         if field not in data:
             return jsonify({"error": "Validation error", "message": f"{field} is required"}), 400
 
-    program = db.session.get(Program, data["programId"])
-    if not program:
-        return jsonify({"error": "Not found", "message": "Program not found"}), 404
+    # Validate program selection (up to 3 choices)
+    program_ids = data.get("programIds", [])
+    if not isinstance(program_ids, list) or len(program_ids) == 0:
+        return jsonify({"error": "Validation error", "message": "At least one program must be selected"}), 400
+    if len(program_ids) > 3:
+        return jsonify({"error": "Validation error", "message": "Maximum 3 program choices allowed"}), 400
+
+    # Validate all selected programs exist
+    programs = []
+    for pid in program_ids:
+        program = db.session.get(Program, pid)
+        if not program:
+            return jsonify({"error": "Not found", "message": f"Program ID {pid} not found"}), 404
+        programs.append(program)
+
+    # Use first choice as primary program
+    program = programs[0]
 
     existing = AdmissionApplication.query.filter_by(user_id=user.id).first()
     if existing:
@@ -95,28 +172,42 @@ def create_application():
     if not isinstance(uneb_grades, dict):
         return jsonify({"error": "Validation error", "message": "unebGrades must be an object with 'olevel' and/or 'alevel' arrays"}), 400
 
+    # Validate UNEB grades format
+    grade_errors = validate_uneb_grades(uneb_grades, exam_level)
+    if grade_errors:
+        return jsonify({"error": "Validation error", "message": "; ".join(grade_errors)}), 422
+
     # Validate minimum subjects
     olevel_grades = uneb_grades.get("olevel", [])
     alevel_grades = uneb_grades.get("alevel", [])
 
     if exam_level == "o_level" and len(olevel_grades) < 5:
-        return jsonify({"error": "Validation error", "message": "O-Level requires at least 5 subjects"}), 422
+        return jsonify({"error": "Validation error", "message": "O-Level (UCE) requires at least 5 subjects"}), 422
 
     if exam_level == "a_level":
         if len(olevel_grades) < 5:
             return jsonify({"error": "Validation error", "message": "Please provide your O-Level (UCE) results as well"}), 422
-        principals = [s for s in alevel_grades if s.get("subjectType") == "principal"]
+        principals = [s for s in alevel_grades if s.get("subjectType", "").lower() == "principal"]
         if len(principals) < 2:
-            return jsonify({"error": "Validation error", "message": "A-Level requires at least 2 principal subjects"}), 422
+            return jsonify({"error": "Validation error", "message": "A-Level (UACE) requires at least 2 principal subjects"}), 422
+
+    # Calculate points for validation
+    olevel_points = calculate_olevel_points(olevel_grades)
+    alevel_points = calculate_alevel_points(alevel_grades) if exam_level == "a_level" else None
 
     app_number = generate_application_number()
     while AdmissionApplication.query.filter_by(application_number=app_number).first():
         app_number = generate_application_number()
 
+    # Determine if local or international student
+    nationality = data.get("nationality", "Ugandan")
+    is_local = nationality.lower() in ("ugandan", "uganda", "east african", "kenyan", "kenya", "tanzanian", "tanzania", "rwandan", "rwanda", "burundian", "burundi", "south sudanese", "south sudan")
+
     application = AdmissionApplication(
         application_number=app_number,
         user_id=user.id,
         program_id=program.id,
+        program_choices=program_ids,  # Store all 3 choices
         exam_level=exam_level,
         exam_year=int(data["examYear"]),
         index_number=data["indexNumber"],
@@ -124,8 +215,14 @@ def create_application():
         personal_statement=data.get("personalStatement", ""),
         date_of_birth=dob,
         gender=data["gender"],
-        nationality=data.get("nationality", "Ugandan"),
+        nationality=nationality,
         district=data.get("district", ""),
+        # Final-year student verification
+        is_final_year=data.get("isFinalYear", False),
+        expected_graduation_year=data.get("expectedGraduationYear"),
+        current_year_of_study=data.get("currentYearOfStudy"),
+        student_number=data.get("studentNumber"),
+        # Next of kin
         next_of_kin_name=data.get("nextOfKinName", ""),
         next_of_kin_phone=data.get("nextOfKinPhone", ""),
         next_of_kin_relationship=data.get("nextOfKinRelationship", ""),

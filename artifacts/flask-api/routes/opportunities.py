@@ -17,7 +17,8 @@ def list_opportunities():
     if opp_type:
         query = query.filter_by(type=opp_type)
     if field:
-        query = query.filter(Opportunity.required_programs.contains([field]))
+        # Cross-compatible JSON array search (works on both MySQL and PostgreSQL)
+        query = query.filter(Opportunity.required_programs.like(f'%"{field}"%'))
 
     total = query.count()
     opps = query.order_by(Opportunity.posted_at.desc()).offset((page - 1) * limit).limit(limit).all()

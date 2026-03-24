@@ -13,7 +13,9 @@ def list_career_paths():
 
     query = CareerPath.query
     if program_name:
-        query = query.filter(CareerPath.related_programs.contains([program_name]))
+        # Cross-compatible JSON array search (works on both MySQL and PostgreSQL)
+        # Uses LIKE with JSON substring pattern instead of PostgreSQL-specific @>
+        query = query.filter(CareerPath.related_programs.like(f'%"{program_name}"%'))
     if faculty:
         query = query.filter_by(industry_field=faculty)
 

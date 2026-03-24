@@ -96,6 +96,9 @@ class AdmissionApplication(db.Model):
     program_id = db.Column(db.Integer, db.ForeignKey("programs.id"), nullable=False)
     status = db.Column(db.String(30), nullable=False, default="pending")
 
+    # Program choices (up to 3 programs as JSON array of IDs)
+    program_choices = db.Column(db.JSON, nullable=False, default=list)
+
     # UNEB details (stored as structured JSON)
     exam_level = db.Column(db.String(20), nullable=False)
     exam_year = db.Column(db.Integer, nullable=False)
@@ -116,6 +119,12 @@ class AdmissionApplication(db.Model):
     nationality = db.Column(db.String(100), default="Ugandan")
     district = db.Column(db.String(100))
 
+    # Final-year student verification
+    is_final_year = db.Column(db.Boolean, default=False)
+    expected_graduation_year = db.Column(db.Integer)
+    current_year_of_study = db.Column(db.Integer)
+    student_number = db.Column(db.String(50))
+
     # Next of kin
     next_of_kin_name = db.Column(db.String(200))
     next_of_kin_phone = db.Column(db.String(20))
@@ -135,6 +144,7 @@ class AdmissionApplication(db.Model):
             "userId": self.user_id,
             "programId": self.program_id,
             "program": self.program.to_dict() if self.program else None,
+            "programChoices": self.program_choices or [],
             "status": self.status,
             "examLevel": self.exam_level,
             "examYear": self.exam_year,
@@ -147,6 +157,10 @@ class AdmissionApplication(db.Model):
             "gender": self.gender,
             "nationality": self.nationality,
             "district": self.district,
+            "isFinalYear": self.is_final_year,
+            "expectedGraduationYear": self.expected_graduation_year,
+            "currentYearOfStudy": self.current_year_of_study,
+            "studentNumber": self.student_number,
             "nextOfKinName": self.next_of_kin_name,
             "nextOfKinPhone": self.next_of_kin_phone,
             "nextOfKinRelationship": self.next_of_kin_relationship,
