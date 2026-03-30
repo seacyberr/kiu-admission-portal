@@ -403,7 +403,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
         examYear,
         indexNumber,
         unebGrades,
-        dateOfBirth: data.dateOfBirth,
+        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString().split('T')[0] : undefined,
         gender: data.gender,
         nationality: data.nationality,
         district: data.district,
