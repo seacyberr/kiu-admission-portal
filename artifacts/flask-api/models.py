@@ -1,9 +1,14 @@
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
-from flask_bcrypt import Bcrypt
+try:
+    from flask_bcrypt import Bcrypt  # type: ignore
+except ModuleNotFoundError:
+    Bcrypt = None  # type: ignore
+
+from werkzeug.security import check_password_hash, generate_password_hash
 
 db = SQLAlchemy()
-bcrypt = Bcrypt()
+bcrypt = Bcrypt() if Bcrypt else None
 
 
 class User(db.Model):
@@ -22,10 +27,16 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def set_password(self, password):
-        self.password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
+        if bcrypt:
+            self.password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
+        else:
+            # Fallback for environments missing flask-bcrypt (dev/smoke-test).
+            self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        return bcrypt.check_password_hash(self.password_hash, password)
+        if bcrypt:
+            return bcrypt.check_password_hash(self.password_hash, password)
+        return check_password_hash(self.password_hash, password)
 
     def to_dict(self):
         return {
@@ -111,6 +122,8 @@ class AdmissionApplication(db.Model):
     # Uploaded files
     olevel_certificate_path = db.Column(db.Text)
     alevel_certificate_path = db.Column(db.Text)
+    diploma_certificate_path = db.Column(db.Text)
+    hec_certificate_path = db.Column(db.Text)
 
     # Personal info
     personal_statement = db.Column(db.Text)
@@ -152,6 +165,8 @@ class AdmissionApplication(db.Model):
             "unebGrades": self.uneb_grades,
             "olevelCertificatePath": self.olevel_certificate_path,
             "alevelCertificatePath": self.alevel_certificate_path,
+            "diplomaCertificatePath": self.diploma_certificate_path,
+            "hecCertificatePath": self.hec_certificate_path,
             "personalStatement": self.personal_statement,
             "dateOfBirth": self.date_of_birth.isoformat() if self.date_of_birth else None,
             "gender": self.gender,

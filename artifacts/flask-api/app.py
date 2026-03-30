@@ -1,9 +1,14 @@
+import logging
 import os
 import sys
+import uuid
 import secrets
 import random
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 sys.path.insert(0, os.path.dirname(__file__))
+
+log = logging.getLogger("kiu.portal")
 
 # Load .env file if present
 try:
@@ -12,8 +17,11 @@ try:
 except ImportError:
     pass  # dotenv not installed, rely on system env vars
 
-from flask import Flask, jsonify, send_from_directory
-from flask_cors import CORS
+from flask import Flask, g, jsonify, request, send_from_directory
+try:
+    from flask_cors import CORS  # type: ignore
+except ModuleNotFoundError:
+    CORS = None  # type: ignore
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from models import db, bcrypt
@@ -24,47 +32,72 @@ from models import db, bcrypt
 def _resolve_db_url():
     url = os.environ.get("DATABASE_URL", "").strip()
 
-    # Heroku / Render style: postgres:// → postgresql://
-    if url.startswith("postgres://"):
-        url = "postgresql" + url[8:]
-
     # Plain mysql:// → mysql+pymysql:// for PyMySQL driver
     if url.startswith("mysql://"):
         url = "mysql+pymysql" + url[5:]
 
+    # Explicitly disallow PostgreSQL for production deployments (MySQL is the supported engine).
+    if url.startswith("postgres://") or url.startswith("postgresql://"):
+        raise RuntimeError(
+            "PostgreSQL DATABASE_URL is not supported in this setup. "
+            "Use a MySQL URL (mysql+pymysql://...)."
+        )
+
     return url
 
 
-DATABASE_URL = _resolve_db_url()
+def _default_database_url():
+    return "mysql+pymysql://root@localhost:3306/kiu_admissions"
 
-# Local SQLite fallback when DATABASE_URL is empty (zero setup for development)
-if not DATABASE_URL:
-    DATABASE_URL = "sqlite:///kiu_admissions.db"
-
-IS_MYSQL = "mysql" in DATABASE_URL
-IS_SQLITE = "sqlite" in DATABASE_URL
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
 ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png"}
 MAX_CONTENT_MB = 5
 
 
-def create_app():
-    app = Flask(__name__)
+def _is_production():
+    return os.environ.get("FLASK_ENV", "").lower() == "production"
 
-    app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+
+def _configure_logging():
+    level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
+    level = getattr(logging, level_name, logging.INFO)
+    root = logging.getLogger()
+    if not root.handlers:
+        logging.basicConfig(
+            level=level,
+            format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+            datefmt="%Y-%m-%dT%H:%M:%S",
+        )
+    root.setLevel(level)
+    log.setLevel(level)
+
+
+def create_app():
+    _configure_logging()
+
+    database_url = _resolve_db_url()
+    if not database_url:
+        database_url = _default_database_url()
+
+    app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    if IS_SQLITE:
-        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {}
-    else:
-        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-            "pool_pre_ping": True,
-            "pool_recycle": 300,
-        }
-    jwt_secret = os.environ.get("JWT_SECRET", "")
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
+    # Prefer JWT_SECRET, but fall back to SECRET_KEY since many .env templates use it.
+    jwt_secret = os.environ.get("JWT_SECRET", "") or os.environ.get("SECRET_KEY", "")
     if not jwt_secret or jwt_secret == "change-me-to-a-random-secret-key":
+        if _is_production():
+            raise RuntimeError("JWT_SECRET (or SECRET_KEY) must be set in production")
         jwt_secret = secrets.token_hex(32)
-        print("[WARNING] JWT_SECRET not set — using auto-generated key. Sessions will not persist across restarts.", flush=True)
+        log.warning(
+            "JWT_SECRET not set — using auto-generated key; tokens will not persist across restarts."
+        )
     app.config["SECRET_KEY"] = jwt_secret
     app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_MB * 1024 * 1024
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
@@ -76,20 +109,53 @@ def create_app():
     cors_origins = os.environ.get("CORS_ORIGINS", "*")
     if cors_origins == "*":
         origins = "*"
+        if _is_production():
+            log.warning(
+                "CORS_ORIGINS is '*' — set explicit comma-separated origins in production."
+            )
     else:
         origins = [o.strip() for o in cors_origins.split(",") if o.strip()]
-    CORS(app, resources={r"/api/*": {"origins": origins}})
+    if CORS:
+        CORS(app, resources={r"/api/*": {"origins": origins}})
 
     db.init_app(app)
-    bcrypt.init_app(app)
+    if bcrypt:
+        bcrypt.init_app(app)
 
-    # Rate limiting — production-ready defaults
+    # Rate limits: use RATE_LIMIT_STORAGE_URI (e.g. redis://127.0.0.1:6379/0) for multi-worker / multi-instance.
+    rate_storage = os.environ.get("RATE_LIMIT_STORAGE_URI", "memory://")
+    raw_limits = os.environ.get("RATE_LIMIT_DEFAULT", "").strip()
+    if raw_limits:
+        default_limits = [x.strip() for x in raw_limits.split(",") if x.strip()]
+    else:
+        default_limits = ["200 per day", "50 per hour"]
     Limiter(
         key_func=get_remote_address,
         app=app,
-        default_limits=["200 per day", "50 per hour"],
-        storage_uri="memory://",
+        default_limits=default_limits,
+        storage_uri=rate_storage,
     )
+
+    @app.before_request
+    def _assign_request_id():
+        g.request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+
+    @app.after_request
+    def _security_headers_and_request_id(resp):
+        resp.headers["X-Request-ID"] = getattr(g, "request_id", "")
+        if os.environ.get("ENABLE_SECURITY_HEADERS", "true").lower() == "true":
+            resp.headers["X-Content-Type-Options"] = "nosniff"
+            resp.headers["X-Frame-Options"] = "DENY"
+            resp.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+            resp.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+            if (
+                request.headers.get("X-Forwarded-Proto") == "https"
+                or os.environ.get("ENABLE_HSTS", "").lower() == "true"
+            ):
+                resp.headers["Strict-Transport-Security"] = (
+                    "max-age=31536000; includeSubDomains"
+                )
+        return resp
 
     from routes.auth import auth_bp
     from routes.admission import admission_bp
@@ -105,16 +171,57 @@ def create_app():
 
     @app.route("/api/healthz")
     def healthz():
-        if IS_SQLITE:
-            db_label = "sqlite"
-        elif IS_MYSQL:
-            db_label = "mysql"
-        else:
-            db_label = "postgresql"
-        return jsonify({"status": "ok", "db": db_label}), 200
+        return jsonify({"status": "ok", "service": "kiu-portal-api"}), 200
+
+    @app.route("/api/readyz")
+    def readyz():
+        from sqlalchemy import text
+
+        try:
+            db.session.execute(text("SELECT 1"))
+        except Exception as exc:
+            log.exception("Readiness check failed: %s", exc)
+            return (
+                jsonify(
+                    {
+                        "status": "unavailable",
+                        "database": "error",
+                        "message": "Database unreachable",
+                    }
+                ),
+                503,
+            )
+        dialect = db.engine.dialect.name
+        return jsonify({"status": "ok", "database": dialect}), 200
 
     @app.route("/api/uploads/certificates/<path:filename>")
     def serve_certificate(filename):
+        from routes.auth import get_current_user
+        from models import AdmissionApplication
+        from sqlalchemy import or_
+
+        user, error = get_current_user()
+        if error:
+            return jsonify({"error": "Unauthorized", "message": error}), 401
+
+        path_fragment = f"/api/uploads/certificates/{filename}"
+        application = (
+            AdmissionApplication.query
+            .filter(
+                or_(
+                    AdmissionApplication.olevel_certificate_path == path_fragment,
+                    AdmissionApplication.alevel_certificate_path == path_fragment,
+                    AdmissionApplication.diploma_certificate_path == path_fragment,
+                    AdmissionApplication.hec_certificate_path == path_fragment,
+                )
+            )
+            .first()
+        )
+        if not application:
+            return jsonify({"error": "Not found", "message": "Certificate not found"}), 404
+        if user.role != "admin" and application.user_id != user.id:
+            return jsonify({"error": "Forbidden", "message": "Access denied"}), 403
+
         cert_dir = os.path.join(UPLOAD_FOLDER, "certificates")
         return send_from_directory(cert_dir, filename)
 
@@ -132,6 +239,17 @@ def create_app():
 
     @app.errorhandler(500)
     def internal_error(e):
+        log.exception("Unhandled server error: %s", e)
+        if _is_production():
+            return (
+                jsonify(
+                    {
+                        "error": "Internal server error",
+                        "message": "An unexpected error occurred",
+                    }
+                ),
+                500,
+            )
         return jsonify({"error": "Internal server error", "message": str(e)}), 500
 
     with app.app_context():
@@ -148,6 +266,9 @@ def create_app():
 def _run_migrations():
     from sqlalchemy import inspect, text
     from models import User
+
+    if db.engine.dialect.name == "sqlite":
+        return
 
     insp = inspect(db.engine)
 
@@ -177,6 +298,14 @@ def _run_migrations():
             conn.execute(text(
                 "ALTER TABLE admission_applications ADD COLUMN alevel_certificate_path TEXT"
             ))
+        if "diploma_certificate_path" not in app_cols:
+            conn.execute(text(
+                "ALTER TABLE admission_applications ADD COLUMN diploma_certificate_path TEXT"
+            ))
+        if "hec_certificate_path" not in app_cols:
+            conn.execute(text(
+                "ALTER TABLE admission_applications ADD COLUMN hec_certificate_path TEXT"
+            ))
 
     # Ensure admin is always verified
     with db.engine.begin() as conn:
@@ -192,8 +321,52 @@ def _seed_data():
     from models import Program, CareerPath, Opportunity, User
     from datetime import date, timedelta
 
-    if Program.query.count() > 0:
+    if os.environ.get("SEED_DATABASE", "true").lower() in ("0", "false", "no"):
         return
+
+    replace_programs = os.environ.get("REPLACE_PROGRAMS", "false").lower() in ("1", "true", "yes")
+    programs_count = Program.query.count()
+    seed_programs_path = os.path.join(os.path.dirname(__file__), "seed-programs.json")
+
+    # If programmes already exist and we are not replacing them, still add missing ones
+    # so the UI sees the updated full course lists.
+    if programs_count > 0 and not replace_programs:
+        if os.path.exists(seed_programs_path):
+            import json
+
+            with open(seed_programs_path, "r", encoding="utf-8") as f:
+                seed = json.load(f)
+
+            existing_codes = {p.code for p in Program.query.all()}
+            missing = []
+            for p in seed.get("programs", []):
+                code = p.get("code")
+                if not code or code in existing_codes:
+                    continue
+                missing.append(
+                    Program(
+                        name=p.get("name", ""),
+                        code=code,
+                        faculty=p.get("faculty", "") or "",
+                        department=p.get("department"),
+                        level=p.get("level", ""),
+                        duration=p.get("duration"),
+                        description=p.get("description"),
+                        entry_requirements=p.get("entry_requirements", ""),
+                        min_olevel_points=p.get("minOlevelPoints"),
+                        min_alevel_points=p.get("minAlevelPoints"),
+                        available_slots=p.get("availableSlots", 100) or 100,
+                    )
+                )
+
+            if missing:
+                db.session.add_all(missing)
+                db.session.commit()
+        return
+
+    if replace_programs:
+        Program.query.delete()
+        db.session.commit()
 
     programs = [
         # ── Faculty of Medicine ──────────────────────────────────────────
@@ -239,6 +412,30 @@ def _seed_data():
         Program(name="Bachelor of International Relations", code="BIR", faculty="Faculty of Social Sciences", department="Department of Political Science", level="degree", duration="3 years", description="International relations covering diplomacy, global politics, conflict resolution, and international organizations.", entry_requirements="UACE: 2 principal passes including History or Economics with at least 8 points. UCE: At least 5 passes including English and History.", min_olevel_points=40, min_alevel_points=8, available_slots=50),
         Program(name="Bachelor of Psychology", code="BPsy", faculty="Faculty of Social Sciences", department="Department of Psychology", level="degree", duration="3 years", description="Psychology program covering clinical, developmental, organizational, and forensic psychology.", entry_requirements="UACE: 2 principal passes with at least 8 points. UCE: At least 5 passes including English and Mathematics.", min_olevel_points=40, min_alevel_points=8, available_slots=50),
     ]
+    # If we have a seed-programs.json file, prefer it over the hardcoded list.
+    seed_programs_path = os.path.join(os.path.dirname(__file__), "seed-programs.json")
+    if os.path.exists(seed_programs_path):
+        import json
+        with open(seed_programs_path, "r", encoding="utf-8") as f:
+            seed = json.load(f)
+        programs = [
+            Program(
+                name=p.get("name", ""),
+                code=p.get("code", ""),
+                faculty=p.get("faculty", "") or "",
+                department=p.get("department"),
+                level=p.get("level", ""),
+                duration=p.get("duration"),
+                description=p.get("description"),
+                entry_requirements=p.get("entry_requirements", ""),
+                min_olevel_points=p.get("minOlevelPoints"),
+                min_alevel_points=p.get("minAlevelPoints"),
+                available_slots=p.get("availableSlots", 100) or 100,
+            )
+            for p in seed.get("programs", [])
+            if p.get("level") in ("degree", "diploma", "hec")
+        ]
+
     db.session.add_all(programs)
     db.session.flush()
 
@@ -326,22 +523,17 @@ def _seed_data():
     print(f"{'='*60}\n", flush=True)
 
 
-app = create_app()
-
 if __name__ == "__main__":
-    # Default port: 5001 for local dev, 8080 for PostgreSQL/Replit
+    application = create_app()
     default_port = 5001
     port = int(os.environ.get("PORT", default_port))
-    if IS_SQLITE:
-        db_label = "SQLite (local)"
-    elif IS_MYSQL:
-        db_label = "MySQL (local)"
-    else:
-        db_label = "PostgreSQL (Replit)"
+    with application.app_context():
+        dialect = db.engine.dialect.name
+    db_label = f"{dialect} (local)" if dialect == "mysql" else dialect
     print(f"\n{'='*60}")
     print(f"  KIU Portal API Server")
     print(f"  Database : {db_label}")
     print(f"  Port     : {port}")
     print(f"  Upload   : {UPLOAD_FOLDER}")
     print(f"{'='*60}\n", flush=True)
-    app.run(host="0.0.0.0", port=port, debug=False)
+    application.run(host="0.0.0.0", port=port, debug=False)

@@ -153,15 +153,28 @@ def create_application():
         return jsonify({"error": "Conflict", "message": "You have already submitted an application"}), 409
 
     exam_level = data["examLevel"]
-    if exam_level not in ("o_level", "a_level"):
-        return jsonify({"error": "Validation error", "message": "examLevel must be 'o_level' or 'a_level'"}), 400
-
-    # Degree programs require A-Level
-    if program.level == "degree" and exam_level == "o_level":
+    valid_exam_levels = ("o_level", "a_level", "diploma", "hec")
+    if exam_level not in valid_exam_levels:
         return jsonify({
             "error": "Validation error",
-            "message": "Degree programs require A-Level (UACE) qualifications. Diploma programs accept O-Level."
-        }), 422
+            "message": "examLevel must be one of: 'o_level', 'a_level', 'diploma', 'hec'"
+        }), 400
+
+    # Degree vs non-degree qualification gating (portal UI-only guidance + backend safety)
+    if program.level == "degree":
+        # Degree accepts A-Level (UACE) or Certificate-based qualifications (Diploma/HEC)
+        if exam_level == "o_level":
+            return jsonify({
+                "error": "Validation error",
+                "message": "Degree programs require A-Level, Diploma, or HEC qualifications. O-Level alone is not accepted."
+            }), 422
+    else:
+        # Diploma/HEC programmes accept only O-Level (UCE) qualifications in this portal flow
+        if exam_level != "o_level":
+            return jsonify({
+                "error": "Validation error",
+                "message": "Diploma/HEC programmes accept O-Level (UCE) qualifications in this portal flow."
+            }), 422
 
     try:
         dob = date.fromisoformat(data["dateOfBirth"])
@@ -194,6 +207,26 @@ def create_application():
     # Calculate points for validation
     olevel_points = calculate_olevel_points(olevel_grades)
     alevel_points = calculate_alevel_points(alevel_grades) if exam_level == "a_level" else None
+
+    # Program entry threshold checks
+    # Only enforce numeric thresholds when O-Level / A-Level is actually provided.
+    if exam_level in ("o_level", "a_level") and program.min_olevel_points is not None and olevel_points > program.min_olevel_points:
+        return jsonify({
+            "error": "Validation error",
+            "message": (
+                f"Your O-Level aggregate ({olevel_points}) does not meet the minimum "
+                f"requirement for {program.code} (aggregate <= {program.min_olevel_points})."
+            ),
+        }), 422
+    if exam_level == "a_level" and program.min_alevel_points is not None:
+        if (alevel_points or 0) < program.min_alevel_points:
+            return jsonify({
+                "error": "Validation error",
+                "message": (
+                    f"Your A-Level points ({alevel_points or 0}) do not meet the minimum "
+                    f"requirement for {program.code} ({program.min_alevel_points}+ points)."
+                ),
+            }), 422
 
     app_number = generate_application_number()
     while AdmissionApplication.query.filter_by(application_number=app_number).first():
@@ -236,7 +269,7 @@ def create_application():
 
 @admission_bp.route("/applications/<int:app_id>/certificate", methods=["POST"])
 def upload_certificate(app_id):
-    """Upload O-Level or A-Level academic certificate for an existing application."""
+    """Upload academic certificate for an existing application."""
     user, error = get_current_user()
     if error:
         return jsonify({"error": "Unauthorized", "message": error}), 401
@@ -248,9 +281,9 @@ def upload_certificate(app_id):
     if application.user_id != user.id and user.role != "admin":
         return jsonify({"error": "Forbidden", "message": "You can only upload certificates for your own application"}), 403
 
-    cert_type = request.form.get("type", "olevel")  # 'olevel' or 'alevel'
-    if cert_type not in ("olevel", "alevel"):
-        return jsonify({"error": "Validation error", "message": "type must be 'olevel' or 'alevel'"}), 400
+    cert_type = request.form.get("type", "olevel")  # 'olevel' | 'alevel' | 'diploma' | 'hec'
+    if cert_type not in ("olevel", "alevel", "diploma", "hec"):
+        return jsonify({"error": "Validation error", "message": "type must be 'olevel', 'alevel', 'diploma', or 'hec'"}), 400
 
     if "file" not in request.files:
         return jsonify({"error": "Bad request", "message": "No file provided (field name: 'file')"}), 400
@@ -274,8 +307,12 @@ def upload_certificate(app_id):
 
     if cert_type == "olevel":
         application.olevel_certificate_path = url_path
-    else:
+    elif cert_type == "alevel":
         application.alevel_certificate_path = url_path
+    elif cert_type == "diploma":
+        application.diploma_certificate_path = url_path
+    elif cert_type == "hec":
+        application.hec_certificate_path = url_path
 
     db.session.commit()
     return jsonify({

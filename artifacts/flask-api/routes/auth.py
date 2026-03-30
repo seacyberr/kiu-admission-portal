@@ -7,14 +7,12 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 
 import jwt
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from models import db, User, OtpCode
 
 log = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__)
-
-JWT_SECRET = os.environ.get("JWT_SECRET", "")
 
 # Brevo SMTP configuration
 BREVO_SMTP_HOST = "smtp-relay.brevo.com"
@@ -32,16 +30,18 @@ OTP_RESEND_COOLDOWN_SECONDS = 60
 # ---------------------------------------------------------------------------
 
 def generate_token(user_id, role):
+    jwt_secret = current_app.config.get("SECRET_KEY", "")
     payload = {
         "userId": user_id,
         "role": role,
         "exp": datetime.utcnow() + timedelta(days=7),
     }
-    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    return jwt.encode(payload, jwt_secret, algorithm="HS256")
 
 
 def verify_token(token):
-    return jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    jwt_secret = current_app.config.get("SECRET_KEY", "")
+    return jwt.decode(token, jwt_secret, algorithms=["HS256"])
 
 
 def get_current_user():
@@ -67,6 +67,8 @@ def _generate_otp():
 
 def _print_otp_to_terminal(email, otp, full_name=""):
     """Always dump OTP to terminal so dev can use it during testing."""
+    if os.environ.get("FLASK_ENV", "").lower() == "production":
+        return
     line = "=" * 56
     msg = (
         f"\n{line}\n"

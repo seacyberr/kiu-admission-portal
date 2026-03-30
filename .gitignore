@@ -56,3 +56,6 @@ Thumbs.db
 
 # Environment variables
 .env
+
+# Flask uploaded files (must persist on the server, not in git)
+artifacts/flask-api/uploads/

@@ -43,7 +43,7 @@
 }
 
 :root {
-  /* Deep Oxford Blue & Academic Gold Palette */
+  /* KIU Brand Palette: Green Primary + warm Accent */
   --background: 210 20% 98%;
   --foreground: 222 47% 11%;
   
@@ -55,8 +55,8 @@
   --popover-foreground: 222 47% 11%;
   --popover-border: 214 32% 91%;
   
-  /* Primary: Deep Academic Blue */
-  --primary: 215 100% 20%;
+  /* Primary: KIU Green (main brand color) */
+  --primary: 142 51% 28%;
   --primary-foreground: 210 40% 98%;
   
   /* Secondary: Soft Slate */
@@ -75,7 +75,7 @@
   
   --border: 214 32% 91%;
   --input: 214 32% 91%;
-  --ring: 215 100% 20%;
+  --ring: 142 51% 28%;
   
   --radius: 0.75rem;
 }
@@ -92,7 +92,7 @@
   --popover-foreground: 210 40% 98%;
   --popover-border: 215 32% 20%;
   
-  --primary: 210 40% 98%;
+  --primary: 142 51% 28%;
   --primary-foreground: 215 100% 20%;
   
   --secondary: 217 32% 17%;
@@ -109,7 +109,7 @@
   
   --border: 217 32% 17%;
   --input: 217 32% 17%;
-  --ring: 212 100% 48%;
+  --ring: 142 51% 28%;
 }
 
 @layer base {

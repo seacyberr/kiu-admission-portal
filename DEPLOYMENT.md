@@ -81,6 +81,49 @@ python app.py
 gunicorn -w 4 -b 0.0.0.0:5001 wsgi:app
 ```
 
+## Production Reverse Proxy (Nginx example)
+
+Assumes:
+- Flask API runs on `127.0.0.1:5001`
+- React frontend is served as static files (or a separate service) for non-`/api` routes
+- Certificate uploads are allowed up to at least `5MB` each
+
+```nginx
+server {
+  listen 80;
+  server_name your-domain.com;
+
+  # Allow uploads (backend limit is 5MB per file)
+  client_max_body_size 6m;
+
+  # API: proxy everything under /api to Flask
+  location /api/ {
+    proxy_pass http://127.0.0.1:5001/api/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+
+  # Frontend: serve built assets (example path)
+  # If you serve frontend via another container/service, you can swap this for a proxy_pass.
+  location / {
+    root /var/www/kiu-portal/artifacts/kiu-portal/dist/public;
+    try_files $uri $uri/ /index.html;
+    index index.html;
+  }
+}
+```
+
+## Upload persistence note
+
+The backend stores uploaded certificates on disk under:
+- `artifacts/flask-api/uploads/certificates/`
+
+In production, ensure this directory is writable and persists across restarts
+(e.g., mount a persistent volume or shared storage).
+
 ## Environment Variables
 
 | Variable | Description | Required |

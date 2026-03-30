@@ -1,6 +1,6 @@
 import { useListCareerPaths, useGetFinalistProfile } from '@workspace/api-client-react';
 import { Card, Badge } from '@/components/ui/shared';
-import { ArrowLeft, Clock, Map, TrendingUp, Target, DollarSign } from 'lucide-react';
+import { ArrowLeft, Award, Clock, Map, TrendingUp, Target, DollarSign } from 'lucide-react';
 import { Link } from 'wouter';
 
 export default function CareerPaths() {

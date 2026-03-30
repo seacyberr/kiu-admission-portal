@@ -84,7 +84,10 @@ export default function Opportunities() {
                   <p className="flex items-center gap-2"><MapPin className="w-4 h-4" /> {op.location}</p>
                 )}
                 <p className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" /> Deadline: {format(new Date(op.applicationDeadline), 'MMM d, yyyy')}
+                  <Clock className="w-4 h-4" /> Deadline:{' '}
+                  {op.applicationDeadline
+                    ? format(new Date(op.applicationDeadline), 'MMM d, yyyy')
+                    : '—'}
                 </p>
               </div>
               

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime, date
 from models import db, Opportunity, OpportunityApplication
 from routes.auth import get_current_user
+from sqlalchemy import func
 
 opportunities_bp = Blueprint("opportunities", __name__)
 
@@ -22,9 +23,25 @@ def list_opportunities():
 
     total = query.count()
     opps = query.order_by(Opportunity.posted_at.desc()).offset((page - 1) * limit).limit(limit).all()
+    opp_ids = [o.id for o in opps]
+    counts_by_id = {}
+    if opp_ids:
+        count_rows = (
+            db.session.query(
+                OpportunityApplication.opportunity_id,
+                func.count(OpportunityApplication.id),
+            )
+            .filter(OpportunityApplication.opportunity_id.in_(opp_ids))
+            .group_by(OpportunityApplication.opportunity_id)
+            .all()
+        )
+        counts_by_id = {opp_id: count for opp_id, count in count_rows}
 
     return jsonify({
-        "opportunities": [o.to_dict() for o in opps],
+        "opportunities": [
+            {**o.to_dict(), "applicantCount": counts_by_id.get(o.id, 0)}
+            for o in opps
+        ],
         "total": total,
         "page": page,
         "limit": limit,
@@ -40,6 +57,8 @@ def create_opportunity():
         return jsonify({"error": "Forbidden", "message": "Admin access required"}), 403
 
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
     required = ["title", "organization", "type", "description", "requirements", "applicationDeadline"]
     for field in required:
         if field not in data:
@@ -90,6 +109,8 @@ def update_opportunity(opp_id):
         return jsonify({"error": "Not found", "message": "Opportunity not found"}), 404
 
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
     for field, attr in [
         ("title", "title"), ("organization", "organization"), ("type", "type"),
         ("description", "description"), ("requirements", "requirements"),
@@ -101,7 +122,10 @@ def update_opportunity(opp_id):
             setattr(opp, attr, data[field])
 
     if "applicationDeadline" in data:
-        opp.application_deadline = date.fromisoformat(data["applicationDeadline"])
+        try:
+            opp.application_deadline = date.fromisoformat(data["applicationDeadline"])
+        except ValueError:
+            return jsonify({"error": "Validation error", "message": "Invalid applicationDeadline format"}), 400
 
     opp.updated_at = datetime.utcnow()
     db.session.commit()
@@ -181,6 +205,8 @@ def update_application_status(app_id):
         return jsonify({"error": "Not found", "message": "Application not found"}), 404
 
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
     valid_statuses = ["applied", "shortlisted", "interview_scheduled", "accepted", "rejected"]
     new_status = data.get("status")
     if new_status not in valid_statuses:

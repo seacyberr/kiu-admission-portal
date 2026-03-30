@@ -73,33 +73,81 @@ const aGradeEntry = z.object({
   subjectType: z.enum(["principal", "subsidiary"]),
 });
 
-const applySchema = z.object({
-  programId: z.coerce.number().min(1, "Please select a program"),
-  examLevel: z.enum(["o_level", "a_level"]),
-  oLevelYear: z.coerce.number().min(1990).max(new Date().getFullYear()),
-  oLevelIndexNumber: z.string().min(5, "O-Level index number is required"),
-  oLevelGrades: z.array(oGradeEntry).min(5, "At least 5 O-Level subjects required"),
-  aLevelYear: z.coerce.number().min(1990).max(new Date().getFullYear()).optional(),
-  aLevelIndexNumber: z.string().optional(),
-  aLevelGrades: z.array(aGradeEntry).optional(),
-  personalStatement: z.string().min(50, "At least 50 characters required"),
-  dateOfBirth: z.string().min(8, "Date of birth required"),
-  gender: z.enum(["male", "female", "other"]),
-  nationality: z.string().default("Ugandan"),
-  district: z.string().min(2, "District required"),
-  nextOfKinName: z.string().min(2, "Name required"),
-  nextOfKinPhone: z.string().min(9, "Phone required"),
-  nextOfKinRelationship: z.string().min(2, "Relationship required"),
-});
+const applySchema = z
+  .object({
+    programId: z.coerce.number().min(1, "Please select a program"),
+    examLevel: z.enum(["o_level", "a_level", "diploma", "hec"]),
+
+    // O-Level inputs (required when examLevel is o_level or a_level)
+    oLevelYear: z.coerce.number().min(1990).max(new Date().getFullYear()).optional(),
+    oLevelIndexNumber: z.string().min(5, "O-Level index number is required").optional(),
+    oLevelGrades: z.array(oGradeEntry).min(5, "At least 5 O-Level subjects required").optional(),
+
+    // A-Level inputs (required when examLevel is a_level)
+    aLevelYear: z.coerce.number().min(1990).max(new Date().getFullYear()).optional(),
+    aLevelIndexNumber: z.string().optional(),
+    aLevelGrades: z.array(aGradeEntry).optional(),
+
+    // Certificate-only inputs for degree qualification via diploma/hec
+    certYear: z.coerce.number().min(1990).max(new Date().getFullYear()).optional(),
+    certIndexNumber: z.string().min(3, "Certificate index number is required").optional(),
+
+    personalStatement: z.string().min(50, "At least 50 characters required"),
+    dateOfBirth: z.string().min(8, "Date of birth required"),
+    gender: z.enum(["male", "female", "other"]),
+    nationality: z.string().default("Ugandan"),
+    district: z.string().min(2, "District required"),
+    nextOfKinName: z.string().min(2, "Name required"),
+    nextOfKinPhone: z.string().min(9, "Phone required"),
+    nextOfKinRelationship: z.string().min(2, "Relationship required"),
+  })
+  .superRefine((val, ctx) => {
+    const requireField = (key: keyof typeof val, message: string) => {
+      const v = val[key];
+      if (v === undefined || v === null || (typeof v === "string" && !v.trim())) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message, path: [key as string] });
+      }
+    };
+
+    if (val.examLevel === "o_level") {
+      requireField("oLevelYear", "O-Level examination year is required");
+      requireField("oLevelIndexNumber", "O-Level index number is required");
+      if (!val.oLevelGrades || val.oLevelGrades.length < 5) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "At least 5 O-Level subjects required", path: ["oLevelGrades"] });
+      }
+      return;
+    }
+
+    if (val.examLevel === "a_level") {
+      requireField("oLevelYear", "O-Level examination year is required");
+      requireField("oLevelIndexNumber", "O-Level index number is required");
+      if (!val.oLevelGrades || val.oLevelGrades.length < 5) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "At least 5 O-Level subjects required", path: ["oLevelGrades"] });
+      }
+      requireField("aLevelYear", "A-Level examination year is required");
+      if (!val.aLevelGrades || val.aLevelGrades.length < 1) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please add A-Level subjects", path: ["aLevelGrades"] });
+      }
+      return;
+    }
+
+    if (val.examLevel === "diploma" || val.examLevel === "hec") {
+      // Certificate-only qualification: only capture year/index + upload certificate
+      requireField("certYear", "Certificate year is required");
+      requireField("certIndexNumber", "Certificate index number is required");
+      return;
+    }
+  });
 
 type ApplyForm = z.infer<typeof applySchema>;
 
-type Step = "program" | "olevel" | "alevel" | "personal" | "upload" | "review";
+type Step = "program" | "olevel" | "alevel" | "cert" | "personal" | "upload" | "review";
 
 const STEPS: { key: Step; label: string }[] = [
   { key: "program", label: "Program" },
   { key: "olevel", label: "O-Level Results" },
   { key: "alevel", label: "A-Level Results" },
+  { key: "cert", label: "Certificate Details" },
   { key: "personal", label: "Personal Info" },
   { key: "upload", label: "Certificates" },
   { key: "review", label: "Review & Submit" },
@@ -107,7 +155,19 @@ const STEPS: { key: Step; label: string }[] = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function Apply() {
+type ApplyTarget = "degree" | "diploma" | "hec";
+type DegreeQualification = "a_level" | "diploma" | "hec";
+type ExamLevel = "o_level" | "a_level" | "diploma" | "hec";
+
+function readDegreeQualificationFromUrl(): DegreeQualification {
+  if (typeof window === "undefined") return "a_level";
+  const sp = new URLSearchParams(window.location.search);
+  const q = sp.get("qualification");
+  if (q === "a_level" || q === "diploma" || q === "hec") return q;
+  return "a_level";
+}
+
+export default function Apply({ target }: { target: ApplyTarget }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { data: programsData, isLoading: programsLoading } = useListPrograms();
@@ -117,16 +177,26 @@ export default function Apply() {
   const [applicationId, setApplicationId] = useState<number | null>(null);
   const [olevelFile, setOlevelFile] = useState<File | null>(null);
   const [alevelFile, setAlevelFile] = useState<File | null>(null);
+  const [diplomaFile, setDiplomaFile] = useState<File | null>(null);
+  const [hecFile, setHecFile] = useState<File | null>(null);
   const [uploadingCerts, setUploadingCerts] = useState(false);
   const olevelInputRef = useRef<HTMLInputElement>(null);
   const alevelInputRef = useRef<HTMLInputElement>(null);
+  const diplomaInputRef = useRef<HTMLInputElement>(null);
+  const hecInputRef = useRef<HTMLInputElement>(null);
 
   const programs = (programsData as any)?.programs ?? [];
+
+  const degreeQualification = readDegreeQualificationFromUrl();
+  const examLevel: ExamLevel = target === "degree" ? degreeQualification : "o_level";
+  const shouldShowALevel = examLevel === "a_level";
+  const shouldShowOlevel = examLevel === "o_level";
+  const shouldShowCert = examLevel === "diploma" || examLevel === "hec";
 
   const { register, control, handleSubmit, watch, setValue, getValues, formState: { errors } } = useForm<ApplyForm>({
     resolver: zodResolver(applySchema),
     defaultValues: {
-      examLevel: "o_level",
+      examLevel,
       nationality: "Ugandan",
       oLevelYear: new Date().getFullYear() - 2,
       oLevelGrades: [{ subject: "", grade: "", points: 0 }],
@@ -137,15 +207,16 @@ export default function Apply() {
   const watchExamLevel = watch("examLevel");
   const watchProgramId = watch("programId");
   const selectedProgram = programs.find((p: any) => p.id === Number(watchProgramId));
-  const isDegreeProgram = selectedProgram?.level === "degree";
 
   // Field arrays
   const oLevelArray = useFieldArray({ control, name: "oLevelGrades" });
   const aLevelArray = useFieldArray({ control, name: "aLevelGrades" as any });
 
-  const stepOrder: Step[] = isDegreeProgram
+  const stepOrder: Step[] = shouldShowALevel
     ? ["program", "olevel", "alevel", "personal", "upload", "review"]
-    : ["program", "olevel", "personal", "upload", "review"];
+    : shouldShowOlevel
+      ? ["program", "olevel", "personal", "upload", "review"]
+      : ["program", "cert", "personal", "upload", "review"];
 
   const currentIdx = stepOrder.indexOf(step);
   const canGoNext = currentIdx < stepOrder.length - 1;
@@ -243,18 +314,41 @@ export default function Apply() {
     try {
       const token = localStorage.getItem("kiu_token");
 
-      const unebGrades: any = {
-        olevel: data.oLevelGrades.map((g) => ({ ...g, year: data.oLevelYear, indexNumber: data.oLevelIndexNumber })),
-      };
-      if (isDegreeProgram && data.aLevelGrades?.length) {
-        unebGrades.alevel = data.aLevelGrades.map((g) => ({ ...g, year: data.aLevelYear, indexNumber: data.aLevelIndexNumber }));
+      const unebGrades: any = {};
+      if (examLevel === "o_level" || examLevel === "a_level") {
+        unebGrades.olevel = (data.oLevelGrades ?? []).map((g) => ({
+          ...g,
+          year: data.oLevelYear,
+          indexNumber: data.oLevelIndexNumber,
+        }));
+      }
+      if (examLevel === "a_level" && data.aLevelGrades?.length) {
+        unebGrades.alevel = data.aLevelGrades.map((g) => ({
+          ...g,
+          year: data.aLevelYear,
+          indexNumber: data.aLevelIndexNumber,
+        }));
       }
 
+      const examYear =
+        examLevel === "a_level"
+          ? data.aLevelYear
+          : examLevel === "o_level"
+            ? data.oLevelYear
+            : data.certYear;
+
+      const indexNumber =
+        examLevel === "a_level"
+          ? data.aLevelIndexNumber || data.oLevelIndexNumber
+          : examLevel === "o_level"
+            ? data.oLevelIndexNumber
+            : data.certIndexNumber;
+
       const payload = {
-        programId: data.programId,
-        examLevel: isDegreeProgram ? "a_level" : "o_level",
-        examYear: isDegreeProgram ? data.aLevelYear : data.oLevelYear,
-        indexNumber: isDegreeProgram ? (data.aLevelIndexNumber || data.oLevelIndexNumber) : data.oLevelIndexNumber,
+        programIds: [data.programId],
+        examLevel,
+        examYear,
+        indexNumber,
         unebGrades,
         personalStatement: data.personalStatement,
         dateOfBirth: data.dateOfBirth,
@@ -290,7 +384,7 @@ export default function Apply() {
     const token = localStorage.getItem("kiu_token");
     let allOk = true;
 
-    const upload = async (file: File, type: "olevel" | "alevel") => {
+    const upload = async (file: File, type: "olevel" | "alevel" | "diploma" | "hec") => {
       const fd = new FormData();
       fd.append("file", file);
       fd.append("type", type);
@@ -304,7 +398,9 @@ export default function Apply() {
 
     try {
       if (olevelFile) await upload(olevelFile, "olevel");
-      if (alevelFile) await upload(alevelFile, "alevel");
+      if (examLevel === "a_level" && alevelFile) await upload(alevelFile, "alevel");
+      if (examLevel === "diploma" && diplomaFile) await upload(diplomaFile, "diploma");
+      if (examLevel === "hec" && hecFile) await upload(hecFile, "hec");
     } catch {
       allOk = false;
     }
@@ -367,42 +463,64 @@ export default function Apply() {
             {step === "program" && (
               <Card className="p-8">
                 <h2 className="text-xl font-bold mb-2">Choose Your Program</h2>
-                <p className="text-muted-foreground text-sm mb-6">Select the degree or diploma you are applying for.</p>
+                <p className="text-muted-foreground text-sm mb-6">Select the program you are applying for.</p>
 
                 {programsLoading ? (
                   <p className="text-muted-foreground">Loading programs…</p>
                 ) : (
                   <div className="space-y-4">
-                    {["degree", "diploma"].map((lvl) => (
-                      <div key={lvl}>
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
-                          {lvl === "degree" ? "Undergraduate Degrees" : "Diploma Programs"}
-                        </h3>
-                        <div className="grid gap-3">
-                          {programs.filter((p: any) => p.level === lvl).map((p: any) => (
-                            <label
-                              key={p.id}
-                              className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all
-                                ${Number(watchProgramId) === p.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
-                            >
-                              <input type="radio" value={p.id} {...register("programId")} className="mt-1 accent-primary" />
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-sm">{p.name}</p>
-                                <p className="text-xs text-muted-foreground">{p.faculty} · {p.duration}</p>
-                                <p className="text-xs text-muted-foreground mt-1">{p.entryRequirements}</p>
-                              </div>
-                            </label>
-                          ))}
+                    {(() => {
+                      const allowedLevel = target === "degree" ? "degree" : target; // diploma | hec
+                      const levelLabel =
+                        allowedLevel === "degree"
+                          ? "Undergraduate Degrees"
+                          : allowedLevel === "diploma"
+                            ? "Diploma Programmes"
+                            : "HEC Programmes";
+
+                      return (
+                        <div>
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
+                            {levelLabel}
+                          </h3>
+                          <div className="grid gap-3">
+                            {programs
+                              .filter((p: any) => p.level === allowedLevel)
+                              .map((p: any) => (
+                                <label
+                                  key={p.id}
+                                  className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all
+                                    ${Number(watchProgramId) === p.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+                                >
+                                  <input
+                                    type="radio"
+                                    value={p.id}
+                                    {...register("programId")}
+                                    className="mt-1 accent-primary"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-sm">{p.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {p.faculty} · {p.duration}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {p.entryRequirements}
+                                    </p>
+                                  </div>
+                                </label>
+                              ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })()}
                   </div>
                 )}
                 {errors.programId && <p className="text-xs text-destructive mt-2">{errors.programId.message}</p>}
 
                 <div className="mt-6 flex justify-end">
                   <Button type="button" onClick={goNext} disabled={!watchProgramId} className="gap-2">
-                    Next: O-Level Results <ArrowRight className="w-4 h-4" />
+                    Next: {(shouldShowOlevel || shouldShowALevel) ? "O-Level Results" : "Certificate Details"}{" "}
+                    <ArrowRight className="w-4 h-4" />
                   </Button>
                 </div>
               </Card>
@@ -450,7 +568,39 @@ export default function Apply() {
 
                 <div className="mt-6 flex justify-end">
                   <Button type="button" onClick={goNext} className="gap-2">
-                    Next {isDegreeProgram ? ": A-Level Results" : ": Personal Info"} <ArrowRight className="w-4 h-4" />
+                    Next {shouldShowALevel ? ": A-Level Results" : ": Personal Info"} <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </Card>
+            )}
+
+            {/* ── STEP: Certificate Details ─────────────────────────────────── */}
+            {step === "cert" && (
+              <Card className="p-8">
+                <h2 className="text-xl font-bold mb-1">Certificate Details</h2>
+                <p className="text-muted-foreground text-sm mb-6">
+                  Enter your {examLevel === "diploma" ? "Diploma" : "HEC"} certificate year and index number.
+                </p>
+
+                <div className="grid md:grid-cols-2 gap-5 mb-6">
+                  <div className="space-y-2">
+                    <Label>Certificate Year</Label>
+                    <Input type="number" {...register("certYear")} min={1990} max={new Date().getFullYear()} />
+                    {errors.certYear && <p className="text-xs text-destructive">{errors.certYear.message as string}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Certificate Index Number</Label>
+                    <Input
+                      placeholder={examLevel === "diploma" ? "e.g. D0001/001" : "e.g. H0001/001"}
+                      {...register("certIndexNumber")}
+                    />
+                    {errors.certIndexNumber && <p className="text-xs text-destructive">{errors.certIndexNumber.message as string}</p>}
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <Button type="button" onClick={goNext} className="gap-2">
+                    Next: Personal Info <ArrowRight className="w-4 h-4" />
                   </Button>
                 </div>
               </Card>
@@ -580,24 +730,26 @@ export default function Apply() {
                 </p>
 
                 <div className="grid md:grid-cols-2 gap-6">
-                  {/* O-Level Certificate */}
-                  <div
-                    onClick={() => olevelInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-2xl p-6 cursor-pointer transition-all text-center
-                      ${olevelFile ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-secondary/50"}`}
-                  >
-                    <FileText className={`w-10 h-10 mx-auto mb-3 ${olevelFile ? "text-primary" : "text-muted-foreground"}`} />
-                    <p className="font-semibold text-sm mb-1">O-Level (UCE) Certificate</p>
-                    {olevelFile ? (
-                      <p className="text-xs text-primary font-medium truncate">{olevelFile.name}</p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">Click to upload PDF/JPG/PNG</p>
-                    )}
-                    <input ref={olevelInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => setOlevelFile(e.target.files?.[0] ?? null)} />
-                  </div>
+                  {/* O-Level Certificate (required for o_level and a_level modes) */}
+                  {(examLevel === "o_level" || examLevel === "a_level") && (
+                    <div
+                      onClick={() => olevelInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-2xl p-6 cursor-pointer transition-all text-center
+                        ${olevelFile ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-secondary/50"}`}
+                    >
+                      <FileText className={`w-10 h-10 mx-auto mb-3 ${olevelFile ? "text-primary" : "text-muted-foreground"}`} />
+                      <p className="font-semibold text-sm mb-1">O-Level (UCE) Certificate</p>
+                      {olevelFile ? (
+                        <p className="text-xs text-primary font-medium truncate">{olevelFile.name}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Click to upload PDF/JPG/PNG</p>
+                      )}
+                      <input ref={olevelInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => setOlevelFile(e.target.files?.[0] ?? null)} />
+                    </div>
+                  )}
 
-                  {/* A-Level Certificate */}
-                  {isDegreeProgram && (
+                  {/* A-Level Certificate (Degree with A-Level qualification) */}
+                  {examLevel === "a_level" && (
                     <div
                       onClick={() => alevelInputRef.current?.click()}
                       className={`border-2 border-dashed rounded-2xl p-6 cursor-pointer transition-all text-center
@@ -611,6 +763,42 @@ export default function Apply() {
                         <p className="text-xs text-muted-foreground">Click to upload PDF/JPG/PNG</p>
                       )}
                       <input ref={alevelInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => setAlevelFile(e.target.files?.[0] ?? null)} />
+                    </div>
+                  )}
+
+                  {/* Diploma Certificate (Degree with Diploma qualification) */}
+                  {examLevel === "diploma" && (
+                    <div
+                      onClick={() => diplomaInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-2xl p-6 cursor-pointer transition-all text-center
+                        ${diplomaFile ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-secondary/50"}`}
+                    >
+                      <FileText className={`w-10 h-10 mx-auto mb-3 ${diplomaFile ? "text-primary" : "text-muted-foreground"}`} />
+                      <p className="font-semibold text-sm mb-1">Diploma Certificate</p>
+                      {diplomaFile ? (
+                        <p className="text-xs text-primary font-medium truncate">{diplomaFile.name}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Click to upload PDF/JPG/PNG</p>
+                      )}
+                      <input ref={diplomaInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => setDiplomaFile(e.target.files?.[0] ?? null)} />
+                    </div>
+                  )}
+
+                  {/* HEC Certificate (Degree with HEC qualification) */}
+                  {examLevel === "hec" && (
+                    <div
+                      onClick={() => hecInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-2xl p-6 cursor-pointer transition-all text-center
+                        ${hecFile ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-secondary/50"}`}
+                    >
+                      <FileText className={`w-10 h-10 mx-auto mb-3 ${hecFile ? "text-primary" : "text-muted-foreground"}`} />
+                      <p className="font-semibold text-sm mb-1">HEC Certificate</p>
+                      {hecFile ? (
+                        <p className="text-xs text-primary font-medium truncate">{hecFile.name}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Click to upload PDF/JPG/PNG</p>
+                      )}
+                      <input ref={hecInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => setHecFile(e.target.files?.[0] ?? null)} />
                     </div>
                   )}
                 </div>

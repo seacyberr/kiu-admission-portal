@@ -12,8 +12,17 @@ export default function AdminDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-display font-bold text-primary mb-8">Admin Overview</h1>
-      
+      <div className="flex flex-col items-center text-center mb-8">
+        <img
+          src={`${import.meta.env.BASE_URL}images/logo.png`}
+          alt="KIU Logo"
+          className="w-16 h-16 object-contain drop-shadow"
+        />
+        <h1 className="text-3xl font-display font-bold text-primary mt-4">Admin Overview</h1>
+        <p className="text-muted-foreground mt-2">
+          Admissions and opportunities management
+        </p>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         <Card className="p-6 flex items-center gap-4 bg-primary text-primary-foreground border-none">
           <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">

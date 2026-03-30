@@ -28,3 +28,9 @@ gunicorn>=22.0.0
 
 # Date utilities
 python-dateutil>=2.9.0
+
+# Distributed rate limits (optional; set RATE_LIMIT_STORAGE_URI=redis://...)
+redis>=5.0.0
+
+# Tests
+pytest>=8.0.0
