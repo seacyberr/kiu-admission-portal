@@ -417,6 +417,17 @@ export default function Apply({ target }: { target: ApplyTarget }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
+      
+      // Check if response is HTML (error page) instead of JSON
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
+          throw new Error("Server returned an error page. Please check if the server is running and try again.");
+        }
+        throw new Error(`Unexpected response format: ${text.substring(0, 100)}...`);
+      }
+      
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Submission failed");
 
