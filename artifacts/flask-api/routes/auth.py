@@ -65,9 +65,27 @@ def _generate_otp():
     return str(random.randint(100000, 999999))
 
 
+def _otp_debug_enabled() -> bool:
+    """
+    Controls whether OTP codes are printed to terminal.
+
+    Recommended:
+    - `OTP_DEBUG=false` in production
+    - `OTP_DEBUG=true` only during local testing
+
+    Backwards compatible behavior:
+    - If `OTP_DEBUG` is not set, print only when `FLASK_ENV != production`.
+    """
+
+    otp_debug_raw = os.environ.get("OTP_DEBUG", "").strip().lower()
+    if otp_debug_raw == "":
+        return os.environ.get("FLASK_ENV", "").lower() != "production"
+    return otp_debug_raw in ("1", "true", "yes", "on")
+
+
 def _print_otp_to_terminal(email, otp, full_name=""):
-    """Always dump OTP to terminal so dev can use it during testing."""
-    if os.environ.get("FLASK_ENV", "").lower() == "production":
+    """Print OTP to terminal only when debugging is enabled."""
+    if not _otp_debug_enabled():
         return
     line = "=" * 56
     msg = (
