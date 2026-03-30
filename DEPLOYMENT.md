@@ -66,19 +66,49 @@ pip install -r requirements.txt
 ---
 
 ## Local Development
+### 1) MySQL prerequisite
+1. Make sure MySQL is running on your machine.
+2. Create the database and user (replace placeholders):
+```sql
+CREATE DATABASE IF NOT EXISTS kiu_admissions;
+-- Example user:
+-- CREATE USER 'admin'@'localhost' IDENTIFIED BY 'your-password';
+-- GRANT ALL PRIVILEGES ON kiu_admissions.* TO 'admin'@'localhost';
+-- FLUSH PRIVILEGES;
+```
 
+### 2) Configure environment variables
+1. Edit the repo-root `.env` (the backend loads `../../.env` on startup).
+2. Ensure at minimum you set:
+- `DATABASE_URL=mysql+pymysql://<user>:<password>@localhost/kiu_admissions`
+- `JWT_SECRET=<random-secret>`
+
+For local testing with terminal OTP codes:
+- set `FLASK_ENV=development`
+- set `OTP_DEBUG=true`
+
+Recommended defaults for production-like behavior:
+- `OTP_DEBUG=false`
+- `FLASK_ENV=production`
+- `REPLACE_PROGRAMS=false`
+
+### 3) Run backend + frontend
+Backend:
 ```bash
-# Install dependencies
 cd Kiu-Admission-Portal/artifacts/flask-api
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Run with Flask dev server
-python app.py
+# Production-style run (recommended)
+gunicorn -w 2 -b 127.0.0.1:5001 wsgi:app
+```
 
-# Or run with Gunicorn (production)
-gunicorn -w 4 -b 0.0.0.0:5001 wsgi:app
+Frontend (separate terminal):
+```bash
+cd Kiu-Admission-Portal/artifacts/kiu-portal
+pnpm install
+pnpm dev
 ```
 
 ## Production Reverse Proxy (Nginx example)
@@ -129,8 +159,12 @@ In production, ensure this directory is writable and persists across restarts
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `DATABASE_URL` | MySQL/PostgreSQL connection string | Yes |
-| `SECRET_KEY` | JWT secret key (generate with `python -c "import secrets; print(secrets.token_hex(32))"`) | Yes |
-| `CORS_ORIGINS` | Comma-separated allowed origins | No (default: `*`) |
+| `JWT_SECRET` | JWT secret key (preferred) | Yes |
+| `SECRET_KEY` | Optional alias for JWT secret (used if `JWT_SECRET` is missing) | No |
+| `OTP_DEBUG` | When `true`, OTP codes are printed to terminal (for local testing). Recommended `false` in production. | No |
+| `REPLACE_PROGRAMS` | If `true`, overwrites the programme catalogue on startup. Recommended `false` for production. | No |
+| `SEED_DATABASE` | If `true`, seeds demo data (depends on your workflow). | No |
+| `CORS_ORIGINS` | Comma-separated allowed origins (do not leave `*` for production) | No (default: `*`) |
 | `PORT` | Server port | No (default: 5001) |
 | `BREVO_SMTP_USER` | Brevo SMTP login | No (for email OTP) |
 | `BREVO_SMTP_KEY` | Brevo SMTP key | No (for email OTP) |

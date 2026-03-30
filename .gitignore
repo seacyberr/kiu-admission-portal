@@ -53,6 +53,11 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+.replit
+.replitignore
+replit.md
+replitignore
+.git.tar
 
 # Environment variables
 .env
