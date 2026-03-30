@@ -44,17 +44,18 @@ function ApplicationRow({ app }: { app: AdmissionApplication }) {
   const mutation = useUpdateAdmissionStatus();
   const [status, setStatus] = useState(app.status);
   const [notes, setNotes] = useState(app.adminNotes ?? "");
+  const [selectedProgram, setSelectedProgram] = useState(app.programId);
 
   useEffect(() => {
     setStatus(app.status);
     setNotes(app.adminNotes ?? "");
   }, [app.id, app.status, app.adminNotes]);
 
-  const dirty = status !== app.status || (notes || "") !== (app.adminNotes ?? "");
+  const dirty = status !== app.status || (notes || "") !== (app.adminNotes ?? "") || selectedProgram !== app.programId;
 
   const save = () => {
     mutation.mutate(
-      { id: app.id, data: { status, adminNotes: notes || undefined } },
+      { id: app.id, data: { status, adminNotes: notes || undefined, programId: selectedProgram } },
       {
         onSuccess: () =>
           toast({ title: "Saved", description: `Application ${app.applicationNumber} updated.` }),
@@ -68,6 +69,10 @@ function ApplicationRow({ app }: { app: AdmissionApplication }) {
     );
   };
 
+  // Get program choices from the application
+  const programChoices = (app as any).programChoices || [];
+  const primaryProgram = app.program;
+
   return (
     <TableRow>
       <TableCell className="font-mono text-xs whitespace-nowrap">{app.applicationNumber}</TableCell>
@@ -75,8 +80,31 @@ function ApplicationRow({ app }: { app: AdmissionApplication }) {
         <div className="font-medium">{app.applicantName ?? "—"}</div>
         <div className="text-xs text-muted-foreground">{app.applicantEmail}</div>
       </TableCell>
-      <TableCell className="max-w-[200px] truncate text-sm">
-        {app.program?.name ?? "—"}
+      <TableCell className="max-w-[300px]">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-primary">1st:</span>
+            <span className={`text-sm truncate ${selectedProgram === primaryProgram?.id ? "font-semibold" : ""}`}>
+              {primaryProgram?.name ?? "—"}
+            </span>
+          </div>
+          {programChoices.length > 1 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">2nd:</span>
+              <span className={`text-xs truncate ${selectedProgram === programChoices[1]?.id ? "font-semibold" : "text-muted-foreground"}`}>
+                {programChoices[1]?.name || `Program #${programChoices[1]}`}
+              </span>
+            </div>
+          )}
+          {programChoices.length > 2 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">3rd:</span>
+              <span className={`text-xs truncate ${selectedProgram === programChoices[2]?.id ? "font-semibold" : "text-muted-foreground"}`}>
+                {programChoices[2]?.name || `Program #${programChoices[2]}`}
+              </span>
+            </div>
+          )}
+        </div>
       </TableCell>
       <TableCell>
         <Badge variant={statusVariant(status)}>{status.replace("_", " ")}</Badge>
@@ -99,6 +127,30 @@ function ApplicationRow({ app }: { app: AdmissionApplication }) {
               </option>
             ))}
           </select>
+          {programChoices.length > 1 && (
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Assign Program:</Label>
+              <select
+                value={selectedProgram}
+                onChange={(e) => setSelectedProgram(Number(e.target.value))}
+                className="w-full h-9 rounded-lg border border-border bg-background px-2 text-sm"
+              >
+                <option value={primaryProgram?.id}>
+                  1st: {primaryProgram?.name}
+                </option>
+                {programChoices.length > 1 && programChoices[1]?.id && (
+                  <option value={programChoices[1].id}>
+                    2nd: {programChoices[1].name || `Program #${programChoices[1].id}`}
+                  </option>
+                )}
+                {programChoices.length > 2 && programChoices[2]?.id && (
+                  <option value={programChoices[2].id}>
+                    3rd: {programChoices[2].name || `Program #${programChoices[2].id}`}
+                  </option>
+                )}
+              </select>
+            </div>
+          )}
           <Textarea
             placeholder="Admin notes (optional)"
             value={notes}
@@ -212,7 +264,7 @@ export default function AdminAdmissions() {
               </TableHeader>
               <TableBody>
                 {data?.applications?.length ? (
-                  data.applications.map((app) => (
+                  data.applications.map((app: AdmissionApplication) => (
                     <ApplicationRow key={app.id} app={app} />
                   ))
                 ) : (

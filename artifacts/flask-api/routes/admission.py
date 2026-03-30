@@ -407,6 +407,21 @@ def update_application_status(app_id):
     application.status = new_status
     if "adminNotes" in data:
         application.admin_notes = data["adminNotes"]
+    
+    # Allow admin to update the assigned program
+    if "programId" in data:
+        new_program_id = data["programId"]
+        # Verify the program exists
+        program = db.session.get(Program, new_program_id)
+        if not program:
+            return jsonify({"error": "Not found", "message": "Program not found"}), 404
+        
+        # Verify the program is in the applicant's choices
+        if application.program_choices and new_program_id not in application.program_choices:
+            return jsonify({"error": "Validation error", "message": "Selected program must be one of the applicant's choices"}), 400
+        
+        application.program_id = new_program_id
+    
     db.session.commit()
 
     return jsonify(application.to_dict()), 200

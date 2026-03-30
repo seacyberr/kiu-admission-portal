@@ -113,7 +113,7 @@ const aGradeEntry = z.object({
 
 const applySchema = z
   .object({
-    programId: z.coerce.number().min(1, "Please select a program"),
+    programIds: z.array(z.coerce.number()).min(1, "Please select at least one program").max(3, "Maximum 3 programs allowed"),
     examLevel: z.enum(["o_level", "a_level", "diploma", "hec"]),
 
     // O-Level inputs (required when examLevel is o_level or a_level)
@@ -202,6 +202,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
     defaultValues: {
       examLevel,
       nationality: "Ugandan",
+      programIds: [],
       oLevelYear: new Date().getFullYear() - 2,
       oLevelCurriculum: "new",
       oLevelGrades: [{ subject: "", grade: "", points: 0 }],
@@ -210,9 +211,8 @@ export default function Apply({ target }: { target: ApplyTarget }) {
   });
 
   const watchExamLevel = watch("examLevel");
-  const watchProgramId = watch("programId");
+  const watchProgramIds = watch("programIds") || [];
   const watchCurriculum = watch("oLevelCurriculum");
-  const selectedProgram = programs.find((p: any) => p.id === Number(watchProgramId));
 
   // Get the correct O-Level grades based on curriculum
   const oLevelGrades = watchCurriculum === "old" ? OLEVEL_GRADES_OLD : OLEVEL_GRADES_NEW;
@@ -237,8 +237,8 @@ export default function Apply({ target }: { target: ApplyTarget }) {
     
     switch (step) {
       case "program":
-        if (!values.programId || values.programId < 1) {
-          toast({ title: "Please select a program", variant: "destructive" });
+        if (!values.programIds || values.programIds.length < 1) {
+          toast({ title: "Please select at least one program", variant: "destructive" });
           return false;
         }
         break;
@@ -398,7 +398,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
             : data.certIndexNumber;
 
       const payload = {
-        programIds: [data.programId],
+        programIds: data.programIds,
         examLevel,
         examYear,
         indexNumber,
@@ -567,12 +567,12 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                             <label
                               key={p.id}
                               className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all
-                                ${Number(watchProgramId) === p.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+                                ${watchProgramIds.includes(p.id) ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
                             >
                               <input
-                                type="radio"
+                                type="checkbox"
                                 value={p.id}
-                                {...register("programId")}
+                                {...register("programIds")}
                                 className="mt-1 accent-primary"
                               />
                               <div className="flex-1 min-w-0">
@@ -627,10 +627,10 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                     })()}
                   </div>
                 )}
-                {errors.programId && <p className="text-xs text-destructive mt-2">{errors.programId.message}</p>}
+                {errors.programIds && <p className="text-xs text-destructive mt-2">{errors.programIds.message}</p>}
 
                 <div className="mt-6 flex justify-end">
-                  <Button type="button" onClick={goNext} disabled={!watchProgramId} className="gap-2">
+                  <Button type="button" onClick={goNext} disabled={watchProgramIds.length < 1} className="gap-2">
                     Next: {(shouldShowOlevel || shouldShowALevel) ? "O-Level Results" : "Certificate Details"}{" "}
                     <ArrowRight className="w-4 h-4" />
                   </Button>
