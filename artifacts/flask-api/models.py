@@ -80,6 +80,7 @@ class Program(db.Model):
     min_olevel_points = db.Column(db.Integer)
     min_alevel_points = db.Column(db.Integer)
     available_slots = db.Column(db.Integer, default=100)
+    campus = db.Column(db.String(50), nullable=False, default="kampala")  # 'kampala' or 'western'
 
     def to_dict(self):
         return {
@@ -95,6 +96,7 @@ class Program(db.Model):
             "minOlevelPoints": self.min_olevel_points,
             "minAlevelPoints": self.min_alevel_points,
             "availableSlots": self.available_slots,
+            "campus": self.campus,
         }
 
 

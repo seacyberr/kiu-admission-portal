@@ -49,19 +49,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex flex-col bg-background selection:bg-accent/20">
       {/* Navbar */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white/80 backdrop-blur-xl transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 overflow-hidden group-hover:scale-105 transition-transform">
-              <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="KIU Logo" className="w-8 h-8 object-contain z-10" />
+        <div className="relative h-20 flex items-center">
+          <Link href="/" className="absolute left-4 top-0 flex items-center gap-3 group pl-0">
+            <div className="relative w-20 h-20 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform">
+              <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="KIU Logo" className="w-20 h-20 object-contain z-10" />
             </div>
             <div className="flex flex-col">
-              <span className="font-display font-bold text-lg leading-tight text-primary">KIU Portal</span>
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Admissions & Careers</span>
             </div>
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-8 absolute left-1/2 transform -translate-x-1/2">
             {links.map((link) => (
               <Link key={link.path} href={link.path} className={`text-sm font-semibold transition-colors hover:text-primary ${location === link.path ? 'text-primary' : 'text-muted-foreground'}`}>
                 {link.label}
@@ -69,7 +68,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-4 absolute right-0 top-0 h-full">
             {!isLoading && !user && (
               <>
                 <Link href="/login" className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors">Sign In</Link>
@@ -136,10 +135,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <footer className="bg-primary text-primary-foreground py-12 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2 space-y-4">
-            <div className="flex items-center gap-3 opacity-90">
-              <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="KIU Logo" className="w-8 h-8 brightness-0 invert" />
-              <span className="font-display font-bold text-xl">Kampala International University</span>
-            </div>
             <p className="text-primary-foreground/70 max-w-sm text-sm">
               Empowering the next generation of leaders. The KIU Portal manages both new admissions and finalist career opportunities in one unified platform.
             </p>

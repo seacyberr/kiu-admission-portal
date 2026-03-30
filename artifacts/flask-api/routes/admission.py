@@ -93,10 +93,13 @@ def generate_application_number():
 @admission_bp.route("/programs", methods=["GET"])
 def list_programs():
     level = request.args.get("level")
+    campus = request.args.get("campus")
     query = Program.query
     if level:
         query = query.filter_by(level=level)
-    programs = query.order_by(Program.faculty, Program.name).all()
+    if campus:
+        query = query.filter_by(campus=campus)
+    programs = query.order_by(Program.campus, Program.faculty, Program.name).all()
     return jsonify({"programs": [p.to_dict() for p in programs]}), 200
 
 

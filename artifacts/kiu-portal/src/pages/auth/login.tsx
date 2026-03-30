@@ -81,8 +81,8 @@ export default function Login() {
         
         <Card className="p-8 shadow-2xl shadow-primary/10 border-white/50 bg-white/80 backdrop-blur-xl">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
-              <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Logo" className="w-10 h-10 object-contain" />
+            <div className="w-36 h-36 bg-white rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg border border-border">
+              <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Logo" className="w-32 h-32 object-contain" />
             </div>
             <h1 className="text-3xl font-display font-bold text-primary">Welcome Back</h1>
             <p className="text-muted-foreground mt-2">Sign in to access your portal</p>

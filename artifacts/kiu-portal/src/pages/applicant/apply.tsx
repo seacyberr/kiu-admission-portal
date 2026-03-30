@@ -159,6 +159,7 @@ const STEPS: { key: Step; label: string }[] = [
 type ApplyTarget = "degree" | "diploma" | "hec";
 type DegreeQualification = "a_level" | "diploma" | "hec";
 type ExamLevel = "o_level" | "a_level" | "diploma" | "hec";
+type Campus = "kampala" | "western";
 
 function readDegreeQualificationFromUrl(): DegreeQualification {
   if (typeof window === "undefined") return "a_level";
@@ -171,6 +172,7 @@ function readDegreeQualificationFromUrl(): DegreeQualification {
 export default function Apply({ target }: { target: ApplyTarget }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [selectedCampus, setSelectedCampus] = useState<Campus | "all">("kampala");
   const { data: programsData, isLoading: programsLoading } = useListPrograms();
 
   const [step, setStep] = useState<Step>("program");
@@ -186,7 +188,8 @@ export default function Apply({ target }: { target: ApplyTarget }) {
   const diplomaInputRef = useRef<HTMLInputElement>(null);
   const hecInputRef = useRef<HTMLInputElement>(null);
 
-  const programs = (programsData as any)?.programs ?? [];
+  const allPrograms = (programsData as any)?.programs ?? [];
+  const programs = allPrograms.filter((p: any) => p.campus === selectedCampus);
 
   const degreeQualification = readDegreeQualificationFromUrl();
   const examLevel: ExamLevel = target === "degree" ? degreeQualification : "o_level";
@@ -514,6 +517,33 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                 <h2 className="text-xl font-bold mb-2">Choose Your Program</h2>
                 <p className="text-muted-foreground text-sm mb-6">Select the program you are applying for.</p>
 
+                {/* Campus Selection */}
+                <div className="mb-6">
+                  <Label className="text-sm font-semibold mb-3 block">Select Campus</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCampus("kampala")}
+                      className={`p-3 rounded-xl border-2 text-sm font-medium transition-all
+                        ${selectedCampus === "kampala" ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/30"}`}
+                    >
+                      Kampala Campus
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCampus("western")}
+                      className={`p-3 rounded-xl border-2 text-sm font-medium transition-all
+                        ${selectedCampus === "western" ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/30"}`}
+                    >
+                      Western Campus
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {selectedCampus === "kampala" && "📍 Kampala Campus (Main) - Kansanga, Kampala"}
+                    {selectedCampus === "western" && "📍 Western Campus - Ishaka, Bushenyi (Medical programs)"}
+                  </p>
+                </div>
+
                 {programsLoading ? (
                   <p className="text-muted-foreground">Loading programs…</p>
                 ) : (
@@ -527,38 +557,71 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                             ? "Diploma Programmes"
                             : "HEC Programmes";
 
+                      // Group programs by campus
+                      const kampalaPrograms = programs.filter((p: any) => p.level === allowedLevel && p.campus === "kampala");
+                      const westernPrograms = programs.filter((p: any) => p.level === allowedLevel && p.campus === "western");
+
+                      const renderProgramList = (programList: any[], campusName: string) => (
+                        <div className="grid gap-3">
+                          {programList.map((p: any) => (
+                            <label
+                              key={p.id}
+                              className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all
+                                ${Number(watchProgramId) === p.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
+                            >
+                              <input
+                                type="radio"
+                                value={p.id}
+                                {...register("programId")}
+                                className="mt-1 accent-primary"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="font-semibold text-sm">{p.name}</p>
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium
+                                    ${p.campus === "kampala" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
+                                    {p.campus === "kampala" ? "Kampala" : "Western"}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {p.faculty} · {p.duration}
+                                </p>
+                                {p.entryRequirements && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {p.entryRequirements}
+                                  </p>
+                                )}
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      );
+
                       return (
-                        <div>
-                          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
-                            {levelLabel}
-                          </h3>
-                          <div className="grid gap-3">
-                            {programs
-                              .filter((p: any) => p.level === allowedLevel)
-                              .map((p: any) => (
-                                <label
-                                  key={p.id}
-                                  className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all
-                                    ${Number(watchProgramId) === p.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`}
-                                >
-                                  <input
-                                    type="radio"
-                                    value={p.id}
-                                    {...register("programId")}
-                                    className="mt-1 accent-primary"
-                                  />
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-sm">{p.name}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {p.faculty} · {p.duration}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      {p.entryRequirements}
-                                    </p>
-                                  </div>
-                                </label>
-                              ))}
-                          </div>
+                        <div className="space-y-6">
+                          {selectedCampus === "kampala" && kampalaPrograms.length > 0 && (
+                            <div>
+                              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
+                                {levelLabel} - Kampala Campus
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">📍 Kansanga</span>
+                              </h3>
+                              {renderProgramList(kampalaPrograms, "Kampala")}
+                            </div>
+                          )}
+                          
+                          {selectedCampus === "western" && westernPrograms.length > 0 && (
+                            <div>
+                              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
+                                {levelLabel} - Western Campus
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700">📍 Ishaka</span>
+                              </h3>
+                              {renderProgramList(westernPrograms, "Western")}
+                            </div>
+                          )}
+
+                          {kampalaPrograms.length === 0 && westernPrograms.length === 0 && (
+                            <p className="text-muted-foreground text-sm">No programs available for the selected criteria.</p>
+                          )}
                         </div>
                       );
                     })()}

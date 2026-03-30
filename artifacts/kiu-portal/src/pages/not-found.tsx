@@ -1,4 +1,4 @@
-rricuimport { Link } from "wouter";
+import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/shared";
 import { AlertCircle, ArrowLeft, Home } from "lucide-react";
