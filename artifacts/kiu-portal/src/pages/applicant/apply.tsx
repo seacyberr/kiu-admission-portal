@@ -453,6 +453,32 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
   // ── Form submit ────────────────────────────────────────────────────────────
   const onSubmit = async (data: ApplyForm) => {
+    // Validate personal info fields before submitting
+    if (!data.dateOfBirth) {
+      toast({ title: "Date of Birth is required", variant: "destructive" });
+      return;
+    }
+    if (!data.gender) {
+      toast({ title: "Gender is required", variant: "destructive" });
+      return;
+    }
+    if (!data.district) {
+      toast({ title: "District of Origin is required", variant: "destructive" });
+      return;
+    }
+    if (!data.nextOfKinName) {
+      toast({ title: "Next of Kin Name is required", variant: "destructive" });
+      return;
+    }
+    if (!data.nextOfKinPhone) {
+      toast({ title: "Next of Kin Phone is required", variant: "destructive" });
+      return;
+    }
+    if (!data.nextOfKinRelationship) {
+      toast({ title: "Next of Kin Relationship is required", variant: "destructive" });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem("kiu_token");
