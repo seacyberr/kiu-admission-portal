@@ -19,6 +19,7 @@ export type Program = {
   minOlevelPoints?: number | null;
   minAlevelPoints?: number | null;
   availableSlots?: number | null;
+  campus?: string | null;
 };
 
 export type UserRole = "admin" | "applicant" | "finalist";
