@@ -271,6 +271,96 @@ export default function Apply({ target }: { target: ApplyTarget }) {
     return true;
   };
 
+  // Save current form data and navigate to certificates
+  const saveAndContinueToCertificates = async () => {
+    const values = getValues();
+    
+    // Validate that at least program is selected
+    if (!values.programIds || values.programIds.length < 1) {
+      toast({ title: "Please select at least one program first", variant: "destructive" });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const token = localStorage.getItem("kiu_token");
+
+      const unebGrades: any = {};
+      if (examLevel === "o_level" || examLevel === "a_level") {
+        unebGrades.olevel = (values.oLevelGrades ?? []).map((g) => ({
+          ...g,
+          year: values.oLevelYear,
+          indexNumber: values.oLevelIndexNumber,
+          curriculum: values.oLevelCurriculum,
+        }));
+      }
+      if (examLevel === "a_level" && values.aLevelGrades?.length) {
+        unebGrades.alevel = values.aLevelGrades.map((g) => ({
+          ...g,
+          year: values.aLevelYear,
+          indexNumber: values.aLevelIndexNumber,
+        }));
+      }
+
+      const examYear =
+        examLevel === "a_level"
+          ? values.aLevelYear
+          : examLevel === "o_level"
+            ? values.oLevelYear
+            : values.certYear;
+
+      const indexNumber =
+        examLevel === "a_level"
+          ? values.aLevelIndexNumber || values.oLevelIndexNumber
+          : examLevel === "o_level"
+            ? values.oLevelIndexNumber
+            : values.certIndexNumber;
+
+      const payload = {
+        programIds: values.programIds,
+        examLevel,
+        examYear: examYear || new Date().getFullYear() - 2,
+        indexNumber: indexNumber || "PENDING",
+        unebGrades,
+        dateOfBirth: values.dateOfBirth ? new Date(values.dateOfBirth).toISOString().split('T')[0] : undefined,
+        gender: values.gender || "other",
+        nationality: values.nationality,
+        district: values.district,
+        nextOfKinName: values.nextOfKinName,
+        nextOfKinPhone: values.nextOfKinPhone,
+        nextOfKinRelationship: values.nextOfKinRelationship,
+      };
+
+      const res = await fetch(`${BASE}/api/admission/applications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text();
+        if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
+          throw new Error(`Server error (${res.status}): The server encountered an error. Please check your form data and try again.`);
+        }
+        throw new Error(`Unexpected response format (${res.status}): ${text.substring(0, 100)}...`);
+      }
+      
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.message || `Submission failed (${res.status})`);
+      }
+
+      setApplicationId(json.id);
+      setStep("upload");
+      toast({ title: "Progress saved!", description: "You can now upload your certificates." });
+    } catch (err: any) {
+      toast({ title: "Save failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const goNext = () => { 
     if (canGoNext && validateCurrentStep()) {
       setStep(stepOrder[currentIdx + 1]); 

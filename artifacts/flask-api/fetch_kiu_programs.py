@@ -75,16 +75,50 @@ def fetch_programs_from_kiu() -> List[Dict[str, Any]]:
     
     return programs
 
-def update_seed_file(programs: List[Dict[str, Any]]):
+def update_seed_file(new_programs: List[Dict[str, Any]]):
     """
-    Update seed-programs.json with fetched programs
+    Update seed-programs.json by merging new programs with existing ones
     """
-    seed_data = {"programs": programs}
+    existing_programs = []
+    
+    # Load existing programs if file exists
+    try:
+        with open("seed-programs.json", "r", encoding="utf-8") as f:
+            existing_data = json.load(f)
+            existing_programs = existing_data.get("programs", [])
+            print(f"Loaded {len(existing_programs)} existing programs")
+    except FileNotFoundError:
+        print("No existing seed-programs.json found, creating new file")
+    
+    # Create a set of existing program codes for deduplication
+    existing_codes = {p.get("code") for p in existing_programs if p.get("code")}
+    
+    # Add new programs that don't already exist
+    merged_programs = existing_programs.copy()
+    added_count = 0
+    
+    for program in new_programs:
+        code = program.get("code")
+        if code and code not in existing_codes:
+            merged_programs.append(program)
+            existing_codes.add(code)
+            added_count += 1
+            print(f"Added: {program.get('name')} ({code})")
+        elif not code:
+            # If no code, generate one and add
+            program["code"] = f"{program.get('level', 'PROG').upper()[:3]}{len(merged_programs)+1:03d}"
+            merged_programs.append(program)
+            added_count += 1
+            print(f"Added (new code): {program.get('name')} ({program['code']})")
+        else:
+            print(f"Skipped (already exists): {program.get('name')} ({code})")
+    
+    seed_data = {"programs": merged_programs}
     
     with open("seed-programs.json", "w", encoding="utf-8") as f:
         json.dump(seed_data, f, indent=2, ensure_ascii=False)
     
-    print(f"Updated seed-programs.json with {len(programs)} programs")
+    print(f"\nSummary: Added {added_count} new programs. Total programs: {len(merged_programs)}")
 
 def main():
     print("Fetching programs from KIU website...")
