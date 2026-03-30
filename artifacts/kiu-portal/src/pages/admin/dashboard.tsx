@@ -7,18 +7,13 @@ export default function AdminDashboard() {
   const { data: admissions } = useListAdmissionApplications();
   const { data: opportunities } = useListOpportunities();
 
-  const pendingAdmissions = admissions?.applications.filter(a => a.status === 'pending').length || 0;
-  const activeJobs = opportunities?.opportunities.filter(o => o.isActive).length || 0;
+  const pendingAdmissions = admissions?.applications.filter((a: any) => a.status === 'pending').length || 0;
+  const activeJobs = opportunities?.opportunities.filter((o: any) => o.isActive).length || 0;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="flex flex-col items-center text-center mb-8">
-        <img
-          src={`${import.meta.env.BASE_URL}images/logo.png`}
-          alt="KIU Logo"
-          className="w-16 h-16 object-contain drop-shadow"
-        />
-        <h1 className="text-3xl font-display font-bold text-primary mt-4">Admin Overview</h1>
+      <div className="mb-8">
+        <h1 className="text-3xl font-display font-bold text-primary">Admin Overview</h1>
         <p className="text-muted-foreground mt-2">
           Admissions and opportunities management
         </p>

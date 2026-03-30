@@ -11,6 +11,31 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+// ── Countries List ────────────────────────────────────────────────────────────
+
+const COUNTRIES = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
+  "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan",
+  "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia",
+  "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica",
+  "Croatia", "Cuba", "Cyprus", "Czech Republic", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "East Timor", "Ecuador",
+  "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France",
+  "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau",
+  "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland",
+  "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kosovo",
+  "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania",
+  "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius",
+  "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia",
+  "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway",
+  "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland",
+  "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino",
+  "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands",
+  "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland",
+  "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey",
+  "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu",
+  "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+];
+
 // ── UNEB Subject lists ────────────────────────────────────────────────────────
 
 const OLEVEL_SUBJECTS = [
@@ -23,7 +48,21 @@ const OLEVEL_SUBJECTS = [
   "Additional Mathematics",
 ];
 
-const OLEVEL_GRADES = [
+// Old Curriculum: D1, D2, C3, C4, C5, C6, P7, P8, F9
+const OLEVEL_GRADES_OLD = [
+  { label: "D1 – Distinction 1 (best)", value: "D1", points: 1 },
+  { label: "D2 – Distinction 2", value: "D2", points: 2 },
+  { label: "C3 – Credit 3", value: "C3", points: 3 },
+  { label: "C4 – Credit 4", value: "C4", points: 4 },
+  { label: "C5 – Credit 5", value: "C5", points: 5 },
+  { label: "C6 – Credit 6", value: "C6", points: 6 },
+  { label: "P7 – Pass 7", value: "P7", points: 7 },
+  { label: "P8 – Pass 8", value: "P8", points: 8 },
+  { label: "F9 – Fail", value: "F9", points: 9 },
+];
+
+// New Curriculum: D1, D2, D3, D4, D5, D6, D7, D8, F
+const OLEVEL_GRADES_NEW = [
   { label: "D1 – Distinction 1 (best)", value: "D1", points: 1 },
   { label: "D2 – Distinction 2", value: "D2", points: 2 },
   { label: "D3 – Distinction 3", value: "D3", points: 3 },
@@ -32,7 +71,6 @@ const OLEVEL_GRADES = [
   { label: "D6 – Credit 6", value: "D6", points: 6 },
   { label: "D7 – Pass 7", value: "D7", points: 7 },
   { label: "D8 – Pass 8", value: "D8", points: 8 },
-  { label: "D9 – Pass 9", value: "D9", points: 9 },
   { label: "F – Fail", value: "F", points: 9 },
 ];
 
@@ -80,8 +118,9 @@ const applySchema = z
 
     // O-Level inputs (required when examLevel is o_level or a_level)
     oLevelYear: z.coerce.number().min(1990).max(new Date().getFullYear()).optional(),
-    oLevelIndexNumber: z.string().min(5, "O-Level index number is required").optional(),
-    oLevelGrades: z.array(oGradeEntry).min(5, "At least 5 O-Level subjects required").optional(),
+    oLevelIndexNumber: z.string().optional(),
+    oLevelGrades: z.array(oGradeEntry).optional(),
+    oLevelCurriculum: z.enum(["old", "new"]).optional(),
 
     // A-Level inputs (required when examLevel is a_level)
     aLevelYear: z.coerce.number().min(1990).max(new Date().getFullYear()).optional(),
@@ -90,53 +129,15 @@ const applySchema = z
 
     // Certificate-only inputs for degree qualification via diploma/hec
     certYear: z.coerce.number().min(1990).max(new Date().getFullYear()).optional(),
-    certIndexNumber: z.string().min(3, "Certificate index number is required").optional(),
+    certIndexNumber: z.string().optional(),
 
-    personalStatement: z.string().min(50, "At least 50 characters required"),
-    dateOfBirth: z.string().min(8, "Date of birth required"),
+    dateOfBirth: z.string().optional(),
     gender: z.enum(["male", "female", "other"]),
     nationality: z.string().default("Ugandan"),
-    district: z.string().min(2, "District required"),
-    nextOfKinName: z.string().min(2, "Name required"),
-    nextOfKinPhone: z.string().min(9, "Phone required"),
-    nextOfKinRelationship: z.string().min(2, "Relationship required"),
-  })
-  .superRefine((val, ctx) => {
-    const requireField = (key: keyof typeof val, message: string) => {
-      const v = val[key];
-      if (v === undefined || v === null || (typeof v === "string" && !v.trim())) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message, path: [key as string] });
-      }
-    };
-
-    if (val.examLevel === "o_level") {
-      requireField("oLevelYear", "O-Level examination year is required");
-      requireField("oLevelIndexNumber", "O-Level index number is required");
-      if (!val.oLevelGrades || val.oLevelGrades.length < 5) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "At least 5 O-Level subjects required", path: ["oLevelGrades"] });
-      }
-      return;
-    }
-
-    if (val.examLevel === "a_level") {
-      requireField("oLevelYear", "O-Level examination year is required");
-      requireField("oLevelIndexNumber", "O-Level index number is required");
-      if (!val.oLevelGrades || val.oLevelGrades.length < 5) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "At least 5 O-Level subjects required", path: ["oLevelGrades"] });
-      }
-      requireField("aLevelYear", "A-Level examination year is required");
-      if (!val.aLevelGrades || val.aLevelGrades.length < 1) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please add A-Level subjects", path: ["aLevelGrades"] });
-      }
-      return;
-    }
-
-    if (val.examLevel === "diploma" || val.examLevel === "hec") {
-      // Certificate-only qualification: only capture year/index + upload certificate
-      requireField("certYear", "Certificate year is required");
-      requireField("certIndexNumber", "Certificate index number is required");
-      return;
-    }
+    district: z.string().optional(),
+    nextOfKinName: z.string().optional(),
+    nextOfKinPhone: z.string().optional(),
+    nextOfKinRelationship: z.string().optional(),
   });
 
 type ApplyForm = z.infer<typeof applySchema>;
@@ -199,6 +200,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
       examLevel,
       nationality: "Ugandan",
       oLevelYear: new Date().getFullYear() - 2,
+      oLevelCurriculum: "new",
       oLevelGrades: [{ subject: "", grade: "", points: 0 }],
       aLevelGrades: [{ subject: "", grade: "", points: 0, subjectType: "principal" }],
     },
@@ -206,7 +208,11 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
   const watchExamLevel = watch("examLevel");
   const watchProgramId = watch("programId");
+  const watchCurriculum = watch("oLevelCurriculum");
   const selectedProgram = programs.find((p: any) => p.id === Number(watchProgramId));
+
+  // Get the correct O-Level grades based on curriculum
+  const oLevelGrades = watchCurriculum === "old" ? OLEVEL_GRADES_OLD : OLEVEL_GRADES_NEW;
 
   // Field arrays
   const oLevelArray = useFieldArray({ control, name: "oLevelGrades" });
@@ -222,7 +228,50 @@ export default function Apply({ target }: { target: ApplyTarget }) {
   const canGoNext = currentIdx < stepOrder.length - 1;
   const canGoBack = currentIdx > 0;
 
-  const goNext = () => { if (canGoNext) setStep(stepOrder[currentIdx + 1]); };
+  // Validate current step before proceeding
+  const validateCurrentStep = (): boolean => {
+    const values = getValues();
+    
+    switch (step) {
+      case "program":
+        if (!values.programId || values.programId < 1) {
+          toast({ title: "Please select a program", variant: "destructive" });
+          return false;
+        }
+        break;
+      case "olevel":
+        if (!values.oLevelYear || !values.oLevelIndexNumber || !values.oLevelGrades || values.oLevelGrades.length < 5) {
+          toast({ title: "Please complete all O-Level fields", description: "Year, index number, and at least 5 subjects are required", variant: "destructive" });
+          return false;
+        }
+        break;
+      case "alevel":
+        if (!values.aLevelYear || !values.aLevelGrades || values.aLevelGrades.length < 1) {
+          toast({ title: "Please complete all A-Level fields", description: "Year and at least 1 subject are required", variant: "destructive" });
+          return false;
+        }
+        break;
+      case "cert":
+        if (!values.certYear || !values.certIndexNumber) {
+          toast({ title: "Please complete certificate details", variant: "destructive" });
+          return false;
+        }
+        break;
+      case "personal":
+        if (!values.dateOfBirth || !values.gender || !values.district || !values.nextOfKinName || !values.nextOfKinPhone || !values.nextOfKinRelationship) {
+          toast({ title: "Please complete all personal information", description: "All fields are required", variant: "destructive" });
+          return false;
+        }
+        break;
+    }
+    return true;
+  };
+
+  const goNext = () => { 
+    if (canGoNext && validateCurrentStep()) {
+      setStep(stepOrder[currentIdx + 1]); 
+    }
+  };
   const goBack = () => { if (canGoBack) setStep(stepOrder[currentIdx - 1]); };
 
   // ── O-Level grade entry helper ─────────────────────────────────────────────
@@ -242,14 +291,14 @@ export default function Apply({ target }: { target: ApplyTarget }) {
           <select
             {...register(`oLevelGrades.${index}.grade`)}
             onChange={(e) => {
-              const found = OLEVEL_GRADES.find((g) => g.value === e.target.value);
+              const found = oLevelGrades.find((g) => g.value === e.target.value);
               setValue(`oLevelGrades.${index}.grade`, e.target.value);
               setValue(`oLevelGrades.${index}.points`, found?.points ?? 0);
             }}
             className="w-full h-10 px-3 rounded-lg border border-border bg-white text-sm"
           >
             <option value="">Grade…</option>
-            {OLEVEL_GRADES.map((gr) => <option key={gr.value} value={gr.value}>{gr.label}</option>)}
+            {oLevelGrades.map((gr) => <option key={gr.value} value={gr.value}>{gr.label}</option>)}
           </select>
         </div>
         <button type="button" onClick={() => oLevelArray.remove(index)} disabled={oLevelArray.fields.length <= 1} className="h-10 w-10 flex items-center justify-center text-muted-foreground hover:text-destructive disabled:opacity-30">
@@ -320,6 +369,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
           ...g,
           year: data.oLevelYear,
           indexNumber: data.oLevelIndexNumber,
+          curriculum: data.oLevelCurriculum,
         }));
       }
       if (examLevel === "a_level" && data.aLevelGrades?.length) {
@@ -350,7 +400,6 @@ export default function Apply({ target }: { target: ApplyTarget }) {
         examYear,
         indexNumber,
         unebGrades,
-        personalStatement: data.personalStatement,
         dateOfBirth: data.dateOfBirth,
         gender: data.gender,
         nationality: data.nationality,
@@ -532,16 +581,23 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                 <h2 className="text-xl font-bold mb-1">Uganda Certificate of Education (UCE)</h2>
                 <p className="text-muted-foreground text-sm mb-6">Enter your O-Level results as they appear on your UNEB certificate. Include at least 5 subjects.</p>
 
-                <div className="grid md:grid-cols-2 gap-5 mb-6">
+                <div className="grid md:grid-cols-3 gap-5 mb-6">
                   <div className="space-y-2">
-                    <Label>Examination Year</Label>
+                    <Label>Examination Year <span className="text-primary">(Required)</span></Label>
                     <Input type="number" {...register("oLevelYear")} min={1990} max={new Date().getFullYear()} />
                     {errors.oLevelYear && <p className="text-xs text-destructive">{errors.oLevelYear.message}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label>UNEB Index Number</Label>
+                    <Label>UNEB Index Number <span className="text-primary">(Required)</span></Label>
                     <Input placeholder="e.g. U0001/001" {...register("oLevelIndexNumber")} />
                     {errors.oLevelIndexNumber && <p className="text-xs text-destructive">{errors.oLevelIndexNumber.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Curriculum Type</Label>
+                    <select {...register("oLevelCurriculum")} className="w-full h-10 px-3 rounded-lg border border-border bg-white text-sm">
+                      <option value="new">New Curriculum (D1-D8, F)</option>
+                      <option value="old">Old Curriculum (D1, D2, C3-C6, P7, P8, F9)</option>
+                    </select>
                   </div>
                 </div>
 
@@ -562,7 +618,12 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
                 <div className="mt-3 flex items-start gap-2 bg-blue-50 text-blue-700 p-3 rounded-lg text-xs">
                   <Info className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span><strong>UCE Grading:</strong> D1 (1pt) is the highest. D1–D6 are passes. D7–D9 are weak passes. F is a fail.</span>
+                  <span>
+                    <strong>UCE Grading:</strong>{" "}
+                    {watchCurriculum === "old" 
+                      ? "Old: D1, D2 (Distinctions), C3-C6 (Credits), P7, P8 (Passes), F9 (Fail)" 
+                      : "New: D1, D2 (Distinctions), D3-D6 (Credits), D7, D8 (Passes), F (Fail)"}
+                  </span>
                 </div>
                 {errors.oLevelGrades && <p className="text-xs text-destructive mt-2">{errors.oLevelGrades.message as string}</p>}
 
@@ -584,12 +645,12 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
                 <div className="grid md:grid-cols-2 gap-5 mb-6">
                   <div className="space-y-2">
-                    <Label>Certificate Year</Label>
+                    <Label>Certificate Year <span className="text-primary">(Required)</span></Label>
                     <Input type="number" {...register("certYear")} min={1990} max={new Date().getFullYear()} />
                     {errors.certYear && <p className="text-xs text-destructive">{errors.certYear.message as string}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label>Certificate Index Number</Label>
+                    <Label>Certificate Index Number <span className="text-primary">(Required)</span></Label>
                     <Input
                       placeholder={examLevel === "diploma" ? "e.g. D0001/001" : "e.g. H0001/001"}
                       {...register("certIndexNumber")}
@@ -614,11 +675,11 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
                 <div className="grid md:grid-cols-2 gap-5 mb-6">
                   <div className="space-y-2">
-                    <Label>Examination Year</Label>
+                    <Label>Examination Year <span className="text-primary">(Required)</span></Label>
                     <Input type="number" {...register("aLevelYear")} min={1990} max={new Date().getFullYear()} />
                   </div>
                   <div className="space-y-2">
-                    <Label>UNEB Index Number</Label>
+                    <Label>UNEB Index Number <span className="text-primary">(Required)</span></Label>
                     <Input placeholder="e.g. A001/001" {...register("aLevelIndexNumber")} />
                   </div>
                 </div>
@@ -657,12 +718,12 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
                 <div className="grid md:grid-cols-3 gap-5 mb-5">
                   <div className="space-y-2">
-                    <Label>Date of Birth</Label>
+                    <Label>Date of Birth <span className="text-primary">(Required)</span></Label>
                     <Input type="date" {...register("dateOfBirth")} max={new Date().toISOString().split("T")[0]} />
                     {errors.dateOfBirth && <p className="text-xs text-destructive">{errors.dateOfBirth.message}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label>Gender</Label>
+                    <Label>Gender <span className="text-primary">(Required)</span></Label>
                     <select {...register("gender")} className="w-full h-10 px-3 rounded-lg border border-border bg-white text-sm">
                       <option value="">Select…</option>
                       <option value="male">Male</option>
@@ -673,12 +734,17 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                   </div>
                   <div className="space-y-2">
                     <Label>Nationality</Label>
-                    <Input {...register("nationality")} defaultValue="Ugandan" />
+                    <select {...register("nationality")} className="w-full h-10 px-3 rounded-lg border border-border bg-white text-sm">
+                      {COUNTRIES.map((country) => (
+                        <option key={country} value={country}>{country}</option>
+                      ))}
+                    </select>
+                    {errors.nationality && <p className="text-xs text-destructive">{errors.nationality.message}</p>}
                   </div>
                 </div>
 
                 <div className="space-y-2 mb-5">
-                  <Label>District of Origin</Label>
+                  <Label>District of Origin <span className="text-primary">(Required)</span></Label>
                   <Input {...register("district")} placeholder="e.g. Kampala" />
                   {errors.district && <p className="text-xs text-destructive">{errors.district.message}</p>}
                 </div>
@@ -687,27 +753,21 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                   <h3 className="font-bold mb-4">Next of Kin</h3>
                   <div className="grid md:grid-cols-3 gap-5">
                     <div className="space-y-2">
-                      <Label>Full Name</Label>
+                      <Label>Full Name <span className="text-primary">(Required)</span></Label>
                       <Input {...register("nextOfKinName")} />
                       {errors.nextOfKinName && <p className="text-xs text-destructive">{errors.nextOfKinName.message}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label>Phone</Label>
+                      <Label>Phone <span className="text-primary">(Required)</span></Label>
                       <Input {...register("nextOfKinPhone")} />
                       {errors.nextOfKinPhone && <p className="text-xs text-destructive">{errors.nextOfKinPhone.message}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label>Relationship</Label>
+                      <Label>Relationship <span className="text-primary">(Required)</span></Label>
                       <Input {...register("nextOfKinRelationship")} placeholder="e.g. Father, Mother" />
                       {errors.nextOfKinRelationship && <p className="text-xs text-destructive">{errors.nextOfKinRelationship.message}</p>}
                     </div>
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Personal Statement</Label>
-                  <Textarea {...register("personalStatement")} rows={6} placeholder="Tell us about yourself, your motivation for applying to this program, and your future goals…" className={errors.personalStatement ? "border-destructive" : ""} />
-                  {errors.personalStatement && <p className="text-xs text-destructive">{errors.personalStatement.message}</p>}
                 </div>
 
                 <div className="mt-6 flex justify-end">

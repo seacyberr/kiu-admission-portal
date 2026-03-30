@@ -125,7 +125,7 @@ def create_application():
     if not data:
         return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
 
-    required = ["programIds", "examLevel", "examYear", "indexNumber", "unebGrades", "dateOfBirth", "gender", "nationality"]
+    required = ["programIds", "examLevel", "examYear", "indexNumber", "unebGrades", "dateOfBirth", "gender"]
     for field in required:
         if field not in data:
             return jsonify({"error": "Validation error", "message": f"{field} is required"}), 400

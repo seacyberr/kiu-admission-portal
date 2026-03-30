@@ -129,22 +129,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <main className="flex-1 w-full relative">
-        {/* Consistent brand mark on every route */}
-        <div className="w-full flex justify-center pt-8 pb-6">
-          <div className="glass rounded-2xl px-5 py-4 flex items-center gap-3">
-            <img
-              src={`${import.meta.env.BASE_URL}images/logo.png`}
-              alt="KIU Logo"
-              className="w-10 h-10 object-contain"
-            />
-            <div className="flex flex-col leading-tight">
-              <span className="font-display font-bold text-primary text-lg">KIU Portal</span>
-              <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-                Admissions & Careers
-              </span>
-            </div>
-          </div>
-        </div>
         {children}
       </main>
 
