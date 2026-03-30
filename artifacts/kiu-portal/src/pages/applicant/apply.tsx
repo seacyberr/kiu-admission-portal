@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef } 
+from 'react';
 import { useLocation } from 'wouter';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -422,14 +423,24 @@ export default function Apply({ target }: { target: ApplyTarget }) {
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         const text = await res.text();
+        console.error("Server returned non-JSON response:", {
+          status: res.status,
+          statusText: res.statusText,
+          contentType,
+          responseText: text.substring(0, 500)
+        });
         if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
-          throw new Error("Server returned an error page. Please check if the server is running and try again.");
+          throw new Error(`Server error (${res.status}): The server encountered an error. Please check your form data and try again.`);
         }
-        throw new Error(`Unexpected response format: ${text.substring(0, 100)}...`);
+        throw new Error(`Unexpected response format (${res.status}): ${text.substring(0, 100)}...`);
       }
       
       const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Submission failed");
+      console.log("Server response:", { status: res.status, data: json });
+      if (!res.ok) {
+        console.error("Server error response:", json);
+        throw new Error(json.message || `Submission failed (${res.status})`);
+      }
 
       setApplicationId(json.id);
       setStep("upload");
@@ -550,8 +561,8 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    {selectedCampus === "kampala" && "📍 Kampala Campus (Main) - Kansanga, Kampala"}
-                    {selectedCampus === "western" && "📍 Western Campus - Ishaka, Bushenyi (Medical programs)"}
+                    {selectedCampus === "kampala" && "Kampala Campus (Main) - Kansanga, Kampala"}
+                    {selectedCampus === "western" && "Western Campus - Ishaka, Bushenyi (Medical programs)"}
                   </p>
                 </div>
 
@@ -614,7 +625,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                             <div>
                               <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
                                 {levelLabel} - Kampala Campus
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">📍 Kansanga</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Kansanga</span>
                               </h3>
                               {renderProgramList(kampalaPrograms, "Kampala")}
                             </div>
@@ -624,7 +635,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                             <div>
                               <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
                                 {levelLabel} - Western Campus
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700">📍 Ishaka</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700">Ishaka</span>
                               </h3>
                               {renderProgramList(westernPrograms, "Western")}
                             </div>

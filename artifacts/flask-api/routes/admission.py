@@ -165,19 +165,17 @@ def create_application():
 
     # Degree vs non-degree qualification gating (portal UI-only guidance + backend safety)
     if program.level == "degree":
-        # Degree accepts A-Level (UACE) or Certificate-based qualifications (Diploma/HEC)
+        # Degree programs accept A-Level, Diploma, or HEC qualifications
+        # O-Level alone is not sufficient for degree programs
         if exam_level == "o_level":
             return jsonify({
                 "error": "Validation error",
                 "message": "Degree programs require A-Level, Diploma, or HEC qualifications. O-Level alone is not accepted."
             }), 422
     else:
-        # Diploma/HEC programmes accept only O-Level (UCE) qualifications in this portal flow
-        if exam_level != "o_level":
-            return jsonify({
-                "error": "Validation error",
-                "message": "Diploma/HEC programmes accept O-Level (UCE) qualifications in this portal flow."
-            }), 422
+        # Diploma/HEC programmes primarily accept O-Level, but can also accept other qualifications
+        # This allows flexibility for students with different educational backgrounds
+        pass  # Allow all exam levels for diploma/HEC programs
 
     try:
         dob = date.fromisoformat(data["dateOfBirth"])
