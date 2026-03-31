@@ -64,3 +64,10 @@ replitignore
 
 # Flask uploaded files (must persist on the server, not in git)
 artifacts/flask-api/uploads/
+
+# Flask instance directory (contains local database files)
+artifacts/flask-api/instance/
+
+# Test files
+test_*.py
+test_*.sh
