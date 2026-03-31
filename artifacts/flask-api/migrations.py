@@ -49,6 +49,66 @@ def run_migrations():
             conn.execute(text(
                 "ALTER TABLE admission_applications ADD COLUMN hec_certificate_path TEXT"
             ))
+        if "program_choices" not in app_cols:
+            conn.execute(text(
+                "ALTER TABLE admission_applications ADD COLUMN program_choices JSON NOT NULL DEFAULT '[]'"
+            ))
+            log.info("Added program_choices column to admission_applications table")
+        if "personal_statement" not in app_cols:
+            conn.execute(text(
+                "ALTER TABLE admission_applications ADD COLUMN personal_statement TEXT"
+            ))
+            log.info("Added personal_statement column to admission_applications table")
+        if "district" not in app_cols:
+            conn.execute(text(
+                "ALTER TABLE admission_applications ADD COLUMN district VARCHAR(100)"
+            ))
+            log.info("Added district column to admission_applications table")
+        if "session_of_study" not in app_cols:
+            conn.execute(text(
+                "ALTER TABLE admission_applications ADD COLUMN session_of_study VARCHAR(20)"
+            ))
+            log.info("Added session_of_study column to admission_applications table")
+        if "is_final_year" not in app_cols:
+            conn.execute(text(
+                "ALTER TABLE admission_applications ADD COLUMN is_final_year BOOLEAN DEFAULT FALSE"
+            ))
+            log.info("Added is_final_year column to admission_applications table")
+        if "expected_graduation_year" not in app_cols:
+            conn.execute(text(
+                "ALTER TABLE admission_applications ADD COLUMN expected_graduation_year INTEGER"
+            ))
+            log.info("Added expected_graduation_year column to admission_applications table")
+        if "current_year_of_study" not in app_cols:
+            conn.execute(text(
+                "ALTER TABLE admission_applications ADD COLUMN current_year_of_study INTEGER"
+            ))
+            log.info("Added current_year_of_study column to admission_applications table")
+        if "student_number" not in app_cols:
+            conn.execute(text(
+                "ALTER TABLE admission_applications ADD COLUMN student_number VARCHAR(50)"
+            ))
+            log.info("Added student_number column to admission_applications table")
+        if "next_of_kin_name" not in app_cols:
+            conn.execute(text(
+                "ALTER TABLE admission_applications ADD COLUMN next_of_kin_name VARCHAR(200)"
+            ))
+            log.info("Added next_of_kin_name column to admission_applications table")
+        if "next_of_kin_phone" not in app_cols:
+            conn.execute(text(
+                "ALTER TABLE admission_applications ADD COLUMN next_of_kin_phone VARCHAR(20)"
+            ))
+            log.info("Added next_of_kin_phone column to admission_applications table")
+        if "next_of_kin_relationship" not in app_cols:
+            conn.execute(text(
+                "ALTER TABLE admission_applications ADD COLUMN next_of_kin_relationship VARCHAR(50)"
+            ))
+            log.info("Added next_of_kin_relationship column to admission_applications table")
+        if "admin_notes" not in app_cols:
+            conn.execute(text(
+                "ALTER TABLE admission_applications ADD COLUMN admin_notes TEXT"
+            ))
+            log.info("Added admin_notes column to admission_applications table")
 
     # Ensure admin is always verified
     with db.engine.begin() as conn:
