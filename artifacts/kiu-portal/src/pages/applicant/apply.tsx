@@ -933,7 +933,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                 </div>
 
                 <div className="mt-6 flex justify-end">
-                  <Button type="submit" isLoading={isSubmitting} className="gap-2">
+                  <Button type="button" onClick={saveAndContinueToCertificates} isLoading={isSubmitting} className="gap-2">
                     Save & Continue to Certificates <ArrowRight className="w-4 h-4" />
                   </Button>
                 </div>
