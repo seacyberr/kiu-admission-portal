@@ -16,7 +16,7 @@ ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png"}
 # O-Level (UCE): D1 (best) → D9 (worst). Pass: D1-D6 (points: 1-6)
 # A-Level (UACE): A (6 pts), B (5), C (4), D (3), E (2), O (1), F (0, fail)
 
-VALID_OLEVEL_GRADES = ["D1", "D2", "C3", "C4", "C5", "C6", "P7", "P8", "F9"]
+VALID_OLEVEL_GRADES = ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "F", "C3", "C4", "C5", "C6", "P7", "P8", "F9"]
 VALID_ALEVEL_GRADES = ["A", "B", "C", "D", "E", "O", "F"]
 
 # O-Level grade to points (lower is better for admission)
@@ -274,6 +274,7 @@ def create_application():
         gender=data["gender"],
         nationality=nationality,
         district=data.get("district", ""),
+        session_of_study=data.get("sessionOfStudy"),
         # Final-year student verification
         is_final_year=data.get("isFinalYear", False),
         expected_graduation_year=data.get("expectedGraduationYear"),

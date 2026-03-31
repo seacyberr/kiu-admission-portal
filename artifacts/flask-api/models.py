@@ -133,6 +133,7 @@ class AdmissionApplication(db.Model):
     gender = db.Column(db.String(20), nullable=False)
     nationality = db.Column(db.String(100), default="Ugandan")
     district = db.Column(db.String(100))
+    session_of_study = db.Column(db.String(20))  # 'day', 'evening', or 'weekend'
 
     # Final-year student verification
     is_final_year = db.Column(db.Boolean, default=False)
@@ -174,6 +175,7 @@ class AdmissionApplication(db.Model):
             "gender": self.gender,
             "nationality": self.nationality,
             "district": self.district,
+            "sessionOfStudy": self.session_of_study,
             "isFinalYear": self.is_final_year,
             "expectedGraduationYear": self.expected_graduation_year,
             "currentYearOfStudy": self.current_year_of_study,

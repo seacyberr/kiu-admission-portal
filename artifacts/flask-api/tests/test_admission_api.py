@@ -1,4 +1,4 @@
-"""Tests for admission application API endpoint."""
+ """Tests for admission application API endpoint."""
 import pytest
 import json
 from models import db, User, Program
@@ -192,23 +192,24 @@ def test_invalid_date_format_rejected(client, test_user, degree_program):
 
 def test_o_level_degree_rejected(client, test_user):
     """Test that O-Level only is rejected for degree programs."""
-    # Create a diploma program for comparison
+    # Create a degree program for testing
     with client.application.app_context():
-        diploma_program = Program(
-            name="Diploma in Business",
-            code="DIB",
+        degree_program = Program(
+            name="Bachelor of Business Administration",
+            code="BBA",
             faculty="Faculty of Business",
-            level="diploma",
-            duration="2 years",
-            description="Business diploma program",
-            entry_requirements="O-Level with 5 passes",
-            min_olevel_points=28,
-            min_alevel_points=None,
-            available_slots=50,
+            level="degree",
+            duration="3 years",
+            description="Business administration degree program",
+            entry_requirements="A-Level with 2 principal passes",
+            min_olevel_points=32,
+            min_alevel_points=8,
+            available_slots=100,
             campus="kampala"
         )
-        db.session.add(diploma_program)
+        db.session.add(degree_program)
         db.session.commit()
+        degree_program_id = degree_program.id
 
     # Login to get JWT token
     login_response = client.post("/api/auth/login", json={
@@ -223,7 +224,7 @@ def test_o_level_degree_rejected(client, test_user):
         "/api/admission/applications",
         headers={"Authorization": f"Bearer {token}"},
         json={
-            "programIds": [diploma_program.id],  # This is a degree program
+            "programIds": [degree_program_id],  # This is a degree program
             "examLevel": "o_level",  # O-Level only - should be rejected for degree
             "examYear": 2020,
             "indexNumber": "U0001/004",

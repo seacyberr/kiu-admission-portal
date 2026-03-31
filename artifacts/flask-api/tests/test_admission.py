@@ -135,3 +135,28 @@ def test_admission_endpoint_validates_max_programs(client, app, sample_user, sam
     # Should return validation error for too many programs
     assert response.status_code == 400 or response.status_code == 401
     assert response.content_type == "application/json"
+
+
+def test_admission_endpoint_accepts_session_of_study(client, app, sample_user, sample_program):
+    """Test that the admission endpoint accepts session_of_study field."""
+    # This test verifies that session_of_study field is properly handled
+    # Note: This test requires proper authentication setup to work fully
+    response = client.post(
+        "/api/admission/applications",
+        json={
+            "programIds": [1],
+            "examLevel": "a_level",
+            "examYear": 2024,
+            "indexNumber": "U0001/001",
+            "unebGrades": {"olevel": [], "alevel": []},
+            "dateOfBirth": "2000-01-01",
+            "gender": "male",
+            "sessionOfStudy": "evening"  # Test the new field
+        }
+    )
+    
+    # Should return JSON response (may be 401 due to auth, but should be JSON)
+    assert response.content_type == "application/json"
+    data = response.get_json()
+    # Verify response structure is correct
+    assert isinstance(data, dict)

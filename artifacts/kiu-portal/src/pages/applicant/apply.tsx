@@ -136,6 +136,7 @@ const applySchema = z
     gender: z.enum(["male", "female", "other"]),
     nationality: z.string().default("Ugandan"),
     district: z.string().optional(),
+    sessionOfStudy: z.enum(["day", "evening", "weekend"]).optional(),
     nextOfKinName: z.string().optional(),
     nextOfKinPhone: z.string().optional(),
     nextOfKinRelationship: z.string().optional(),
@@ -326,6 +327,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
         gender: values.gender || "other",
         nationality: values.nationality,
         district: values.district,
+        sessionOfStudy: values.sessionOfStudy,
         nextOfKinName: values.nextOfKinName,
         nextOfKinPhone: values.nextOfKinPhone,
         nextOfKinRelationship: values.nextOfKinRelationship,
@@ -524,6 +526,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
         gender: data.gender,
         nationality: data.nationality,
         district: data.district,
+        sessionOfStudy: data.sessionOfStudy,
         nextOfKinName: data.nextOfKinName,
         nextOfKinPhone: data.nextOfKinPhone,
         nextOfKinRelationship: data.nextOfKinRelationship,
@@ -705,8 +708,12 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                                   <div className="flex items-center gap-2 mb-1">
                                     <p className="font-semibold text-sm">{p.name}</p>
                                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium
-                                      ${p.campus === "kampala" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
-                                      {p.campus === "kampala" ? "Kampala (Kansanga)" : "Western (Ishaka)"}
+                                      ${p.campus === "kampala" ? "bg-blue-100 text-blue-700" : 
+                                        p.campus === "western" ? "bg-green-100 text-green-700" : 
+                                        "bg-purple-100 text-purple-700"}`}>
+                                      {p.campus === "kampala" ? "Kampala (Kansanga)" : 
+                                       p.campus === "western" ? "Western (Ishaka)" : 
+                                       "Both Campuses"}
                                     </span>
                                   </div>
                                   <p className="text-xs text-muted-foreground">
@@ -757,8 +764,8 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                   <div className="space-y-2">
                     <Label>Curriculum Type</Label>
                     <select {...register("oLevelCurriculum")} className="w-full h-10 px-3 rounded-lg border border-border bg-white text-sm">
-                      <option value="new">New Curriculum (D1-D8, F)</option>
-                      <option value="old">Old Curriculum (D1, D2, C3-C6, P7, P8, F9)</option>
+                      <option value="new">New Curriculum</option>
+                      <option value="old">Old Curriculum</option>
                     </select>
                   </div>
                 </div>
@@ -905,10 +912,22 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                   </div>
                 </div>
 
-                <div className="space-y-2 mb-5">
-                  <Label>District of Origin <span className="text-primary">(Required)</span></Label>
-                  <Input {...register("district")} placeholder="e.g. Kampala" />
-                  {errors.district && <p className="text-xs text-destructive">{errors.district.message}</p>}
+                <div className="grid md:grid-cols-2 gap-5 mb-5">
+                  <div className="space-y-2">
+                    <Label>District of Origin <span className="text-primary">(Required)</span></Label>
+                    <Input {...register("district")} placeholder="e.g. Kampala" />
+                    {errors.district && <p className="text-xs text-destructive">{errors.district.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Session of Study</Label>
+                    <select {...register("sessionOfStudy")} className="w-full h-10 px-3 rounded-lg border border-border bg-white text-sm">
+                      <option value="">Select session…</option>
+                      <option value="day">Day</option>
+                      <option value="evening">Evening</option>
+                      <option value="weekend">Weekend</option>
+                    </select>
+                    {errors.sessionOfStudy && <p className="text-xs text-destructive">{errors.sessionOfStudy.message}</p>}
+                  </div>
                 </div>
 
                 <div className="border-t border-border pt-6 mb-5">
