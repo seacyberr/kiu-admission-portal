@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Create a test user for admission testing."""
+"""Create admin user for admission portal."""
 
 import os
 import sys
 
-# Add the parent directory to the path
-sys.path.insert(0, os.path.dirname(__file__))
+# Add the parent directory to the path (where app.py is located)
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # Set environment variables before importing app
-os.environ["DATABASE_URL"] = "sqlite+pysqlite:///instance/kiu_admissions.db"
+os.environ["DATABASE_URL"] = "mysql+pymysql://admin:adekunle%2312@localhost/kiu_admissions"
 os.environ["SEED_DATABASE"] = "false"
 os.environ["JWT_SECRET"] = "test-secret-key-for-development"
 os.environ["FLASK_ENV"] = "development"
@@ -16,8 +16,8 @@ os.environ["FLASK_ENV"] = "development"
 from app import create_app
 from models import db, User
 
-def create_test_user():
-    """Create a test user for admission testing."""
+def create_admin_user():
+    """Create an admin user for admission portal."""
     
     app = create_app()
     
@@ -52,4 +52,4 @@ def create_test_user():
         print(f"Verified: True")
 
 if __name__ == "__main__":
-    create_test_user()
+    create_admin_user()

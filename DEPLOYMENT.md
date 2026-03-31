@@ -111,6 +111,16 @@ pnpm install
 pnpm dev
 ```
 
+### 4) Admin utilities
+The project includes consolidated utility scripts in `artifacts/flask-api/scripts/`:
+
+- **Create admin user**: `python scripts/create_admin.py`
+- **Reset admin password**: `python scripts/reset_password.py`
+- **Database migrations**: `python scripts/migrate_db.py`
+- **Seed programs**: `python scripts/seed_programs.py`
+
+Program seed data is stored in `artifacts/flask-api/data/seed-programs.json`.
+
 ## Production Reverse Proxy (Nginx example)
 
 Assumes:

@@ -4,8 +4,8 @@
 import os
 import sys
 
-# Add the parent directory to the path
-sys.path.insert(0, os.path.dirname(__file__))
+# Add the parent directory to the path (where app.py is located)
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # Set environment variables before importing app
 os.environ["DATABASE_URL"] = "mysql+pymysql://admin:adekunle%2312@localhost/kiu_admissions"

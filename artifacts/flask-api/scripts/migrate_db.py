@@ -4,6 +4,12 @@ Clean up duplicate programs from the database.
 Keeps only the programs that match the website codes.
 """
 
+import os
+import sys
+
+# Add the parent directory to the path (where app.py is located)
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 from app import create_app
 from models import db, Program, AdmissionApplication
 
@@ -61,11 +67,19 @@ def clean_duplicates():
             # Keep the first one, remove the rest
             for program in programs_with_code[1:]:
                 # Check if program has applications
-                has_applications = AdmissionApplication.query.filter_by(program_id=program.id).first()
+                try:
+                    has_applications = AdmissionApplication.query.filter_by(program_id=program.id).first()
+                except Exception as e:
+                    # If there's an error (e.g., missing column), assume no applications
+                    print(f"  Warning: Could not check applications for program ID {program.id} (code: {code}): {e}")
+                    has_applications = None
                 if not has_applications:
+                    # Store program info before deletion
+                    prog_name = program.name
+                    prog_code = program.code
                     db.session.delete(program)
                     removed_count += 1
-                    print(f"  Removed duplicate: {program.name} ({program.code})")
+                    print(f"  Removed duplicate: {prog_name} ({prog_code})")
                 else:
                     print(f"  Kept duplicate (has applications): {program.name} ({program.code})")
         
@@ -74,11 +88,19 @@ def clean_duplicates():
         for program in all_programs:
             if program.code not in ALL_CORRECT_CODES:
                 # Check if program has applications
-                has_applications = AdmissionApplication.query.filter_by(program_id=program.id).first()
+                try:
+                    has_applications = AdmissionApplication.query.filter_by(program_id=program.id).first()
+                except Exception as e:
+                    # If there's an error (e.g., missing column), assume no applications
+                    print(f"  Warning: Could not check applications for program ID {program.id} (code: {program.code}): {e}")
+                    has_applications = None
                 if not has_applications:
+                    # Store program info before deletion
+                    prog_name = program.name
+                    prog_code = program.code
                     db.session.delete(program)
                     incorrect_codes_removed += 1
-                    print(f"  Removed incorrect code: {program.name} ({program.code})")
+                    print(f"  Removed incorrect code: {prog_name} ({prog_code})")
                 else:
                     print(f"  Kept incorrect code (has applications): {program.name} ({program.code})")
         
