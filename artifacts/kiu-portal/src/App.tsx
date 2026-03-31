@@ -50,14 +50,6 @@ function Router() {
           )}
         </Route>
 
-        <Route path="/new-applicant">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <NewApplicant />
-            </RoleGuard>
-          )}
-        </Route>
-
         <Route path="/apply/degree">
           {() => (
             <RoleGuard roles={["applicant"]}>

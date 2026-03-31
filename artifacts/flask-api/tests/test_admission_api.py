@@ -1,4 +1,4 @@
- """Tests for admission application API endpoint."""
+"""Tests for admission application API endpoint."""
 import pytest
 import json
 from models import db, User, Program

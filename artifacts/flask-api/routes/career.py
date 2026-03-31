@@ -10,6 +10,8 @@ career_bp = Blueprint("career", __name__)
 def list_career_paths():
     program_name = request.args.get("program")
     faculty = request.args.get("faculty")
+    page = int(request.args.get("page", 1))
+    limit = int(request.args.get("limit", 20))
 
     query = CareerPath.query
     if program_name:
@@ -19,8 +21,14 @@ def list_career_paths():
     if faculty:
         query = query.filter_by(industry_field=faculty)
 
-    paths = query.all()
-    return jsonify({"careerPaths": [p.to_dict() for p in paths], "total": len(paths)}), 200
+    total = query.count()
+    paths = query.offset((page - 1) * limit).limit(limit).all()
+    return jsonify({
+        "careerPaths": [p.to_dict() for p in paths],
+        "total": total,
+        "page": page,
+        "limit": limit,
+    }), 200
 
 
 @career_bp.route("/my-profile", methods=["GET"])

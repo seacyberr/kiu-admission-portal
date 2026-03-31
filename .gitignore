@@ -68,6 +68,6 @@ artifacts/flask-api/uploads/
 # Flask instance directory (contains local database files)
 artifacts/flask-api/instance/
 
-# Test files
-test_*.py
-test_*.sh
+# Test files (root directory only)
+/test_*.py
+/test_*.sh

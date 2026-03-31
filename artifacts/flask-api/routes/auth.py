@@ -189,6 +189,34 @@ def _create_and_dispatch_otp(user):
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
+    """
+    Register a new user account.
+    
+    Creates a new applicant or finalist account and sends an OTP for email verification.
+    
+    Request Body:
+        email (str): Valid email address
+        password (str): Minimum 6 characters
+        firstName (str): User's first name
+        lastName (str): User's last name
+        phone (str, optional): Phone number
+        nationalId (str, optional): National ID
+        role (str, optional): "applicant" or "finalist" (default: "applicant")
+    
+    Returns:
+        201: Account created, OTP sent
+        400: Validation error
+        409: Email already exists
+    
+    Example:
+        POST /api/auth/register
+        {
+            "email": "student@example.com",
+            "password": "secure123",
+            "firstName": "John",
+            "lastName": "Doe"
+        }
+    """
     data = request.get_json()
     if not data:
         return jsonify({"error": "Bad request", "message": "No JSON body provided"}), 400
@@ -247,6 +275,28 @@ def register():
 
 @auth_bp.route("/verify-otp", methods=["POST"])
 def verify_otp():
+    """
+    Verify email with OTP code.
+    
+    Validates the 6-digit OTP sent during registration and marks the account as verified.
+    
+    Request Body:
+        email (str): User's email address
+        code (str): 6-digit OTP code
+    
+    Returns:
+        200: Email verified, returns JWT token
+        404: Email not found
+        410: OTP expired
+        422: Invalid OTP code
+    
+    Example:
+        POST /api/auth/verify-otp
+        {
+            "email": "student@example.com",
+            "code": "123456"
+        }
+    """
     data = request.get_json()
     if not data:
         return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
@@ -331,6 +381,28 @@ def resend_otp():
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
+    """
+    Authenticate user and obtain JWT token.
+    
+    Validates credentials and returns a JWT token for accessing protected endpoints.
+    If the account is not verified, a new OTP is sent and verification is required.
+    
+    Request Body:
+        email (str): User's email address
+        password (str): User's password
+    
+    Returns:
+        200: Login successful, returns user data and JWT token
+        401: Invalid credentials
+        403: Email not verified (new OTP sent)
+    
+    Example:
+        POST /api/auth/login
+        {
+            "email": "student@example.com",
+            "password": "secure123"
+        }
+    """
     data = request.get_json()
     if not data:
         return jsonify({"error": "Bad request", "message": "No JSON body provided"}), 400

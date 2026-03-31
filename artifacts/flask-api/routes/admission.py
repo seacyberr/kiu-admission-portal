@@ -5,8 +5,11 @@ from datetime import datetime, date
 import random
 import string
 from werkzeug.utils import secure_filename
+from flask_caching import Cache
 from models import db, AdmissionApplication, Program, User
 from routes.auth import get_current_user
+
+cache = Cache()
 
 admission_bp = Blueprint("admission", __name__)
 
@@ -91,16 +94,24 @@ def generate_application_number():
 # ---------------------------------------------------------------------------
 
 @admission_bp.route("/programs", methods=["GET"])
+@cache.cached(timeout=3600, query_string=True)  # Cache for 1 hour
 def list_programs():
     """
-    List all programs with optional filtering by level and campus.
+    List all academic programs.
     
-    Query parameters:
-    - level: Filter by program level (degree, diploma, hec)
-    - campus: Filter by campus (kampala, western)
+    Returns all available programs with optional filtering by level and campus.
+    Results are cached for 1 hour for performance.
     
-    Returns all programs when no filters are provided.
-    Programs are sorted by level, then campus, then faculty, then name.
+    Query Parameters:
+        level (str, optional): Filter by program level - "degree", "diploma", or "hec"
+        campus (str, optional): Filter by campus - "kampala" or "western"
+    
+    Returns:
+        200: List of programs
+    
+    Example:
+        GET /api/admission/programs
+        GET /api/admission/programs?level=degree&campus=kampala
     """
     level = request.args.get("level")
     campus = request.args.get("campus")
@@ -140,6 +151,45 @@ def get_program(program_id):
 
 @admission_bp.route("/applications", methods=["POST"])
 def create_application():
+    """
+    Submit a new admission application.
+    
+    Creates a new admission application for the authenticated user. Each user can only
+    submit one application. Supports up to 3 program choices.
+    
+    Request Body:
+        programIds (list[int]): List of program IDs (1-3 choices, first is primary)
+        examLevel (str): "o_level", "a_level", "diploma", or "hec"
+        examYear (int): Year exams were taken
+        indexNumber (str): UNEB index number
+        unebGrades (dict): O-Level and/or A-Level grades
+        dateOfBirth (str): Date in YYYY-MM-DD format
+        gender (str): "male" or "female"
+        nationality (str, optional): Default "Ugandan"
+        district (str, optional): Home district
+        personalStatement (str, optional): Personal statement
+    
+    Returns:
+        201: Application created successfully
+        400: Validation error
+        409: User already has an application
+        422: Does not meet program requirements
+    
+    Example:
+        POST /api/admission/applications
+        {
+            "programIds": [1, 2, 3],
+            "examLevel": "a_level",
+            "examYear": 2023,
+            "indexNumber": "U0001/001",
+            "unebGrades": {
+                "olevel": [{"subject": "Math", "grade": "D1", "points": 1}],
+                "alevel": [{"subject": "Math", "grade": "A", "points": 6, "subjectType": "principal"}]
+            },
+            "dateOfBirth": "2000-01-15",
+            "gender": "male"
+        }
+    """
     user, error = get_current_user()
     if error:
         return jsonify({"error": "Unauthorized", "message": error}), 401
