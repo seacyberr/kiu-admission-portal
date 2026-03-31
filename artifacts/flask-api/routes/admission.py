@@ -92,14 +92,37 @@ def generate_application_number():
 
 @admission_bp.route("/programs", methods=["GET"])
 def list_programs():
+    """
+    List all programs with optional filtering by level and campus.
+    
+    Query parameters:
+    - level: Filter by program level (degree, diploma, hec)
+    - campus: Filter by campus (kampala, western)
+    
+    Returns all programs when no filters are provided.
+    Programs are sorted by level, then campus, then faculty, then name.
+    """
     level = request.args.get("level")
     campus = request.args.get("campus")
+    
     query = Program.query
+    
+    # Apply filters if provided
     if level:
         query = query.filter_by(level=level)
     if campus:
         query = query.filter_by(campus=campus)
-    programs = query.order_by(Program.campus, Program.faculty, Program.name).all()
+    
+    # Sort by level (degree first, then diploma, then hec), 
+    # then campus (kampala first, then western),
+    # then faculty, then program name
+    programs = query.order_by(
+        Program.level.desc(),  # degree > diploma > hec (alphabetically)
+        Program.campus,        # kampala < western (alphabetically)
+        Program.faculty,
+        Program.name
+    ).all()
+    
     return jsonify({"programs": [p.to_dict() for p in programs]}), 200
 
 
