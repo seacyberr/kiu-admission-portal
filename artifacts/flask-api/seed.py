@@ -61,8 +61,12 @@ def _load_programs_from_json(filepath):
     with open(filepath, "r", encoding="utf-8") as f:
         seed = json.load(f)
 
-    return [
-        Program(
+    programs = []
+    for p in seed.get("programs", []):
+        # Handle both snake_case and camelCase field names for compatibility
+        entry_reqs = p.get("entry_requirements") or p.get("entryRequirements", "")
+        
+        program = Program(
             name=p.get("name", ""),
             code=p.get("code", ""),
             faculty=p.get("faculty", "") or "",
@@ -70,14 +74,14 @@ def _load_programs_from_json(filepath):
             level=p.get("level", ""),
             duration=p.get("duration"),
             description=p.get("description"),
-            entry_requirements=p.get("entry_requirements", ""),
+            entry_requirements=entry_reqs,
             min_olevel_points=p.get("minOlevelPoints"),
             min_alevel_points=p.get("minAlevelPoints"),
             available_slots=p.get("availableSlots", 100) or 100,
         )
-        for p in seed.get("programs", [])
-        if p.get("level") in ("degree", "diploma", "hec")
-    ]
+        programs.append(program)
+    
+    return programs
 
 
 def _add_missing_programs(filepath):
@@ -95,6 +99,10 @@ def _add_missing_programs(filepath):
         code = p.get("code")
         if not code or code in existing_codes:
             continue
+        
+        # Handle both snake_case and camelCase field names for compatibility
+        entry_reqs = p.get("entry_requirements") or p.get("entryRequirements", "")
+        
         missing.append(
             Program(
                 name=p.get("name", ""),
@@ -104,7 +112,7 @@ def _add_missing_programs(filepath):
                 level=p.get("level", ""),
                 duration=p.get("duration"),
                 description=p.get("description"),
-                entry_requirements=p.get("entry_requirements", ""),
+                entry_requirements=entry_reqs,
                 min_olevel_points=p.get("minOlevelPoints"),
                 min_alevel_points=p.get("minAlevelPoints"),
                 available_slots=p.get("availableSlots", 100) or 100,
