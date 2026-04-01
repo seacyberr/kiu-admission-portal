@@ -10,6 +10,8 @@ import Home from "@/pages/home";
 import Login from "@/pages/auth/login";
 import Register from "@/pages/auth/register";
 import VerifyOtp from "@/pages/auth/verify-otp";
+import ForgotPassword from "@/pages/auth/forgot-password";
+import ResetPassword from "@/pages/auth/reset-password";
 import ApplicantDashboard from "@/pages/applicant/dashboard";
 import ApplyForm from "@/pages/applicant/apply";
 import NewApplicant from "@/pages/applicant/new-applicant";
@@ -33,6 +35,8 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
         <Route path="/verify-otp" component={VerifyOtp} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
 
         {/* Applicant */}
         <Route path="/dashboard">

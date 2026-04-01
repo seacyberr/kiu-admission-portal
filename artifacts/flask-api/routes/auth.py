@@ -624,3 +624,124 @@ def me():
     if error:
         return jsonify({"error": "Unauthorized", "message": error}), 401
     return jsonify(user.to_dict()), 200
+
+
+@auth_bp.route("/forgot-password", methods=["POST"])
+@user_rate_limit(max_requests=5, window_seconds=300)  # 5 requests per 5 minutes
+def forgot_password():
+    """
+    Send password reset OTP to user's email.
+    
+    Request Body:
+        email (str): User's email address
+    
+    Returns:
+        200: Reset OTP sent (or email not found - returns 200 to prevent enumeration)
+        429: Rate limited
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
+
+    email = data.get("email", "").strip().lower()
+    if not email:
+        return jsonify({"error": "Validation error", "message": "email is required"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        # Return 200 to prevent email enumeration
+        return jsonify({"message": "If this email is registered, a password reset OTP has been sent."}), 200
+
+    # Check rate limiting for password reset OTP
+    recent = (
+        OtpCode.query
+        .filter_by(user_id=user.id, is_used=False)
+        .filter(OtpCode.created_at > datetime.utcnow() - timedelta(seconds=OTP_RESEND_COOLDOWN_SECONDS))
+        .first()
+    )
+    if recent:
+        seconds_left = int((recent.created_at + timedelta(seconds=OTP_RESEND_COOLDOWN_SECONDS) - datetime.utcnow()).total_seconds())
+        return jsonify({
+            "error": "Rate limited",
+            "message": f"Please wait {seconds_left} seconds before requesting a new code.",
+            "retryAfter": seconds_left,
+        }), 429
+
+    # Create and send password reset OTP
+    _create_and_dispatch_otp(user)
+    
+    return jsonify({
+        "message": "If this email is registered, a password reset OTP has been sent.",
+        "email": email,
+    }), 200
+
+
+@auth_bp.route("/reset-password", methods=["POST"])
+@user_rate_limit(max_requests=3, window_seconds=300)  # 3 requests per 5 minutes
+def reset_password():
+    """
+    Reset user password using OTP verification.
+    
+    Request Body:
+        email (str): User's email address
+        code (str): 6-digit OTP code
+        password (str): New password (must meet complexity requirements)
+    
+    Returns:
+        200: Password reset successful
+        400: Validation error
+        404: Email not found
+        410: OTP expired
+        422: Invalid OTP code
+        429: Rate limited
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
+
+    email = data.get("email", "").strip().lower()
+    code = data.get("code", "").strip()
+    password = data.get("password", "")
+
+    if not email or not code or not password:
+        return jsonify({"error": "Validation error", "message": "email, code, and password are required"}), 400
+
+    # Password complexity requirements
+    if len(password) < 8:
+        return jsonify({"error": "Validation error", "message": "Password must be at least 8 characters"}), 400
+    if not any(c.isupper() for c in password):
+        return jsonify({"error": "Validation error", "message": "Password must contain at least one uppercase letter"}), 400
+    if not any(c.islower() for c in password):
+        return jsonify({"error": "Validation error", "message": "Password must contain at least one lowercase letter"}), 400
+    if not any(c.isdigit() for c in password):
+        return jsonify({"error": "Validation error", "message": "Password must contain at least one digit"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"error": "Not found", "message": "No account found for this email"}), 404
+
+    # Verify OTP
+    otp = (
+        OtpCode.query
+        .filter_by(user_id=user.id, code=code, is_used=False)
+        .filter(OtpCode.expires_at > datetime.utcnow())
+        .first()
+    )
+
+    if not otp:
+        # Check if code exists but is expired
+        expired = OtpCode.query.filter_by(user_id=user.id, code=code, is_used=False).first()
+        if expired:
+            return jsonify({"error": "OTP expired", "message": "This code has expired. Please request a new one."}), 410
+        return jsonify({"error": "Invalid OTP", "message": "Incorrect verification code. Please check and try again."}), 422
+
+    # Mark OTP as used and update password
+    otp.is_used = True
+    user.set_password(password)
+    user.is_verified = True  # Ensure account is verified after password reset
+    db.session.commit()
+
+    return jsonify({
+        "message": "Password reset successful. You can now login with your new password.",
+        "email": email,
+    }), 200
