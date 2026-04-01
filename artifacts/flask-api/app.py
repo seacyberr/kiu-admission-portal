@@ -151,6 +151,7 @@ def create_app():
     from routes.opportunities import opportunities_bp
     from routes.users import users_bp
     from routes.docs import docs_bp
+    from routes.v1 import v1_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(admission_bp, url_prefix="/api/admission")
@@ -158,6 +159,11 @@ def create_app():
     app.register_blueprint(opportunities_bp, url_prefix="/api/opportunities")
     app.register_blueprint(users_bp, url_prefix="/api/users")
     app.register_blueprint(docs_bp, url_prefix="/api/docs")
+    app.register_blueprint(v1_bp, url_prefix="/api/v1")
+
+    # Initialize Prometheus metrics
+    from metrics import init_metrics
+    init_metrics(app)
 
     # Health check endpoints
     @app.route("/api/healthz")
