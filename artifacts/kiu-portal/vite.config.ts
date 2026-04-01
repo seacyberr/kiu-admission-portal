@@ -51,6 +51,27 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-radix': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-label',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-tooltip'
+          ],
+          'vendor-query': ['@tanstack/react-query'],
+          'vendor-form': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          'vendor-chart': ['recharts'],
+          'vendor-motion': ['framer-motion'],
+          'vendor-icons': ['lucide-react', 'react-icons'],
+          'vendor-router': ['wouter'],
+          'vendor-utils': ['clsx', 'tailwind-merge', 'class-variance-authority', 'date-fns'],
+        },
+      },
+    },
   },
   server: {
     port,

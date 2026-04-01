@@ -19,6 +19,7 @@ python-dotenv>=1.0.0
 
 # Rate limiting
 flask-limiter>=3.5.0
+redis>=5.0.0
 
 # Email validation
 email-validator>=2.1.0
@@ -29,34 +30,16 @@ gunicorn>=22.0.0
 # Date utilities
 python-dateutil>=2.9.0
 
-# Distributed rate limits (optional; set RATE_LIMIT_STORAGE_URI=redis://...)
-redis>=5.0.0
-
 # Caching
 flask-caching>=2.1.0
 
-# Task queue (Celery)
-celery>=5.3.6
-
-# Monitoring (Sentry)
+# Monitoring
 sentry-sdk[flask]>=1.40.0
-
-# Input validation
-marshmallow>=3.20.1
-
-# Structured logging
-structlog>=24.1.0
-
-# API documentation
-flask-swagger-ui>=4.11.1
-apispec>=6.3.0
-
-# Tests
-pytest>=8.0.0
-pytest-cov>=4.1.0
-
-# Prometheus metrics
 prometheus-client>=0.19.0
 
 # Database migrations
 alembic>=1.13.0
+
+# Tests
+pytest>=8.0.0
+pytest-cov>=4.1.0
