@@ -65,6 +65,21 @@ class OtpCode(db.Model):
     user = db.relationship("User", backref=db.backref("otp_codes", cascade="all, delete-orphan"))
 
 
+class RefreshToken(db.Model):
+    __tablename__ = "refresh_tokens"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    is_revoked = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_agent = db.Column(db.Text)
+    ip_address = db.Column(db.String(45))
+
+    user = db.relationship("User", backref=db.backref("refresh_tokens", cascade="all, delete-orphan"))
+
+
 class Program(db.Model):
     __tablename__ = "programs"
 

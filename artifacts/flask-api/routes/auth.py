@@ -1,5 +1,6 @@
 import os
 import random
+import secrets
 import smtplib
 import logging
 from email.mime.text import MIMEText
@@ -8,7 +9,7 @@ from datetime import datetime, timedelta
 
 import jwt
 from flask import Blueprint, request, jsonify, current_app
-from models import db, User, OtpCode
+from models import db, User, OtpCode, RefreshToken
 
 log = logging.getLogger(__name__)
 
@@ -30,13 +31,33 @@ OTP_RESEND_COOLDOWN_SECONDS = 60
 # ---------------------------------------------------------------------------
 
 def generate_token(user_id, role):
+    """Generate short-lived access token (15 minutes)."""
     jwt_secret = current_app.config.get("SECRET_KEY", "")
     payload = {
         "userId": user_id,
         "role": role,
-        "exp": datetime.utcnow() + timedelta(days=7),
+        "exp": datetime.utcnow() + timedelta(minutes=15),
+        "type": "access",
     }
     return jwt.encode(payload, jwt_secret, algorithm="HS256")
+
+
+def generate_refresh_token(user_id):
+    """Generate long-lived refresh token (7 days) and store in database."""
+    token = secrets.token_urlsafe(64)
+    expires_at = datetime.utcnow() + timedelta(days=7)
+    
+    refresh_token = RefreshToken(
+        user_id=user_id,
+        token=token,
+        expires_at=expires_at,
+        user_agent=request.headers.get("User-Agent", ""),
+        ip_address=request.remote_addr,
+    )
+    db.session.add(refresh_token)
+    db.session.commit()
+    
+    return token
 
 
 def _set_auth_cookie(response, token):
@@ -479,16 +500,70 @@ def login():
             "needsVerification": True,
         }), 403
 
-    token = generate_token(user.id, user.role)
-    response = jsonify({"user": user.to_dict(), "token": token})
-    _set_auth_cookie(response, token)
+    access_token = generate_token(user.id, user.role)
+    refresh_token_str = generate_refresh_token(user.id)
+    response = jsonify({
+        "user": user.to_dict(),
+        "accessToken": access_token,
+        "refreshToken": refresh_token_str,
+    })
+    _set_auth_cookie(response, access_token)
     return response, 200
 
 
-@auth_bp.route("/logout", methods=["POST"])
-def logout():
-    response = jsonify({"message": "Logged out successfully"})
-    _clear_auth_cookie(response)
+@auth_bp.route("/refresh", methods=["POST"])
+def refresh_token():
+    """
+    Refresh access token using a valid refresh token.
+    
+    Implements token rotation: the old refresh token is revoked and a new one is issued.
+    
+    Request Body:
+        refreshToken (str): Valid refresh token
+    
+    Returns:
+        200: New access token and refresh token
+        401: Invalid or expired refresh token
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Bad request", "message": "No JSON body provided"}), 400
+    
+    refresh_token_str = data.get("refreshToken")
+    if not refresh_token_str:
+        return jsonify({"error": "Validation error", "message": "refreshToken is required"}), 400
+    
+    # Find the refresh token in database
+    refresh_token = RefreshToken.query.filter_by(
+        token=refresh_token_str,
+        is_revoked=False,
+    ).first()
+    
+    if not refresh_token:
+        return jsonify({"error": "Unauthorized", "message": "Invalid refresh token"}), 401
+    
+    # Check if expired
+    if refresh_token.expires_at < datetime.utcnow():
+        refresh_token.is_revoked = True
+        db.session.commit()
+        return jsonify({"error": "Unauthorized", "message": "Refresh token expired"}), 401
+    
+    # Revoke the old refresh token (rotation)
+    refresh_token.is_revoked = True
+    
+    # Generate new tokens
+    user = refresh_token.user
+    new_access_token = generate_token(user.id, user.role)
+    new_refresh_token = generate_refresh_token(user.id)
+    
+    db.session.commit()
+    
+    response = jsonify({
+        "accessToken": new_access_token,
+        "refreshToken": new_refresh_token,
+        "user": user.to_dict(),
+    })
+    _set_auth_cookie(response, new_access_token)
     return response, 200
 
 
