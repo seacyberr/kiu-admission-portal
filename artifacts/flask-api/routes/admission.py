@@ -9,8 +9,6 @@ from flask_caching import Cache
 from models import db, AdmissionApplication, Program, User
 from routes.auth import get_current_user
 
-cache = Cache()
-
 admission_bp = Blueprint("admission", __name__)
 
 ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png"}
@@ -96,13 +94,11 @@ def generate_application_number():
 # ---------------------------------------------------------------------------
 
 @admission_bp.route("/programs", methods=["GET"])
-@cache.cached(timeout=3600, query_string=True)  # Cache for 1 hour
 def list_programs():
     """
     List all academic programs.
     
     Returns all available programs with optional filtering by level and campus.
-    Results are cached for 1 hour for performance.
     
     Query Parameters:
         level (str, optional): Filter by program level - "degree", "diploma", "hec", "masters", or "phd"

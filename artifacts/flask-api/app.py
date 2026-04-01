@@ -31,6 +31,7 @@ except ModuleNotFoundError:
     CORS = None
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_caching import Cache
 from models import db, bcrypt
 from config import get_config
 from migrations import run_migrations
@@ -109,6 +110,9 @@ def create_app():
     db.init_app(app)
     if bcrypt:
         bcrypt.init_app(app)
+    
+    # Initialize Flask-Caching
+    cache = Cache(app)
 
     # Configure rate limiting
     raw_limits = config.RATE_LIMIT_DEFAULT

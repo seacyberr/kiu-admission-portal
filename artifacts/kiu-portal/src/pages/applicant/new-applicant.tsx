@@ -100,7 +100,7 @@ export default function NewApplicant() {
                 <div className="flex items-center gap-3">
                   <FileText className="w-6 h-6 text-primary" />
                   <div>
-                    <div className="font-bold">Diploma Holder</div>
+                    <div className="font-bold">DIPLOMA</div>
                     <div className="text-xs text-muted-foreground mt-1">Apply for Degree</div>
                   </div>
                 </div>
@@ -114,7 +114,7 @@ export default function NewApplicant() {
                 <div className="flex items-center gap-3">
                   <FileText className="w-6 h-6 text-primary" />
                   <div>
-                    <div className="font-bold">HEC Holder</div>
+                    <div className="font-bold">HEC</div>
                     <div className="text-xs text-muted-foreground mt-1">Apply for Degree</div>
                   </div>
                 </div>
@@ -128,7 +128,7 @@ export default function NewApplicant() {
                 <div className="flex items-center gap-3">
                   <Award className="w-6 h-6 text-primary" />
                   <div>
-                    <div className="font-bold">Master's Applicant</div>
+                    <div className="font-bold">Master's Degree</div>
                     <div className="text-xs text-muted-foreground mt-1">Bachelor's degree holder</div>
                   </div>
                 </div>
@@ -142,7 +142,7 @@ export default function NewApplicant() {
                 <div className="flex items-center gap-3">
                   <BookOpen className="w-6 h-6 text-primary" />
                   <div>
-                    <div className="font-bold">PhD Applicant</div>
+                    <div className="font-bold">PhD</div>
                     <div className="text-xs text-muted-foreground mt-1">Master's degree holder</div>
                   </div>
                 </div>

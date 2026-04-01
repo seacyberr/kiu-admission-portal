@@ -58,6 +58,10 @@ class Config:
     RATE_LIMIT_STORAGE_URI = os.environ.get("RATE_LIMIT_STORAGE_URI", "memory://")
     RATE_LIMIT_DEFAULT = os.environ.get("RATE_LIMIT_DEFAULT", "200 per day, 50 per hour")
 
+    # Flask-Caching
+    CACHE_TYPE = os.environ.get("CACHE_TYPE", "SimpleCache")
+    CACHE_DEFAULT_TIMEOUT = int(os.environ.get("CACHE_DEFAULT_TIMEOUT", 300))
+
     # Email (Brevo SMTP)
     BREVO_SMTP_HOST = "smtp-relay.brevo.com"
     BREVO_SMTP_PORT = 587
