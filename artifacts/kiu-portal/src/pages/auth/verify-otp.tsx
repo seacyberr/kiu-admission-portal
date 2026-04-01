@@ -104,9 +104,8 @@ export default function VerifyOtp() {
         return;
       }
 
-      // Success
+      // Success - token is stored in httpOnly cookie by the server
       setSuccess(true);
-      localStorage.setItem("kiu_token", json.token);
       localStorage.setItem("kiu_user", JSON.stringify(json.user));
       localStorage.removeItem("kiu_pending_email");
 

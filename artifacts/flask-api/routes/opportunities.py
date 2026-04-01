@@ -39,7 +39,7 @@ def list_opportunities():
 
     return jsonify({
         "opportunities": [
-            {**o.to_dict(), "applicantCount": counts_by_id.get(o.id, 0)}
+            o.to_dict(applicant_count=counts_by_id.get(o.id, 0))
             for o in opps
         ],
         "total": total,

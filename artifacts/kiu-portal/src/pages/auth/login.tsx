@@ -52,7 +52,8 @@ export default function Login() {
         return;
       }
 
-      localStorage.setItem("kiu_token", json.token);
+      // Token is now stored in httpOnly cookie by the server
+      // Store user data for UI purposes only
       localStorage.setItem("kiu_user", JSON.stringify(json.user));
       toast({ title: "Welcome back!", description: "Logged in successfully." });
 

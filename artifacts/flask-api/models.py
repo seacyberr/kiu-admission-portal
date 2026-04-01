@@ -276,10 +276,7 @@ class Opportunity(db.Model):
     posted_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    def applicant_count(self):
-        return OpportunityApplication.query.filter_by(opportunity_id=self.id).count()
-
-    def to_dict(self):
+    def to_dict(self, applicant_count=None):
         return {
             "id": self.id,
             "title": self.title,
@@ -296,7 +293,7 @@ class Opportunity(db.Model):
             "isActive": self.is_active,
             "postedAt": self.posted_at.isoformat() if self.posted_at else None,
             "updatedAt": self.updated_at.isoformat() if self.updated_at else None,
-            "applicantCount": self.applicant_count(),
+            "applicantCount": applicant_count if applicant_count is not None else OpportunityApplication.query.filter_by(opportunity_id=self.id).count(),
         }
 
 

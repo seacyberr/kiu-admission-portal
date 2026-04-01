@@ -1,5 +1,6 @@
 /**
  * Base API client for KIU Portal.
+ * Uses httpOnly cookies for authentication (credentials: 'include').
  */
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
@@ -16,11 +17,6 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const { method = 'GET', body, headers = {} } = options;
 
-  const token = localStorage.getItem('token');
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
   if (body && method !== 'GET') {
     headers['Content-Type'] = 'application/json';
   }
@@ -28,6 +24,7 @@ export async function apiFetch<T>(
   const response = await fetch(`${API_BASE}${endpoint}`, {
     method,
     headers,
+    credentials: 'include', // Send httpOnly cookies with every request
     body: body ? JSON.stringify(body) : undefined,
   });
 

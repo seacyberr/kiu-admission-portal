@@ -39,16 +39,48 @@ def generate_token(user_id, role):
     return jwt.encode(payload, jwt_secret, algorithm="HS256")
 
 
+def _set_auth_cookie(response, token):
+    """Set JWT token as httpOnly cookie."""
+    is_production = os.environ.get("FLASK_ENV", "").lower() == "production"
+    response.set_cookie(
+        "auth_token",
+        value=token,
+        httponly=True,
+        secure=is_production,
+        samesite="Strict",
+        max_age=7 * 24 * 60 * 60,  # 7 days
+        path="/",
+    )
+    return response
+
+
+def _clear_auth_cookie(response):
+    """Remove auth cookie."""
+    response.delete_cookie("auth_token", path="/")
+    return response
+
+
 def verify_token(token):
     jwt_secret = current_app.config.get("SECRET_KEY", "")
     return jwt.decode(token, jwt_secret, algorithms=["HS256"])
 
 
 def get_current_user():
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
+    """Get current user from httpOnly cookie or Authorization header."""
+    token = None
+
+    # Priority 1: httpOnly cookie
+    token = request.cookies.get("auth_token")
+
+    # Priority 2: Authorization header (backward compatibility)
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+
+    if not token:
         return None, "No token provided"
-    token = auth_header[7:]
+
     try:
         payload = verify_token(token)
         user = db.session.get(User, payload["userId"])
@@ -239,8 +271,15 @@ def register():
     except EmailNotValidError:
         return jsonify({"error": "Validation error", "message": "Invalid email address"}), 400
 
-    if len(password) < 6:
-        return jsonify({"error": "Validation error", "message": "Password must be at least 6 characters"}), 400
+    # Password complexity requirements
+    if len(password) < 8:
+        return jsonify({"error": "Validation error", "message": "Password must be at least 8 characters"}), 400
+    if not any(c.isupper() for c in password):
+        return jsonify({"error": "Validation error", "message": "Password must contain at least one uppercase letter"}), 400
+    if not any(c.islower() for c in password):
+        return jsonify({"error": "Validation error", "message": "Password must contain at least one lowercase letter"}), 400
+    if not any(c.isdigit() for c in password):
+        return jsonify({"error": "Validation error", "message": "Password must contain at least one digit"}), 400
 
     # Prevent self-registration as admin
     if role not in ("applicant", "finalist"):
@@ -335,11 +374,13 @@ def verify_otp():
     db.session.commit()
 
     token = generate_token(user.id, user.role)
-    return jsonify({
+    response = jsonify({
         "message": "Email verified successfully. Welcome to KIU Portal!",
         "user": user.to_dict(),
         "token": token,
-    }), 200
+    })
+    _set_auth_cookie(response, token)
+    return response, 200
 
 
 @auth_bp.route("/resend-otp", methods=["POST"])
@@ -439,12 +480,16 @@ def login():
         }), 403
 
     token = generate_token(user.id, user.role)
-    return jsonify({"user": user.to_dict(), "token": token}), 200
+    response = jsonify({"user": user.to_dict(), "token": token})
+    _set_auth_cookie(response, token)
+    return response, 200
 
 
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
-    return jsonify({"message": "Logged out successfully"}), 200
+    response = jsonify({"message": "Logged out successfully"})
+    _clear_auth_cookie(response)
+    return response, 200
 
 
 @auth_bp.route("/me", methods=["GET"])
