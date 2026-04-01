@@ -7,7 +7,7 @@ submits applications, admin reviews them, creates finalists for
 approved applications, and posts job opportunities.
 
 Usage:
-    cd artifacts/flask-api
+    cd apps/flask-api
     python ../../scripts/create_test_data.py
 """
 
@@ -19,7 +19,7 @@ import string
 from datetime import date, datetime, timedelta
 
 # Add flask-api to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "artifacts", "flask-api"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "apps", "flask-api"))
 
 from app import create_app
 from models import db, User, AdmissionApplication, Program, FinalistProfile, Opportunity, RefreshToken, OtpCode

@@ -5,8 +5,8 @@
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "build": "pnpm run typecheck && pnpm -r --filter \"!@workspace/mockup-sandbox\" --if-present run build",
-    "typecheck": "pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --filter \"./lib/**\" --filter \"!@workspace/mockup-sandbox\" --if-present run typecheck",
-    "test:api": "cd artifacts/flask-api && python3 -m pytest tests/ -q"
+    "typecheck": "pnpm -r --filter \"./apps/**\" --filter \"./lib/**\" --filter \"!@workspace/mockup-sandbox\" --if-present run typecheck",
+    "test:api": "cd apps/flask-api && python3 -m pytest tests/ -q"
   },
   "private": true,
   "devDependencies": {

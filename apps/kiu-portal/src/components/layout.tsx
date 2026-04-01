@@ -1,24 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
+import { useQueryClient } from '@tanstack/react-query';
 import { useGetCurrentUser } from '@workspace/api-client-react';
 import { LogOut, Menu, UserCircle, X, ChevronRight, GraduationCap, Building2 } from 'lucide-react';
 import { Button } from './ui/shared';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { data: user, isLoading } = useGetCurrentUser({ query: { retry: false } });
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 
   // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('kiu_token');
-    localStorage.removeItem('kiu_user');
-    window.location.href = '/login';
+  const handleLogout = async () => {
+    try {
+      await fetch(`${base}/api/auth/logout`, { method: "POST", credentials: "include" });
+    } catch {
+      // still clear client state
+    }
+    localStorage.removeItem("kiu_user");
+    queryClient.setQueryData(["me"], null);
+    queryClient.removeQueries();
+    window.location.href = "/login";
   };
 
   const getNavLinks = () => {

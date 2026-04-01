@@ -87,6 +87,7 @@ export default function VerifyOtp() {
       const res = await fetch(`${BASE}/api/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email, code }),
       });
       const json = await res.json();
@@ -128,6 +129,7 @@ export default function VerifyOtp() {
       const res = await fetch(`${BASE}/api/auth/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email }),
       });
       const json = await res.json();

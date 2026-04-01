@@ -10,9 +10,11 @@ SQLAlchemy>=2.0.0
 PyJWT>=2.8.0
 cryptography>=41.0.7
 
-# Database drivers
-psycopg2-binary>=2.9.9
+# Database drivers (MySQL; DATABASE_URL must use mysql+pymysql — see config.py)
 pymysql>=1.1.0
+
+# Structured logging (used in app.py)
+structlog>=24.1.0
 
 # Configuration
 python-dotenv>=1.0.0

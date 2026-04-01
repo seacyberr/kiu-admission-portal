@@ -24,7 +24,7 @@ BREVO_SMTP_KEY=your-brevo-smtp-key
 
 5. Install dependencies in Bash console:
 ```bash
-cd Kiu-Admission-Portal/artifacts/flask-api
+cd Kiu-Admission-Portal/apps/flask-api
 pip install -r requirements.txt
 ```
 
@@ -32,7 +32,7 @@ pip install -r requirements.txt
    - Go to Web tab → Add a new web app
    - Choose "Flask"
    - Set source code path
-   - Set WSGI file to: `/home/yourusername/Kiu-Admission-Portal/artifacts/flask-api/wsgi.py`
+   - Set WSGI file to: `/home/yourusername/Kiu-Admission-Portal/apps/flask-api/wsgi.py`
    - Set working directory
 
 7. Your app will be live at: `https://yourusername.pythonanywhere.com`
@@ -47,8 +47,8 @@ pip install -r requirements.txt
 3. Create PostgreSQL database (free)
 4. Create Web Service:
    - Connect GitHub repo
-   - Build command: `cd artifacts/flask-api && pip install -r requirements.txt`
-   - Start command: `cd artifacts/flask-api && gunicorn -w 4 -b 0.0.0.0:$PORT wsgi:app`
+   - Build command: `cd apps/flask-api && pip install -r requirements.txt`
+   - Start command: `cd apps/flask-api && gunicorn -w 4 -b 0.0.0.0:$PORT wsgi:app`
    - Add environment variables
 
 ---
@@ -95,7 +95,7 @@ Recommended defaults for production-like behavior:
 ### 3) Run backend + frontend
 Backend:
 ```bash
-cd Kiu-Admission-Portal/artifacts/flask-api
+cd Kiu-Admission-Portal/apps/flask-api
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
@@ -106,20 +106,20 @@ gunicorn -w 2 -b 127.0.0.1:5001 wsgi:app
 
 Frontend (separate terminal):
 ```bash
-cd Kiu-Admission-Portal/artifacts/kiu-portal
+cd Kiu-Admission-Portal/apps/kiu-portal
 pnpm install
 pnpm dev
 ```
 
 ### 4) Admin utilities
-The project includes consolidated utility scripts in `artifacts/flask-api/scripts/`:
+The project includes consolidated utility scripts in `apps/flask-api/scripts/`:
 
 - **Create admin user**: `python scripts/create_admin.py`
 - **Reset admin password**: `python scripts/reset_password.py`
 - **Database migrations**: `python scripts/migrate_db.py`
 - **Seed programs**: `python scripts/seed_programs.py`
 
-Program seed data is stored in `artifacts/flask-api/data/seed-programs.json`.
+Program seed data is stored in `apps/flask-api/data/seed-programs.json`.
 
 ## Production Reverse Proxy (Nginx example)
 
@@ -149,7 +149,7 @@ server {
   # Frontend: serve built assets (example path)
   # If you serve frontend via another container/service, you can swap this for a proxy_pass.
   location / {
-    root /var/www/kiu-portal/artifacts/kiu-portal/dist/public;
+    root /var/www/kiu-portal/apps/kiu-portal/dist/public;
     try_files $uri $uri/ /index.html;
     index index.html;
   }
@@ -159,7 +159,7 @@ server {
 ## Upload persistence note
 
 The backend stores uploaded certificates on disk under:
-- `artifacts/flask-api/uploads/certificates/`
+- `apps/flask-api/uploads/certificates/`
 
 In production, ensure this directory is writable and persists across restarts
 (e.g., mount a persistent volume or shared storage).

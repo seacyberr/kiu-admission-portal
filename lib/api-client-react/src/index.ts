@@ -140,6 +140,7 @@ function getBaseUrl(): string {
 
 const BASE_URL = getBaseUrl();
 
+/** Optional Bearer token for legacy/mobile clients; primary auth is httpOnly cookie. */
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("kiu_token");
@@ -154,20 +155,42 @@ function toQueryString(params?: QueryParams): string {
     .join("&");
 }
 
+async function fetchAuthMe(): Promise<User | null> {
+  const res = await fetch(`${BASE_URL}/api/auth/me`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (res.status === 401) return null;
+  if (!res.ok) {
+    let message = `Request failed (${res.status})`;
+    try {
+      const json = (await res.json()) as { message?: string };
+      message = json?.message ?? message;
+    } catch {
+      // ignore
+    }
+    throw new Error(message);
+  }
+  return (await res.json()) as User;
+}
+
 async function apiFetchJson<T>(path: string, init?: RequestInit & { token?: string | null }): Promise<T> {
   const token = init?.token ?? getToken();
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...(init?.headers ? (init.headers as Record<string, string>) : {}),
   };
+  const hasBody = init?.body !== undefined && init?.body !== null;
+  if (hasBody && typeof init.body === "string") {
+    headers["Content-Type"] = headers["Content-Type"] ?? "application/json";
+  }
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers,
+    credentials: "include",
   });
 
-  // Try to return structured errors, but keep it resilient.
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
     try {
@@ -179,7 +202,10 @@ async function apiFetchJson<T>(path: string, init?: RequestInit & { token?: stri
     throw new Error(message);
   }
 
-  return (await res.json()) as T;
+  if (res.status === 204) return undefined as T;
+  const text = await res.text();
+  if (!text) return undefined as T;
+  return JSON.parse(text) as T;
 }
 
 type QueryOverrides<TData> = Partial<
@@ -202,21 +228,21 @@ export function useListPrograms(params?: { level?: ProgramLevel }) {
   });
 }
 
-export function useGetCurrentUser(options?: { query?: QueryOverrides<User> }) {
-  const token = getToken();
-  return useQuery<User, Error>({
-    queryKey: ["me", token ? true : false],
-    enabled: mergeQueryOverrides(options?.query).enabled ?? !!token,
-    queryFn: () => apiFetchJson<User>(`/api/auth/me`, { method: "GET" }),
-    ...mergeQueryOverrides(options?.query),
+export function useGetCurrentUser(options?: { query?: QueryOverrides<User | null> }) {
+  const merged = mergeQueryOverrides(options?.query);
+  return useQuery<User | null, Error>({
+    queryKey: ["me"],
+    queryFn: () => fetchAuthMe(),
+    ...merged,
+    enabled: merged.enabled ?? true,
   });
 }
 
 export function useGetMyAdmissionApplication(options?: { query?: QueryOverrides<AdmissionApplication | null> }) {
-  const token = getToken();
+  const { data: user, isLoading: authLoading } = useGetCurrentUser({ query: { retry: false } });
+  const merged = mergeQueryOverrides(options?.query);
   return useQuery<AdmissionApplication | null, Error>({
     queryKey: ["my-admission-application"],
-    enabled: mergeQueryOverrides(options?.query).enabled ?? !!token,
     queryFn: async () => {
       const json = await apiFetchJson<{ application: AdmissionApplication | null }>(
         `/api/admission/applications/mine`,
@@ -224,7 +250,8 @@ export function useGetMyAdmissionApplication(options?: { query?: QueryOverrides<
       );
       return json.application;
     },
-    ...mergeQueryOverrides(options?.query),
+    ...merged,
+    enabled: (merged.enabled ?? true) && !authLoading && user?.role === "applicant",
   });
 }
 
@@ -258,11 +285,14 @@ export function useListAdmissionApplications(options?: {
     perPage: number;
     pages: number;
   };
+  const { data: user, isLoading: authLoading } = useGetCurrentUser({ query: { retry: false } });
+  const merged = mergeQueryOverrides(options?.query);
   return useQuery<Resp, Error>({
     queryKey: ["admin-admission-applications", queryParams],
     queryFn: () =>
       apiFetchJson<Resp>(`/api/admission/applications?${toQueryString(queryParams)}`, { method: "GET" }),
-    ...(options?.query ?? {}),
+    ...merged,
+    enabled: (merged.enabled ?? true) && !authLoading && user?.role === "admin",
   });
 }
 
@@ -320,14 +350,15 @@ export function useListCareerPaths(options?: { program?: string; query?: QueryOv
   });
 }
 
-export function useGetFinalistProfile(options?: { query?: any }) {
-  const token = getToken();
+export function useGetFinalistProfile(options?: { query?: QueryOverrides<FinalistProfile> }) {
+  const { data: user, isLoading: authLoading } = useGetCurrentUser({ query: { retry: false } });
+  const merged = mergeQueryOverrides(options?.query);
   return useQuery<FinalistProfile, Error>({
     queryKey: ["my-finalist-profile"],
-    enabled: (options?.query as any)?.enabled ?? !!token,
     queryFn: () => apiFetchJson<FinalistProfile>(`/api/career/my-profile`, { method: "GET" }),
-    ...(options?.query ?? {}),
-  });
+    ...merged,
+    enabled: (merged.enabled ?? true) && !authLoading && user?.role === "finalist",
+  } as UseQueryOptions<FinalistProfile, Error, FinalistProfile, readonly unknown[]>);
 }
 
 // -----------------------------------------------------------------------------
@@ -372,9 +403,11 @@ export function useUpdateOpportunity() {
 export function useDeleteOpportunity() {
   return useMutation({
     mutationFn: async (vars: { id: number }) => {
+      const token = getToken();
       const res = await fetch(`${BASE_URL}/api/opportunities/${vars.id}`, {
         method: "DELETE",
-        headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : undefined,
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!res.ok) throw new Error(`Delete failed (${res.status})`);
       return true;

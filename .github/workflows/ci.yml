@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, master, develop]
   pull_request:
-    branches: [main]
+    branches: [main, master]
 
 env:
   PYTHON_VERSION: '3.11'
@@ -49,20 +49,20 @@ jobs:
       
       - name: Install dependencies
         run: |
-          cd artifacts/flask-api
+          cd apps/flask-api
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pytest-cov flake8 mypy
       
       - name: Lint with flake8
         run: |
-          cd artifacts/flask-api
+          cd apps/flask-api
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       
       - name: Type check with mypy
         run: |
-          cd artifacts/flask-api
+          cd apps/flask-api
           mypy . --ignore-missing-imports --no-strict-optional || true
       
       - name: Run tests
@@ -72,13 +72,13 @@ jobs:
           JWT_SECRET: ci-test-secret-key
           SEED_DATABASE: false
         run: |
-          cd artifacts/flask-api
+          cd apps/flask-api
           python -m pytest tests/ -v --tb=short --cov=. --cov-report=xml
       
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
-          file: artifacts/flask-api/coverage.xml
+          file: apps/flask-api/coverage.xml
           flags: backend
           fail_ci_if_error: false
 
@@ -114,17 +114,20 @@ jobs:
       
       - name: Type check
         run: pnpm run typecheck
+
+      - name: Frontend unit tests
+        run: pnpm --filter @workspace/kiu-portal run test
       
       - name: Build frontend
         run: |
-          cd artifacts/kiu-portal
+          cd apps/kiu-portal
           pnpm build
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: artifacts/kiu-portal/dist
+          path: apps/kiu-portal/dist
           retention-days: 7
 
   # ── Security Scan ──────────────────────────────────────────────────────

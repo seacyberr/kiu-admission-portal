@@ -305,8 +305,6 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("kiu_token");
-
       const unebGrades: any = {};
       if (examLevel === "o_level" || examLevel === "a_level") {
         unebGrades.olevel = (values.oLevelGrades ?? []).map((g) => ({
@@ -356,7 +354,8 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
       const res = await fetch(`${BASE}/api/admission/applications`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
       
@@ -504,8 +503,6 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("kiu_token");
-
       const unebGrades: any = {};
       if (examLevel === "o_level" || examLevel === "a_level") {
         unebGrades.olevel = (data.oLevelGrades ?? []).map((g) => ({
@@ -555,7 +552,8 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
       const res = await fetch(`${BASE}/api/admission/applications`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
       
@@ -595,7 +593,6 @@ export default function Apply({ target }: { target: ApplyTarget }) {
   const uploadCertificates = async () => {
     if (!applicationId) return;
     setUploadingCerts(true);
-    const token = localStorage.getItem("kiu_token");
     let allOk = true;
 
     const upload = async (file: File, type: "olevel" | "alevel" | "diploma" | "hec") => {
@@ -604,7 +601,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
       fd.append("type", type);
       const res = await fetch(`${BASE}/api/admission/applications/${applicationId}/certificate`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
         body: fd,
       });
       if (!res.ok) allOk = false;

@@ -2,7 +2,7 @@ kind = "web"
 previewPath = "/"
 title = "KIU Admission & Career Portal"
 version = "1.0.0"
-id = "artifacts/kiu-portal"
+id = "apps/kiu-portal"
 router = "path"
 
 [[integratedSkills]]
@@ -19,7 +19,7 @@ run = "pnpm --filter @workspace/kiu-portal run dev"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/kiu-portal", "run", "build" ]
-publicDir = "artifacts/kiu-portal/dist/public"
+publicDir = "apps/kiu-portal/dist/public"
 serve = "static"
 
 [[services.production.rewrites]]

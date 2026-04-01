@@ -11,23 +11,23 @@ interface RoleGuardProps {
 
 export function RoleGuard({ roles, children }: RoleGuardProps) {
   const [, setLocation] = useLocation();
-  const token = localStorage.getItem("kiu_token");
-  const { data: user, isLoading } = useGetCurrentUser({ query: { retry: false, enabled: !!token } });
+  const { data: user, isLoading } = useGetCurrentUser({ query: { retry: false } });
 
   useEffect(() => {
-    if (!token) {
+    if (isLoading) return;
+    if (!user) {
       setLocation("/login");
       return;
     }
-    if (!isLoading && (!user || !roles.includes(user.role as Role))) {
-      if (user?.role === "admin") setLocation("/admin");
-      else if (user?.role === "finalist") setLocation("/career");
-      else if (user?.role === "applicant") setLocation("/dashboard");
+    if (!roles.includes(user.role as Role)) {
+      if (user.role === "admin") setLocation("/admin");
+      else if (user.role === "finalist") setLocation("/career");
+      else if (user.role === "applicant") setLocation("/dashboard");
       else setLocation("/login");
     }
-  }, [token, isLoading, user, roles, setLocation]);
+  }, [isLoading, user, roles, setLocation]);
 
-  if (!token || isLoading) {
+  if (isLoading) {
     return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
   }
 

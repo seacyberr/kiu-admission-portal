@@ -626,6 +626,18 @@ def me():
     return jsonify(user.to_dict()), 200
 
 
+@auth_bp.route("/logout", methods=["POST"])
+def logout():
+    """Clear httpOnly auth cookie and revoke refresh tokens for the current session."""
+    user, _ = get_current_user()
+    if user:
+        for rt in RefreshToken.query.filter_by(user_id=user.id, is_revoked=False).all():
+            rt.is_revoked = True
+        db.session.commit()
+    response = jsonify({"message": "Logged out"})
+    return _clear_auth_cookie(response), 200
+
+
 @auth_bp.route("/forgot-password", methods=["POST"])
 @user_rate_limit(max_requests=5, window_seconds=300)  # 5 requests per 5 minutes
 def forgot_password():

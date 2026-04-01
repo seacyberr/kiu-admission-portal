@@ -138,6 +138,22 @@ class TestRefreshToken:
         assert response.status_code == 401
 
 
+class TestLogout:
+    """Test logout clears cookie-backed session."""
+
+    def test_logout_clears_session(self, client, verified_user_email, verified_user):
+        _ = verified_user
+        login_resp = client.post("/api/auth/login", json={
+            "email": verified_user_email,
+            "password": "TestPass123",
+        })
+        assert login_resp.status_code == 200
+        assert client.get("/api/auth/me").status_code == 200
+        out = client.post("/api/auth/logout")
+        assert out.status_code == 200
+        assert client.get("/api/auth/me").status_code == 401
+
+
 class TestMe:
     """Test get current user."""
 

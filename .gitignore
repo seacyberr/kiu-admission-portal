@@ -14,6 +14,7 @@ __pycache__
 
 # dependencies
 node_modules
+.pnpm-store
 venv
 .venv
 
@@ -63,10 +64,10 @@ replitignore
 .env
 
 # Flask uploaded files (must persist on the server, not in git)
-artifacts/flask-api/uploads/
+apps/flask-api/uploads/
 
 # Flask instance directory (contains local database files)
-artifacts/flask-api/instance/
+apps/flask-api/instance/
 
 # Test files (root directory only)
 /test_*.py

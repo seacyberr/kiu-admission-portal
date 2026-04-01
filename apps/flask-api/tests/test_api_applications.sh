@@ -57,7 +57,7 @@ test_exam_level() {
     elif echo $REGISTER | grep -q "needsVerification"; then
         echo "   ℹ User registered, OTP verification required"
         # Get OTP from database (for testing purposes)
-        OTP_CODE=$(sqlite3 /home/sea/Downloads/Kiu-Admission-Portal/artifacts/flask-api/instance/kiu_admissions.db \
+        OTP_CODE=$(sqlite3 /home/sea/Downloads/Kiu-Admission-Portal/apps/flask-api/instance/kiu_admissions.db \
             "SELECT code FROM otp_codes WHERE user_id = (SELECT id FROM users WHERE email = '$EMAIL') ORDER BY created_at DESC LIMIT 1" 2>/dev/null)
         if [ -z "$OTP_CODE" ]; then
             echo "   ✗ Could not retrieve OTP from database"
@@ -96,7 +96,7 @@ test_exam_level() {
         # Wait a moment for OTP to be saved to database
         sleep 1
         # Get OTP from database
-        OTP_CODE=$(sqlite3 /home/sea/Downloads/Kiu-Admission-Portal/artifacts/flask-api/instance/kiu_admissions.db \
+        OTP_CODE=$(sqlite3 /home/sea/Downloads/Kiu-Admission-Portal/apps/flask-api/instance/kiu_admissions.db \
             "SELECT code FROM otp_codes WHERE user_id = (SELECT id FROM users WHERE email = '$EMAIL') ORDER BY created_at DESC LIMIT 1" 2>/dev/null)
         if [ -z "$OTP_CODE" ]; then
             echo "   ✗ Could not retrieve OTP from database"
