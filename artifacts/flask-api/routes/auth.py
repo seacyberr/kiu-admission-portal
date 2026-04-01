@@ -6,10 +6,61 @@ import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
+from functools import wraps
 
 import jwt
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, g
 from models import db, User, OtpCode, RefreshToken
+
+# ---------------------------------------------------------------------------
+# User-based Rate Limiting
+# ---------------------------------------------------------------------------
+_rate_limit_store = {}  # In-memory store: {user_id: [(timestamp, endpoint), ...]}
+
+def user_rate_limit(max_requests=100, window_seconds=3600):
+    """
+    Rate limit decorator based on authenticated user ID.
+    
+    Args:
+        max_requests: Maximum requests per window
+        window_seconds: Time window in seconds (default: 1 hour)
+    """
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            user = getattr(g, 'current_user', None)
+            if not user:
+                # Fall back to IP-based if no user
+                user_id = f"ip:{request.remote_addr}"
+            else:
+                user_id = f"user:{user.id}"
+            
+            now = datetime.utcnow()
+            window_start = now - timedelta(seconds=window_seconds)
+            
+            # Clean old entries
+            if user_id in _rate_limit_store:
+                _rate_limit_store[user_id] = [
+                    (ts, ep) for ts, ep in _rate_limit_store[user_id]
+                    if ts > window_start
+                ]
+            else:
+                _rate_limit_store[user_id] = []
+            
+            # Check limit
+            if len(_rate_limit_store[user_id]) >= max_requests:
+                return jsonify({
+                    "error": "Rate limited",
+                    "message": f"Too many requests. Maximum {max_requests} requests per {window_seconds // 60} minutes.",
+                    "retryAfter": window_seconds,
+                }), 429
+            
+            # Record this request
+            _rate_limit_store[user_id].append((now, request.endpoint))
+            
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
 
 log = logging.getLogger(__name__)
 

@@ -4,12 +4,35 @@ from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime, date
 import random
 import string
+from functools import wraps
 from werkzeug.utils import secure_filename
 from flask_caching import Cache
 from models import db, AdmissionApplication, Program, User
 from routes.auth import get_current_user
 
 admission_bp = Blueprint("admission", __name__)
+
+# Cache decorator for static data
+def cached(timeout=300, key_prefix=""):
+    """Cache decorator for functions returning JSON-serializable data."""
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            cache = current_app.extensions.get("cache")
+            if not cache:
+                return f(*args, **kwargs)
+            
+            # Build cache key from function name and arguments
+            cache_key = f"{key_prefix}:{f.__name__}:{str(args)}:{str(sorted(kwargs.items()))}"
+            result = cache.get(cache_key)
+            if result is not None:
+                return result
+            
+            result = f(*args, **kwargs)
+            cache.set(cache_key, result, timeout=timeout)
+            return result
+        return wrapper
+    return decorator
 
 ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png"}
 
@@ -94,11 +117,13 @@ def generate_application_number():
 # ---------------------------------------------------------------------------
 
 @admission_bp.route("/programs", methods=["GET"])
+@cached(timeout=300, key_prefix="programs")
 def list_programs():
     """
     List all academic programs.
     
     Returns all available programs with optional filtering by level and campus.
+    Results are cached for 5 minutes.
     
     Query Parameters:
         level (str, optional): Filter by program level - "degree", "diploma", "hec", "masters", or "phd"
