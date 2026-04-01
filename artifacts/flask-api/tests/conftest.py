@@ -44,7 +44,7 @@ def test_user(app, test_user_email):
             role="applicant",
             is_verified=False,
         )
-        user.set_password("Test123!")
+        user.set_password("TestPass123")
         db.session.add(user)
         db.session.commit()
         return user
@@ -65,7 +65,7 @@ def verified_user(app, verified_user_email):
             role="applicant",
             is_verified=True,
         )
-        user.set_password("Test123!")
+        user.set_password("TestPass123")
         db.session.add(user)
         db.session.commit()
         return user
@@ -86,7 +86,7 @@ def admin_user(app, admin_user_email):
             role="admin",
             is_verified=True,
         )
-        user.set_password("Admin123!")
+        user.set_password("AdminPass123")
         db.session.add(user)
         db.session.commit()
         return user
@@ -117,7 +117,7 @@ def auth_headers(client, verified_user_email, verified_user):
     _ = verified_user
     response = client.post("/api/auth/login", json={
         "email": verified_user_email,
-        "password": "Test123!",
+        "password": "TestPass123",
     })
     token = response.get_json()["accessToken"]
     return {"Authorization": f"Bearer {token}"}
@@ -130,7 +130,7 @@ def admin_headers(client, admin_user_email, admin_user):
     _ = admin_user
     response = client.post("/api/auth/login", json={
         "email": admin_user_email,
-        "password": "Admin123!",
+        "password": "AdminPass123",
     })
     token = response.get_json()["accessToken"]
     return {"Authorization": f"Bearer {token}"}

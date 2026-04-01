@@ -16,8 +16,9 @@
     "react": "^18 || ^19"
   },
   "devDependencies": {
+    "@tanstack/react-query": "catalog:",
+    "react": "catalog:",
     "typescript": "~5.9.2",
     "vite": "catalog:"
   }
 }
-

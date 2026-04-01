@@ -206,7 +206,7 @@ export default function AdminOpportunities() {
                   </TableCell>
                 </TableRow>
               ) : (
-                opps.map((o) => (
+                opps.map((o: any) => (
                   <TableRow key={o.id}>
                     <TableCell className="font-medium max-w-[200px]">{o.title}</TableCell>
                     <TableCell>{o.organization}</TableCell>

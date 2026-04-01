@@ -11,7 +11,7 @@ class TestRegistrationAndVerificationFlow:
         # Step 1: Register
         register_response = client.post("/api/auth/register", json={
             "email": "integration@test.com",
-            "password": "testpass123",
+            "password": "TestPass123",
             "firstName": "Integration",
             "lastName": "Test"
         })
@@ -39,11 +39,11 @@ class TestRegistrationAndVerificationFlow:
         # Step 4: Login (should work now)
         login_response = client.post("/api/auth/login", json={
             "email": "integration@test.com",
-            "password": "testpass123"
+            "password": "TestPass123"
         })
         assert login_response.status_code == 200
         login_data = login_response.get_json()
-        assert "token" in login_data
+        assert "accessToken" in login_data
 
         # Step 5: Get profile
         me_response = client.get("/api/auth/me", headers={
@@ -70,7 +70,7 @@ class TestAdmissionApplicationFlow:
                 role="applicant",
                 is_verified=True
             )
-            applicant.set_password("testpass123")
+            applicant.set_password("TestPass123")
             db.session.add(applicant)
 
             program = Program(
@@ -88,10 +88,10 @@ class TestAdmissionApplicationFlow:
         # Step 1: Applicant logs in
         login_response = client.post("/api/auth/login", json={
             "email": "applicant@integration.com",
-            "password": "testpass123"
+            "password": "TestPass123"
         })
         assert login_response.status_code == 200
-        token = login_response.get_json()["token"]
+        token = login_response.get_json()["accessToken"]
 
         # Step 2: Submit application
         app_response = client.post("/api/admission/applications",
@@ -142,7 +142,7 @@ class TestAdmissionApplicationFlow:
             "email": "admin@integration.com",
             "password": "adminpass123"
         })
-        admin_token = admin_login.get_json()["token"]
+        admin_token = admin_login.get_json()["accessToken"]
 
         # Step 4: Admin updates status
         update_response = client.patch(
@@ -183,7 +183,7 @@ class TestOpportunityApplicationFlow:
                 role="finalist",
                 is_verified=True
             )
-            applicant.set_password("testpass123")
+            applicant.set_password("TestPass123")
             db.session.add(applicant)
             db.session.commit()
             opp_id = opp.id
@@ -191,9 +191,9 @@ class TestOpportunityApplicationFlow:
         # Step 1: Login as finalist
         login_response = client.post("/api/auth/login", json={
             "email": "jobseeker@test.com",
-            "password": "testpass123"
+            "password": "TestPass123"
         })
-        token = login_response.get_json()["token"]
+        token = login_response.get_json()["accessToken"]
 
         # Step 2: List opportunities
         list_response = client.get("/api/opportunities")

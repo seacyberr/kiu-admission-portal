@@ -17,8 +17,9 @@ class TestRegister:
         data = response.get_json()
         assert data["needsVerification"] is True
 
-    def test_register_duplicate_email(self, client, test_user_email):
+    def test_register_duplicate_email(self, client, test_user_email, test_user):
         """Test registration with existing email."""
+        _ = test_user  # Ensure user exists in database
         response = client.post("/api/auth/register", json={
             "email": test_user_email,
             "password": "Secure123!",
@@ -48,30 +49,33 @@ class TestRegister:
 class TestLogin:
     """Test user login."""
 
-    def test_login_success(self, client, verified_user_email):
+    def test_login_success(self, client, verified_user_email, verified_user):
         """Test successful login."""
+        _ = verified_user  # Ensure user exists in database
         response = client.post("/api/auth/login", json={
             "email": verified_user_email,
-            "password": "Test123!",
+            "password": "TestPass123",
         })
         assert response.status_code == 200
         data = response.get_json()
         assert "accessToken" in data
         assert "refreshToken" in data
 
-    def test_login_wrong_password(self, client, verified_user_email):
+    def test_login_wrong_password(self, client, verified_user_email, verified_user):
         """Test login with wrong password."""
+        _ = verified_user  # Ensure user exists in database
         response = client.post("/api/auth/login", json={
             "email": verified_user_email,
-            "password": "WrongPass123!",
+            "password": "WrongPass123",
         })
         assert response.status_code == 401
 
-    def test_login_unverified(self, client, test_user_email):
+    def test_login_unverified(self, client, test_user_email, test_user):
         """Test login with unverified account."""
+        _ = test_user  # Ensure user exists in database
         response = client.post("/api/auth/login", json={
             "email": test_user_email,
-            "password": "Test123!",
+            "password": "TestPass123",
         })
         assert response.status_code == 403
 
@@ -79,18 +83,27 @@ class TestLogin:
 class TestVerifyOtp:
     """Test OTP verification."""
 
-    def test_verify_otp_success(self, client, test_user_email, test_otp):
+    def test_verify_otp_success(self, client, test_user_email, test_otp, test_user, app):
         """Test successful OTP verification."""
+        _ = test_user  # Ensure user exists in database
+        # Get the OTP code within app context to avoid DetachedInstanceError
+        with app.app_context():
+            from models import OtpCode, User
+            user = User.query.filter_by(email=test_user_email).first()
+            otp = OtpCode.query.filter_by(user_id=user.id, is_used=False).first()
+            otp_code = otp.code
+        
         response = client.post("/api/auth/verify-otp", json={
             "email": test_user_email,
-            "code": test_otp.code,
+            "code": otp_code,
         })
         assert response.status_code == 200
         data = response.get_json()
         assert "token" in data
 
-    def test_verify_otp_invalid(self, client, test_user_email):
+    def test_verify_otp_invalid(self, client, test_user_email, test_user):
         """Test invalid OTP."""
+        _ = test_user  # Ensure user exists in database
         response = client.post("/api/auth/verify-otp", json={
             "email": test_user_email,
             "code": "000000",
@@ -101,11 +114,12 @@ class TestVerifyOtp:
 class TestRefreshToken:
     """Test token refresh."""
 
-    def test_refresh_success(self, client, verified_user_email):
+    def test_refresh_success(self, client, verified_user_email, verified_user):
         """Test successful token refresh."""
+        _ = verified_user  # Ensure user exists in database
         login_resp = client.post("/api/auth/login", json={
             "email": verified_user_email,
-            "password": "Test123!",
+            "password": "TestPass123",
         })
         refresh_token = login_resp.get_json()["refreshToken"]
 

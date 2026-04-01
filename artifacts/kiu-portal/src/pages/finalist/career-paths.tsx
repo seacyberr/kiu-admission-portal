@@ -28,7 +28,7 @@ export default function CareerPaths() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {data?.careerPaths?.map((path) => (
+        {data?.careerPaths?.map((path: any) => (
           <Card key={path.id} className="p-8 hover:shadow-xl transition-shadow flex flex-col h-full">
             <div className="flex-1">
               <Badge variant="default" className="mb-4">{path.industryField}</Badge>
@@ -43,7 +43,7 @@ export default function CareerPaths() {
                     <Target className="w-4 h-4 text-primary" /> Potential Roles
                   </h4>
                   <ul className="list-disc list-inside text-sm text-muted-foreground ml-6 space-y-1">
-                    {path.potentialRoles.map((role, i) => <li key={i}>{role}</li>)}
+                    {path.potentialRoles.map((role: any, i: number) => <li key={i}>{role}</li>)}
                   </ul>
                 </div>
                 
@@ -52,7 +52,7 @@ export default function CareerPaths() {
                     <Award className="w-4 h-4 text-accent" /> Key Skills Needed
                   </h4>
                   <div className="flex flex-wrap gap-2">
-                    {path.skills.map((skill, i) => (
+                    {path.skills.map((skill: any, i: number) => (
                       <Badge key={i} variant="outline" className="bg-secondary/50 text-xs">{skill}</Badge>
                     ))}
                   </div>

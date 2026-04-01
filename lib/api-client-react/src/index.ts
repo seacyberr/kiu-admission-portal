@@ -338,7 +338,7 @@ type MutVars<T> = T;
 
 export function useUpdateAdmissionStatus() {
   return useMutation({
-    mutationFn: async (vars: { id: number; data: { status: AdmissionApplicationStatus; adminNotes?: string | undefined } }) => {
+    mutationFn: async (vars: { id: number; data: { status: AdmissionApplicationStatus; adminNotes?: string | undefined; programId?: number | undefined } }) => {
       return apiFetchJson<AdmissionApplication>(`/api/admission/applications/${vars.id}/status`, {
         method: "PATCH",
         body: JSON.stringify(vars.data),

@@ -18,8 +18,18 @@ def cached(timeout=300, key_prefix=""):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            cache = current_app.extensions.get("cache")
-            if not cache:
+            # Get cache from Flask-Caching extension
+            from flask_caching import Cache
+            cache_dict = current_app.extensions.get('cache')
+            
+            if cache_dict is None:
+                # Fallback: no caching available
+                return f(*args, **kwargs)
+            
+            # Get the Cache object from the dict (it's stored as the key)
+            cache = list(cache_dict.keys())[0] if cache_dict else None
+            
+            if cache is None:
                 return f(*args, **kwargs)
             
             # Build cache key from function name and arguments

@@ -63,7 +63,7 @@ export default function Opportunities() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {data?.opportunities?.map((op) => (
+        {data?.opportunities?.map((op: any) => (
           <Card key={op.id} className="flex flex-col hover:border-primary/50 transition-colors">
             <div className="p-6 flex-1">
               <div className="flex justify-between items-start mb-4">

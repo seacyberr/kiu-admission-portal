@@ -51,7 +51,7 @@ def test_al_level_degree_old_curriculum_application(client, test_user, degree_pr
         "password": "testpass123"
     })
     assert login_response.status_code == 200
-    token = login_response.get_json()["token"]
+    token = login_response.get_json()["accessToken"]
 
     # Submit A-Level degree application with old curriculum
     response = client.post(
@@ -100,7 +100,7 @@ def test_al_level_degree_new_curriculum_application(client, test_user, degree_pr
         "password": "testpass123"
     })
     assert login_response.status_code == 200
-    token = login_response.get_json()["token"]
+    token = login_response.get_json()["accessToken"]
 
     # Submit A-Level degree application with new curriculum
     response = client.post(
@@ -149,7 +149,7 @@ def test_invalid_date_format_rejected(client, test_user, degree_program):
         "password": "testpass123"
     })
     assert login_response.status_code == 200
-    token = login_response.get_json()["token"]
+    token = login_response.get_json()["accessToken"]
 
     # Submit application with invalid date format
     response = client.post(
@@ -217,7 +217,7 @@ def test_o_level_degree_rejected(client, test_user):
         "password": "testpass123"
     })
     assert login_response.status_code == 200
-    token = login_response.get_json()["token"]
+    token = login_response.get_json()["accessToken"]
 
     # Try to submit degree application with O-Level only - should be rejected
     response = client.post(

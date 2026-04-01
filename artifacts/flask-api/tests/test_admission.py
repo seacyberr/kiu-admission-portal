@@ -6,8 +6,14 @@ from models import db, Program
 class TestPrograms:
     """Test program endpoints."""
 
-    def test_list_programs(self, client):
+    def test_list_programs(self, client, app):
         """Test listing programs."""
+        # Create a test program first
+        with app.app_context():
+            prog = Program(name="Test", code="TST", faculty="Test", level="degree", campus="kampala")
+            db.session.add(prog)
+            db.session.commit()
+
         response = client.get("/api/admission/programs")
         assert response.status_code == 200
         data = response.get_json()
