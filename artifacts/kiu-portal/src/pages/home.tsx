@@ -76,7 +76,7 @@ export default function Home() {
               </div>
               <h3 className="text-2xl font-bold mb-3">New Admissions</h3>
               <p className="text-muted-foreground mb-8">
-                Seamlessly apply for Undergraduate and Diploma programs. Track your application status, submit your UNEB grades, and manage your admission process.
+                Seamlessly apply for Undergraduate, Diploma, Master's, and PhD programs. Track your application status, submit your UNEB grades, and manage your admission process.
               </p>
               <ul className="space-y-3 mb-8">
                 {['O-Level (UCE) & A-Level (UACE) Integration', 'Real-time Application Tracking', 'Secure Document Uploads'].map((item, i) => (

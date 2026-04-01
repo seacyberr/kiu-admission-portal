@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
 import { Button, Card, Badge } from '@/components/ui/shared';
-import { ArrowLeft, ArrowRight, GraduationCap, School, FileText, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, GraduationCap, School, FileText, Sparkles, Award, BookOpen } from 'lucide-react';
 
-type HighestEducation = 'o_level' | 'a_level' | 'diploma' | 'hec';
+type HighestEducation = 'o_level' | 'a_level' | 'diploma' | 'hec' | 'masters' | 'phd';
 type YesNo = 'yes' | 'no';
 
 function toDegreeApply(qualification: 'a_level' | 'diploma' | 'hec') {
@@ -63,7 +63,7 @@ export default function NewApplicant() {
               <h2 className="text-xl font-bold">Select Your Highest Education</h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <button
                 type="button"
                 onClick={() => setHighest('o_level')}
@@ -116,6 +116,34 @@ export default function NewApplicant() {
                   <div>
                     <div className="font-bold">HEC Holder</div>
                     <div className="text-xs text-muted-foreground mt-1">Apply for Degree</div>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHighest('masters')}
+                className="text-left p-5 rounded-2xl border-2 border-border hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <Award className="w-6 h-6 text-primary" />
+                  <div>
+                    <div className="font-bold">Master's Applicant</div>
+                    <div className="text-xs text-muted-foreground mt-1">Bachelor's degree holder</div>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setHighest('phd')}
+                className="text-left p-5 rounded-2xl border-2 border-border hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <BookOpen className="w-6 h-6 text-primary" />
+                  <div>
+                    <div className="font-bold">PhD Applicant</div>
+                    <div className="text-xs text-muted-foreground mt-1">Master's degree holder</div>
                   </div>
                 </div>
               </button>
@@ -297,6 +325,38 @@ export default function NewApplicant() {
 
             <Button className="w-full" variant="accent" onClick={() => setLocation(toDegreeApply('hec'))}>
               Continue to Degree Application
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Card>
+        )}
+
+        {highest === 'masters' && (
+          <Card className="p-8">
+            <div className="bg-secondary/30 rounded-xl p-5 mb-6">
+              <h2 className="text-lg font-bold">Master's Program Application</h2>
+              <p className="text-muted-foreground text-sm mt-1">
+                Apply for Master's degree programs at KIU. You will need to provide your Bachelor's degree information including university, degree title, graduation year, and GPA.
+              </p>
+            </div>
+
+            <Button className="w-full" variant="accent" onClick={() => setLocation('/apply/masters')}>
+              Continue to Master's Application
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Card>
+        )}
+
+        {highest === 'phd' && (
+          <Card className="p-8">
+            <div className="bg-secondary/30 rounded-xl p-5 mb-6">
+              <h2 className="text-lg font-bold">PhD Program Application</h2>
+              <p className="text-muted-foreground text-sm mt-1">
+                Apply for Doctoral (PhD) programs at KIU. You will need to provide your Master's degree information and a research proposal.
+              </p>
+            </div>
+
+            <Button className="w-full" variant="accent" onClick={() => setLocation('/apply/phd')}>
+              Continue to PhD Application
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </Card>

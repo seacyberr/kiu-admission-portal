@@ -21,6 +21,8 @@ ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png"}
 
 VALID_OLEVEL_GRADES = ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "F", "C3", "C4", "C5", "C6", "P7", "P8", "F9"]
 VALID_ALEVEL_GRADES = ["A", "B", "C", "D", "E", "O", "F"]
+VALID_MASTERS_QUALIFICATIONS = ["distinction", "merit", "pass", "first_class", "second_class_upper", "second_class_lower", "third_class"]
+VALID_PHD_QUALIFICATIONS = ["distinction", "merit", "pass", "first_class", "second_class_upper", "second_class_lower", "third_class"]
 
 # O-Level grade to points (lower is better for admission)
 OLEVEL_GRADE_POINTS = {"D1": 1, "D2": 2, "C3": 3, "C4": 4, "C5": 5, "C6": 6, "P7": 7, "P8": 8, "F9": 9}
@@ -103,7 +105,7 @@ def list_programs():
     Results are cached for 1 hour for performance.
     
     Query Parameters:
-        level (str, optional): Filter by program level - "degree", "diploma", or "hec"
+        level (str, optional): Filter by program level - "degree", "diploma", "hec", "masters", or "phd"
         campus (str, optional): Filter by campus - "kampala" or "western"
     
     Returns:
@@ -159,7 +161,7 @@ def create_application():
     
     Request Body:
         programIds (list[int]): List of program IDs (1-3 choices, first is primary)
-        examLevel (str): "o_level", "a_level", "diploma", or "hec"
+        examLevel (str): "o_level", "a_level", "diploma", "hec", "masters", or "phd"
         examYear (int): Year exams were taken
         indexNumber (str): UNEB index number
         unebGrades (dict): O-Level and/or A-Level grades
@@ -229,11 +231,11 @@ def create_application():
         return jsonify({"error": "Conflict", "message": "You have already submitted an application"}), 409
 
     exam_level = data["examLevel"]
-    valid_exam_levels = ("o_level", "a_level", "diploma", "hec")
+    valid_exam_levels = ("o_level", "a_level", "diploma", "hec", "masters", "phd")
     if exam_level not in valid_exam_levels:
         return jsonify({
             "error": "Validation error",
-            "message": "examLevel must be one of: 'o_level', 'a_level', 'diploma', 'hec'"
+            "message": "examLevel must be one of: 'o_level', 'a_level', 'diploma', 'hec', 'masters', 'phd'"
         }), 400
 
     # Degree vs non-degree qualification gating (portal UI-only guidance + backend safety)
@@ -244,6 +246,20 @@ def create_application():
             return jsonify({
                 "error": "Validation error",
                 "message": "Degree programs require A-Level, Diploma, or HEC qualifications. O-Level alone is not accepted."
+            }), 422
+    elif program.level == "masters":
+        # Masters programs require a bachelor's degree qualification
+        if exam_level not in ("a_level", "diploma", "hec", "masters"):
+            return jsonify({
+                "error": "Validation error",
+                "message": "Masters programs require a bachelor's degree qualification (A-Level, Diploma, HEC, or Masters level)."
+            }), 422
+    elif program.level == "phd":
+        # PhD programs require a master's degree qualification
+        if exam_level not in ("masters", "phd"):
+            return jsonify({
+                "error": "Validation error",
+                "message": "PhD programs require a master's degree qualification."
             }), 422
     else:
         # Diploma/HEC programmes primarily accept O-Level, but can also accept other qualifications

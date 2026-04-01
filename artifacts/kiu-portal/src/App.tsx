@@ -74,6 +74,22 @@ function Router() {
           )}
         </Route>
 
+        <Route path="/apply/masters">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <ApplyForm target="masters" />
+            </RoleGuard>
+          )}
+        </Route>
+
+        <Route path="/apply/phd">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <ApplyForm target="phd" />
+            </RoleGuard>
+          )}
+        </Route>
+
         {/* Finalist */}
         <Route path="/career">
           {() => (

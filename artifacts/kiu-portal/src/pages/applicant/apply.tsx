@@ -115,7 +115,7 @@ const aGradeEntry = z.object({
 const applySchema = z
   .object({
     programIds: z.array(z.coerce.number()).min(1, "Please select at least one program").max(3, "Maximum 3 programs allowed"),
-    examLevel: z.enum(["o_level", "a_level", "diploma", "hec"]),
+    examLevel: z.enum(["o_level", "a_level", "diploma", "hec", "masters", "phd"]),
 
     // O-Level inputs (required when examLevel is o_level or a_level)
     oLevelYear: z.coerce.number().min(1990).max(new Date().getFullYear()).optional(),
@@ -132,6 +132,19 @@ const applySchema = z
     certYear: z.coerce.number().min(1990).max(new Date().getFullYear()).optional(),
     certIndexNumber: z.string().optional(),
 
+    // Masters inputs
+    bachelorUniversity: z.string().optional(),
+    bachelorDegree: z.string().optional(),
+    bachelorYear: z.coerce.number().min(1990).max(new Date().getFullYear()).optional(),
+    bachelorGPA: z.string().optional(),
+
+    // PhD inputs
+    mastersUniversity: z.string().optional(),
+    mastersDegree: z.string().optional(),
+    mastersYear: z.coerce.number().min(1990).max(new Date().getFullYear()).optional(),
+    mastersGPA: z.string().optional(),
+    researchProposal: z.string().optional(),
+
     dateOfBirth: z.string().optional(),
     gender: z.enum(["male", "female", "other"]),
     nationality: z.string().default("Ugandan"),
@@ -144,13 +157,15 @@ const applySchema = z
 
 type ApplyForm = z.infer<typeof applySchema>;
 
-type Step = "program" | "olevel" | "alevel" | "cert" | "personal" | "upload" | "review";
+type Step = "program" | "olevel" | "alevel" | "cert" | "masters" | "phd" | "personal" | "upload" | "review";
 
 const STEPS: { key: Step; label: string }[] = [
   { key: "program", label: "Program" },
   { key: "olevel", label: "O-Level Results" },
   { key: "alevel", label: "A-Level Results" },
   { key: "cert", label: "Certificate Details" },
+  { key: "masters", label: "Master's Details" },
+  { key: "phd", label: "PhD Details" },
   { key: "personal", label: "Personal Info" },
   { key: "upload", label: "Certificates" },
   { key: "review", label: "Review & Submit" },
@@ -158,9 +173,9 @@ const STEPS: { key: Step; label: string }[] = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-type ApplyTarget = "degree" | "diploma" | "hec";
+type ApplyTarget = "degree" | "diploma" | "hec" | "masters" | "phd";
 type DegreeQualification = "a_level" | "diploma" | "hec";
-type ExamLevel = "o_level" | "a_level" | "diploma" | "hec";
+type ExamLevel = "o_level" | "a_level" | "diploma" | "hec" | "masters" | "phd";
 type Campus = "kampala" | "western";
 
 function readDegreeQualificationFromUrl(): DegreeQualification {
@@ -223,11 +238,17 @@ export default function Apply({ target }: { target: ApplyTarget }) {
   const oLevelArray = useFieldArray({ control, name: "oLevelGrades" });
   const aLevelArray = useFieldArray({ control, name: "aLevelGrades" as any });
 
-  const stepOrder: Step[] = shouldShowALevel
-    ? ["program", "olevel", "alevel", "personal", "upload", "review"]
-    : shouldShowOlevel
-      ? ["program", "olevel", "personal", "upload", "review"]
-      : ["program", "cert", "personal", "upload", "review"];
+  // Determine step order based on target level
+  const stepOrder: Step[] = 
+    target === "phd"
+      ? ["program", "phd", "personal", "upload", "review"]
+      : target === "masters"
+        ? ["program", "masters", "personal", "upload", "review"]
+        : shouldShowALevel
+          ? ["program", "olevel", "alevel", "personal", "upload", "review"]
+          : shouldShowOlevel
+            ? ["program", "olevel", "personal", "upload", "review"]
+            : ["program", "cert", "personal", "upload", "review"];
 
   const currentIdx = stepOrder.indexOf(step);
   const canGoNext = currentIdx < stepOrder.length - 1;
@@ -671,13 +692,18 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                 ) : (
                   <div className="space-y-4">
                     {(() => {
-                      const allowedLevel = target === "degree" ? "degree" : target; // diploma | hec
-                      const levelLabel =
-                        allowedLevel === "degree"
-                          ? "Undergraduate Degrees"
-                          : allowedLevel === "diploma"
-                            ? "Diploma Programmes"
-                            : "HEC Programmes";
+                      // Map target to program level
+                      const levelMap: Record<string, { level: string; label: string }> = {
+                        degree: { level: "degree", label: "Undergraduate Degrees" },
+                        diploma: { level: "diploma", label: "Diploma Programmes" },
+                        hec: { level: "hec", label: "HEC Programmes" },
+                        masters: { level: "masters", label: "Master's Programmes" },
+                        phd: { level: "phd", label: "PhD Programmes" },
+                      };
+                      
+                      const config = levelMap[target] || { level: target, label: `${target} Programmes` };
+                      const allowedLevel = config.level;
+                      const levelLabel = config.label;
 
                       // Filter programs by level (show all campuses)
                       const filteredPrograms = programs.filter((p: any) => p.level === allowedLevel);
@@ -870,6 +896,106 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                 <div className="mt-3 flex items-start gap-2 bg-blue-50 text-blue-700 p-3 rounded-lg text-xs">
                   <Info className="w-4 h-4 mt-0.5 shrink-0" />
                   <span><strong>UACE Grading:</strong> A=6, B=5, C=4, D=3, E=2, O=1, F=0. You must have General Paper as subsidiary.</span>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <Button type="button" onClick={goNext} className="gap-2">
+                    Next: Personal Info <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </Card>
+            )}
+
+            {/* ── STEP: Masters Details ───────────────────────────────────── */}
+            {step === "masters" && (
+              <Card className="p-8">
+                <h2 className="text-xl font-bold mb-1">Master's Degree Details</h2>
+                <p className="text-muted-foreground text-sm mb-6">Enter your Bachelor's degree information for Master's program application.</p>
+
+                <div className="grid md:grid-cols-2 gap-5 mb-6">
+                  <div className="space-y-2">
+                    <Label>University Attended <span className="text-primary">(Required)</span></Label>
+                    <Input placeholder="e.g. Makerere University" {...register("bachelorUniversity")} />
+                    {errors.bachelorUniversity && <p className="text-xs text-destructive">{errors.bachelorUniversity.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Degree Awarded <span className="text-primary">(Required)</span></Label>
+                    <Input placeholder="e.g. Bachelor of Science" {...register("bachelorDegree")} />
+                    {errors.bachelorDegree && <p className="text-xs text-destructive">{errors.bachelorDegree.message}</p>}
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-5 mb-6">
+                  <div className="space-y-2">
+                    <Label>Year of Graduation <span className="text-primary">(Required)</span></Label>
+                    <Input type="number" {...register("bachelorYear")} min={1990} max={new Date().getFullYear()} />
+                    {errors.bachelorYear && <p className="text-xs text-destructive">{errors.bachelorYear.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>GPA/Class of Degree <span className="text-primary">(Required)</span></Label>
+                    <Input placeholder="e.g. First Class, 4.5/5.0" {...register("bachelorGPA")} />
+                    {errors.bachelorGPA && <p className="text-xs text-destructive">{errors.bachelorGPA.message}</p>}
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-start gap-2 bg-blue-50 text-blue-700 p-3 rounded-lg text-xs">
+                  <Info className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span><strong>Note:</strong> Master's programs require a relevant Bachelor's degree with at least Second Class Lower division or equivalent GPA.</span>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <Button type="button" onClick={goNext} className="gap-2">
+                    Next: Personal Info <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </Card>
+            )}
+
+            {/* ── STEP: PhD Details ───────────────────────────────────────── */}
+            {step === "phd" && (
+              <Card className="p-8">
+                <h2 className="text-xl font-bold mb-1">PhD Program Details</h2>
+                <p className="text-muted-foreground text-sm mb-6">Enter your Master's degree information and research proposal for PhD application.</p>
+
+                <div className="grid md:grid-cols-2 gap-5 mb-6">
+                  <div className="space-y-2">
+                    <Label>University Attended <span className="text-primary">(Required)</span></Label>
+                    <Input placeholder="e.g. Makerere University" {...register("mastersUniversity")} />
+                    {errors.mastersUniversity && <p className="text-xs text-destructive">{errors.mastersUniversity.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Degree Awarded <span className="text-primary">(Required)</span></Label>
+                    <Input placeholder="e.g. Master of Science" {...register("mastersDegree")} />
+                    {errors.mastersDegree && <p className="text-xs text-destructive">{errors.mastersDegree.message}</p>}
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-5 mb-6">
+                  <div className="space-y-2">
+                    <Label>Year of Graduation <span className="text-primary">(Required)</span></Label>
+                    <Input type="number" {...register("mastersYear")} min={1990} max={new Date().getFullYear()} />
+                    {errors.mastersYear && <p className="text-xs text-destructive">{errors.mastersYear.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>GPA/Class of Degree <span className="text-primary">(Required)</span></Label>
+                    <Input placeholder="e.g. First Class, 4.5/5.0" {...register("mastersGPA")} />
+                    {errors.mastersGPA && <p className="text-xs text-destructive">{errors.mastersGPA.message}</p>}
+                  </div>
+                </div>
+
+                <div className="space-y-2 mb-6">
+                  <Label>Research Proposal <span className="text-primary">(Required)</span></Label>
+                  <Textarea 
+                    placeholder="Describe your research interest area, proposed methodology, and expected contribution to knowledge..."
+                    className="min-h-[120px]"
+                    {...register("researchProposal")} 
+                  />
+                  {errors.researchProposal && <p className="text-xs text-destructive">{errors.researchProposal.message}</p>}
+                </div>
+
+                <div className="mt-3 flex items-start gap-2 bg-blue-50 text-blue-700 p-3 rounded-lg text-xs">
+                  <Info className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span><strong>Note:</strong> PhD programs require a relevant Master's degree with at least a B+ average or equivalent. A research proposal is mandatory.</span>
                 </div>
 
                 <div className="mt-6 flex justify-end">
