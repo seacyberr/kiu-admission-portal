@@ -39,13 +39,13 @@ export default function Home() {
               <Link href="/register">
                 <Button variant="accent" size="lg" className="w-full sm:w-auto gap-2 text-base shadow-xl shadow-accent/20">
                   <GraduationCap className="w-5 h-5" />
-                  Apply for Admission
+                  Get Started
                 </Button>
               </Link>
               <Link href="/login">
                 <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2 text-white border-white/30 hover:bg-white/10 hover:text-white backdrop-blur-sm text-base">
                   <Briefcase className="w-5 h-5" />
-                  Finalist Career Portal
+                  Sign In
                 </Button>
               </Link>
             </div>
@@ -120,7 +120,7 @@ export default function Home() {
               </ul>
               <Link href="/login">
                 <Button variant="accent" className="w-full group/btn text-primary">
-                  Access Career Portal <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                  Sign In for Careers <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
                 </Button>
               </Link>
             </motion.div>
