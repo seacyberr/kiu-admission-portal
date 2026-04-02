@@ -36,10 +36,26 @@ export default function Register() {
 
   const selectedRole = watch('role');
 
+  // Capitalize first letter of each word in a name
+  const capitalizeName = (name: string): string => {
+    return name
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   const onSubmit = (data: RegisterForm) => {
     const { confirmPassword, ...payload } = data;
+    // Capitalize first and last names
+    const formattedPayload = {
+      ...payload,
+      firstName: capitalizeName(payload.firstName),
+      lastName: capitalizeName(payload.lastName),
+      role: payload.role as "applicant" | "finalist" | "admin"
+    };
     registerMutation.mutate(
-      { data: { ...payload, role: payload.role as "applicant" | "finalist" | "admin" } },
+      { data: formattedPayload },
       {
         onSuccess: (res: any) => {
           // Backend now returns { needsVerification: true, email } instead of a token
