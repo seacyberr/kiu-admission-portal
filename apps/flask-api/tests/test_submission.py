@@ -90,7 +90,7 @@ def test_submission():
         "gender": "male",
         "nationality": "Ugandan",
         "district": "Kampala",
-        "nextOfKinName": "John Doe",
+        "nextOfKinName": "JOHN DOE",
         "nextOfKinPhone": "0701240315",
         "nextOfKinRelationship": "Father"
     }
