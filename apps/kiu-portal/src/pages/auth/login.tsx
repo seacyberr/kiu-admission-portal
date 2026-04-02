@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,6 +20,22 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const loginMutation = useLoginUser();
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    const userStr = localStorage.getItem("kiu_user");
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.role === "admin") setLocation("/admin");
+        else if (user.role === "finalist") setLocation("/career");
+        else setLocation("/dashboard");
+      } catch {
+        // Invalid user data, clear it
+        localStorage.removeItem("kiu_user");
+      }
+    }
+  }, [setLocation]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema)
