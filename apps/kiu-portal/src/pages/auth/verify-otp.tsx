@@ -105,15 +105,12 @@ export default function VerifyOtp() {
         return;
       }
 
-      // Success - token is stored in httpOnly cookie by the server
+      // Success - redirect to login page for user to sign in
       setSuccess(true);
-      localStorage.setItem("kiu_user", JSON.stringify(json.user));
       localStorage.removeItem("kiu_pending_email");
 
       setTimeout(() => {
-        if (json.user.role === "finalist") setLocation("/career");
-        else if (json.user.role === "admin") setLocation("/admin");
-        else setLocation("/dashboard");
+        setLocation("/login");
       }, 1200);
     } catch {
       toast({ title: "Network error", description: "Could not connect to the server.", variant: "destructive" });
