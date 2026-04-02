@@ -2,22 +2,23 @@
 
 ## Recent Changes
 
-### Authentication Redirect Fix (Latest)
+### Authentication Logout Fix (Latest)
 **Date:** April 2, 2026
-**Commit:** `1ff42c2` - "fix: Redirect authenticated users from login page to dashboard"
+**Commit:** `508cda5` - "fix: Logout user when visiting login page while authenticated"
 
 **Problem:**
 - After OTP verification, users remained logged in but the login page was still displayed
 - The "Welcome Back" sign-in page appeared even though users were authenticated
-- No check existed to redirect authenticated users away from login page
+- Users couldn't sign in with a different account without manually logging out first
 
 **Solution:**
-- Added authentication check in `apps/kiu-portal/src/pages/auth/login.tsx`
-- Checks localStorage for existing user data on component mount
-- Redirects authenticated users to their appropriate dashboard based on role
+- Modified authentication check in `apps/kiu-portal/src/pages/auth/login.tsx`
+- When authenticated user visits `/login`, their session is cleared
+- Calls logout API to clear httpOnly cookie
+- Allows users to sign in fresh with different credentials
 
 **Files Modified:**
-- `apps/kiu-portal/src/pages/auth/login.tsx` - Added useEffect hook to check authentication status
+- `apps/kiu-portal/src/pages/auth/login.tsx` - Changed redirect logic to logout logic
 
 ---
 
