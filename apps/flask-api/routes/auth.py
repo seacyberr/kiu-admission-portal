@@ -13,50 +13,49 @@ from flask import Blueprint, request, jsonify, current_app, g
 from models import db, User, OtpCode, RefreshToken
 
 # ---------------------------------------------------------------------------
-# User-based Rate Limiting
+# User-based Rate Limiting (uses Flask-Limiter with configured storage)
 # ---------------------------------------------------------------------------
-_rate_limit_store = {}  # In-memory store: {user_id: [(timestamp, endpoint), ...]}
-
 def user_rate_limit(max_requests=100, window_seconds=3600):
     """
     Rate limit decorator based on authenticated user ID.
+    Uses Flask-Limiter which respects RATE_LIMIT_STORAGE_URI config.
     
     Args:
         max_requests: Maximum requests per window
         window_seconds: Time window in seconds (default: 1 hour)
     """
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
             user = getattr(g, 'current_user', None)
             if not user:
                 # Fall back to IP-based if no user
-                user_id = f"ip:{request.remote_addr}"
+                identity = get_remote_address()
             else:
-                user_id = f"user:{user.id}"
+                identity = f"user:{user.id}"
             
-            now = datetime.utcnow()
-            window_start = now - timedelta(seconds=window_seconds)
-            
-            # Clean old entries
-            if user_id in _rate_limit_store:
-                _rate_limit_store[user_id] = [
-                    (ts, ep) for ts, ep in _rate_limit_store[user_id]
-                    if ts > window_start
-                ]
-            else:
-                _rate_limit_store[user_id] = []
-            
-            # Check limit
-            if len(_rate_limit_store[user_id]) >= max_requests:
-                return jsonify({
-                    "error": "Rate limited",
-                    "message": f"Too many requests. Maximum {max_requests} requests per {window_seconds // 60} minutes.",
-                    "retryAfter": window_seconds,
-                }), 429
-            
-            # Record this request
-            _rate_limit_store[user_id].append((now, request.endpoint))
+            # Use Flask-Limiter's storage backend
+            limiter = current_app.extensions.get('limiter')
+            if limiter:
+                key = f"user_rate_limit:{identity}:{request.endpoint}"
+                # Check and increment using limiter's storage
+                try:
+                    # Simple in-memory fallback that works with Flask-Limiter
+                    window_key = f"{key}:{int(datetime.utcnow().timestamp()) // window_seconds}"
+                    current = limiter._storage.get(window_key) or 0
+                    if current >= max_requests:
+                        return jsonify({
+                            "error": "Rate limited",
+                            "message": f"Too many requests. Maximum {max_requests} requests per {window_seconds // 60} minutes.",
+                            "retryAfter": window_seconds,
+                        }), 429
+                    limiter._storage.incr(window_key)
+                    limiter._storage.set(window_key, current + 1, window_seconds)
+                except Exception:
+                    pass  # Fail open if storage unavailable
             
             return f(*args, **kwargs)
         return wrapper

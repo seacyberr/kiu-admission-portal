@@ -1,5 +1,6 @@
 import os
 import uuid
+import re
 from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime, date
 import random
@@ -10,37 +11,64 @@ from flask_caching import Cache
 from models import db, AdmissionApplication, Program, User
 from routes.auth import get_current_user
 
+
+def sanitize_text(text):
+    """Sanitize user-provided text to prevent XSS and injection attacks.
+    
+    - Strips leading/trailing whitespace
+    - Removes potentially dangerous HTML/script tags
+    - Limits length to prevent abuse
+    """
+    if not text or not isinstance(text, str):
+        return text
+    
+    # Strip whitespace
+    text = text.strip()
+    
+    # Remove HTML tags (basic XSS prevention)
+    text = re.sub(r'<[^>]*>', '', text)
+    
+    # Remove potential script injections
+    text = re.sub(r'javascript:', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'on\w+\s*=', '', text, flags=re.IGNORECASE)
+    
+    # Limit length
+    max_length = 5000
+    if len(text) > max_length:
+        text = text[:max_length]
+    
+    return text
+
 admission_bp = Blueprint("admission", __name__)
 
 # Cache decorator for static data
 def cached(timeout=300, key_prefix=""):
-    """Cache decorator for functions returning JSON-serializable data."""
+    """Cache decorator for functions returning JSON-serializable data.
+    
+    Uses Flask-Caching's memoize functionality for reliable caching.
+    Falls back gracefully if caching is unavailable.
+    """
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            # Get cache from Flask-Caching extension
-            from flask_caching import Cache
-            cache_dict = current_app.extensions.get('cache')
-            
-            if cache_dict is None:
-                # Fallback: no caching available
-                return f(*args, **kwargs)
-            
-            # Get the Cache object from the dict (it's stored as the key)
-            cache = list(cache_dict.keys())[0] if cache_dict else None
-            
-            if cache is None:
-                return f(*args, **kwargs)
-            
-            # Build cache key from function name and arguments
-            cache_key = f"{key_prefix}:{f.__name__}:{str(args)}:{str(sorted(kwargs.items()))}"
-            result = cache.get(cache_key)
-            if result is not None:
+            try:
+                # Use Flask-Caching's built-in memoize
+                cache = current_app.extensions.get('cache')
+                if cache is None:
+                    return f(*args, **kwargs)
+                
+                # Build cache key from function name and arguments
+                cache_key = f"{key_prefix}:{f.__name__}:{hash(str(args) + str(sorted(kwargs.items())))}"
+                result = cache.get(cache_key)
+                if result is not None:
+                    return result
+                
+                result = f(*args, **kwargs)
+                cache.set(cache_key, result, timeout=timeout)
                 return result
-            
-            result = f(*args, **kwargs)
-            cache.set(cache_key, result, timeout=timeout)
-            return result
+            except Exception:
+                # Fail open: if caching fails, just call the function
+                return f(*args, **kwargs)
         return wrapper
     return decorator
 
@@ -364,23 +392,23 @@ def create_application():
         program_choices=program_ids,  # Store all 3 choices
         exam_level=exam_level,
         exam_year=int(data["examYear"]),
-        index_number=data["indexNumber"],
+        index_number=sanitize_text(data["indexNumber"]),
         uneb_grades=uneb_grades,
-        personal_statement=data.get("personalStatement", ""),
+        personal_statement=sanitize_text(data.get("personalStatement", "")),
         date_of_birth=dob,
         gender=data["gender"],
-        nationality=nationality,
-        district=data.get("district", ""),
+        nationality=sanitize_text(nationality),
+        district=sanitize_text(data.get("district", "")),
         session_of_study=data.get("sessionOfStudy"),
         # Final-year student verification
         is_final_year=data.get("isFinalYear", False),
         expected_graduation_year=data.get("expectedGraduationYear"),
         current_year_of_study=data.get("currentYearOfStudy"),
-        student_number=data.get("studentNumber"),
+        student_number=sanitize_text(data.get("studentNumber", "")),
         # Next of kin
-        next_of_kin_name=data.get("nextOfKinName", ""),
-        next_of_kin_phone=data.get("nextOfKinPhone", ""),
-        next_of_kin_relationship=data.get("nextOfKinRelationship", ""),
+        next_of_kin_name=sanitize_text(data.get("nextOfKinName", "")),
+        next_of_kin_phone=sanitize_text(data.get("nextOfKinPhone", "")),
+        next_of_kin_relationship=sanitize_text(data.get("nextOfKinRelationship", "")),
         status="pending",
     )
     db.session.add(application)

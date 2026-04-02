@@ -165,8 +165,8 @@ class AdmissionApplication(db.Model):
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = db.relationship("User", backref="admission_applications")
-    program = db.relationship("Program", backref="admission_applications")
+    user = db.relationship("User", backref="admission_applications", lazy="joined")
+    program = db.relationship("Program", backref="admission_applications", lazy="joined")
 
     def to_dict(self):
         return {
@@ -224,8 +224,8 @@ class FinalistProfile(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = db.relationship("User", backref="finalist_profile")
-    program = db.relationship("Program", backref="finalist_profiles")
+    user = db.relationship("User", backref="finalist_profile", lazy="joined")
+    program = db.relationship("Program", backref="finalist_profiles", lazy="joined")
 
     def to_dict(self):
         return {
@@ -326,8 +326,8 @@ class OpportunityApplication(db.Model):
     applied_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = db.relationship("User", backref="opportunity_applications")
-    opportunity = db.relationship("Opportunity", backref="applications")
+    user = db.relationship("User", backref="opportunity_applications", lazy="joined")
+    opportunity = db.relationship("Opportunity", backref="applications", lazy="joined")
 
     def to_dict(self):
         return {

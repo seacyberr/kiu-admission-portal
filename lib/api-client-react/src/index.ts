@@ -140,10 +140,10 @@ function getBaseUrl(): string {
 
 const BASE_URL = getBaseUrl();
 
-/** Optional Bearer token for legacy/mobile clients; primary auth is httpOnly cookie. */
+/** Primary auth is httpOnly cookie - no localStorage token needed. */
 function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("kiu_token");
+  // httpOnly cookies are sent automatically; no token in localStorage needed
+  return null;
 }
 
 function toQueryString(params?: QueryParams): string {
@@ -174,6 +174,36 @@ async function fetchAuthMe(): Promise<User | null> {
   return (await res.json()) as User;
 }
 
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+async function refreshAccessToken(): Promise<boolean> {
+  try {
+    const storedUser = typeof window !== "undefined" ? localStorage.getItem("kiu_user") : null;
+    if (!storedUser) return false;
+    
+    // Get refresh token from stored data (if available)
+    // Note: Refresh token should be in httpOnly cookie, but we'll try the refresh endpoint
+    const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({}), // Server reads refresh token from cookie
+    });
+    
+    if (res.ok) {
+      const json = await res.json();
+      if (json.user) {
+        localStorage.setItem("kiu_user", JSON.stringify(json.user));
+      }
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 async function apiFetchJson<T>(path: string, init?: RequestInit & { token?: string | null }): Promise<T> {
   const token = init?.token ?? getToken();
   const headers: Record<string, string> = {
@@ -185,11 +215,32 @@ async function apiFetchJson<T>(path: string, init?: RequestInit & { token?: stri
   }
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  let res = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers,
     credentials: "include",
   });
+
+  // If 401, try to refresh token and retry once
+  if (res.status === 401 && !init?.token) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      refreshPromise = refreshAccessToken().finally(() => {
+        isRefreshing = false;
+        refreshPromise = null;
+      });
+    }
+    
+    const refreshed = await refreshPromise;
+    if (refreshed) {
+      // Retry the original request
+      res = await fetch(`${BASE_URL}${path}`, {
+        ...init,
+        headers,
+        credentials: "include",
+      });
+    }
+  }
 
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
