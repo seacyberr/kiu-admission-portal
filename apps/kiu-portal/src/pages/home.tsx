@@ -78,7 +78,7 @@ export default function Home() {
               <p className="text-muted-foreground mb-8">
                 Seamlessly apply for Undergraduate, Diploma, Master's, and PhD programs. Track your application status, submit your UNEB grades, and manage your admission process.
               </p>
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-3">
                 {['O-Level (UCE) & A-Level (UACE) Integration', 'Real-time Application Tracking', 'Secure Document Uploads'].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm font-medium">
                     <div className="w-5 h-5 rounded-full bg-accent/20 text-accent flex items-center justify-center shrink-0">
@@ -88,11 +88,6 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <Link href="/register">
-                <Button variant="outline" className="w-full group/btn">
-                  Start Application <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
             </motion.div>
 
             {/* Careers Card */}
@@ -108,7 +103,7 @@ export default function Home() {
               <p className="text-primary-foreground/80 mb-8">
                 Exclusive to final-year degree and diploma students. Get personalized career path recommendations and apply directly for premium internships and graduate jobs.
               </p>
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-3">
                 {['AI-driven Career Path Matching', 'Exclusive Job & Internship Board', 'Direct Employer Applications'].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-sm font-medium text-white">
                     <div className="w-5 h-5 rounded-full bg-accent text-primary flex items-center justify-center shrink-0">
@@ -118,11 +113,6 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <Link href="/login">
-                <Button variant="accent" className="w-full group/btn text-primary">
-                  Sign In for Careers <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
             </motion.div>
           </div>
         </div>
