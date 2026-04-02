@@ -21,21 +21,23 @@ export default function Login() {
   const { toast } = useToast();
   const loginMutation = useLoginUser();
 
-  // Check if user is already authenticated
+  // Clear authentication if user visits login page (allows signing in with different account)
   useEffect(() => {
     const userStr = localStorage.getItem("kiu_user");
     if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        if (user.role === "admin") setLocation("/admin");
-        else if (user.role === "finalist") setLocation("/career");
-        else setLocation("/dashboard");
-      } catch {
-        // Invalid user data, clear it
-        localStorage.removeItem("kiu_user");
-      }
+      // User is authenticated but visiting login page - log them out
+      localStorage.removeItem("kiu_user");
+      
+      // Call logout API to clear httpOnly cookie
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      fetch(`${BASE}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      }).catch(() => {
+        // Ignore errors - cookie might already be expired
+      });
     }
-  }, [setLocation]);
+  }, []);
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema)
