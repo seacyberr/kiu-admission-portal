@@ -442,7 +442,7 @@ class TestAdmissionRoutes:
             'password': 'TestPass123!'
         })
         
-        # Create first application with proper grades
+        # Create first application with proper grades (2 principal subjects required)
         client.post('/api/admission/applications', json={
             'programIds': [sample_program],
             'examLevel': 'a_level',
@@ -456,7 +456,10 @@ class TestAdmissionRoutes:
                     {'subject': 'Chemistry', 'grade': 'D4'},
                     {'subject': 'Biology', 'grade': 'D5'}
                 ],
-                'alevel': [{'subject': 'Math', 'grade': 'A', 'subjectType': 'principal'}]
+                'alevel': [
+                    {'subject': 'Math', 'grade': 'A', 'subjectType': 'principal'},
+                    {'subject': 'Physics', 'grade': 'B', 'subjectType': 'principal'}
+                ]
             },
             'dateOfBirth': '2000-01-15',
             'gender': 'male'
@@ -476,7 +479,10 @@ class TestAdmissionRoutes:
                     {'subject': 'Chemistry', 'grade': 'D4'},
                     {'subject': 'Biology', 'grade': 'D5'}
                 ],
-                'alevel': [{'subject': 'Math', 'grade': 'A', 'subjectType': 'principal'}]
+                'alevel': [
+                    {'subject': 'Math', 'grade': 'A', 'subjectType': 'principal'},
+                    {'subject': 'Physics', 'grade': 'B', 'subjectType': 'principal'}
+                ]
             },
             'dateOfBirth': '2000-01-15',
             'gender': 'male'
@@ -494,7 +500,7 @@ class TestAdmissionRoutes:
             'password': 'TestPass123!'
         })
         
-        # Create application with proper grades
+        # Create application with proper grades (2 principal subjects required)
         client.post('/api/admission/applications', json={
             'programIds': [sample_program],
             'examLevel': 'a_level',
@@ -508,7 +514,10 @@ class TestAdmissionRoutes:
                     {'subject': 'Chemistry', 'grade': 'D4'},
                     {'subject': 'Biology', 'grade': 'D5'}
                 ],
-                'alevel': [{'subject': 'Math', 'grade': 'A', 'subjectType': 'principal'}]
+                'alevel': [
+                    {'subject': 'Math', 'grade': 'A', 'subjectType': 'principal'},
+                    {'subject': 'Physics', 'grade': 'B', 'subjectType': 'principal'}
+                ]
             },
             'dateOfBirth': '2000-01-15',
             'gender': 'male'
@@ -584,7 +593,10 @@ class TestAdmissionRoutes:
                     {'subject': 'Chemistry', 'grade': 'D4'},
                     {'subject': 'Biology', 'grade': 'D5'}
                 ],
-                'alevel': [{'subject': 'Math', 'grade': 'A', 'subjectType': 'principal'}]
+                'alevel': [
+                    {'subject': 'Math', 'grade': 'A', 'subjectType': 'principal'},
+                    {'subject': 'Physics', 'grade': 'B', 'subjectType': 'principal'}
+                ]
             },
             'dateOfBirth': '2000-01-15',
             'gender': 'male'

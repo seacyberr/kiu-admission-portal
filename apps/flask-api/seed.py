@@ -78,6 +78,10 @@ def _load_programs_from_json(filepath):
             min_olevel_points=p.get("minOlevelPoints"),
             min_alevel_points=p.get("minAlevelPoints"),
             available_slots=p.get("availableSlots", 100) or 100,
+            fees_local=p.get("feesLocal"),
+            fees_international=p.get("feesInternational"),
+            functional_fees_local=p.get("functionalFeesLocal"),
+            functional_fees_international=p.get("functionalFeesInternational"),
         )
         programs.append(program)
     
@@ -116,6 +120,10 @@ def _add_missing_programs(filepath):
                 min_olevel_points=p.get("minOlevelPoints"),
                 min_alevel_points=p.get("minAlevelPoints"),
                 available_slots=p.get("availableSlots", 100) or 100,
+                fees_local=p.get("feesLocal"),
+                fees_international=p.get("feesInternational"),
+                functional_fees_local=p.get("functionalFeesLocal"),
+                functional_fees_international=p.get("functionalFeesInternational"),
             )
         )
 

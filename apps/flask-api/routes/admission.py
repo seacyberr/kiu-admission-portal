@@ -177,6 +177,15 @@ def list_programs():
     level = request.args.get("level")
     campus = request.args.get("campus")
     
+    # Get nationality from authenticated user for fee display
+    nationality = None
+    user, _ = get_current_user()
+    if user:
+        # Try to get nationality from user's most recent application
+        app = AdmissionApplication.query.filter_by(user_id=user.id).order_by(AdmissionApplication.submitted_at.desc()).first()
+        if app:
+            nationality = app.nationality
+    
     query = Program.query
     
     # Apply filters if provided
@@ -195,7 +204,7 @@ def list_programs():
         Program.name
     ).all()
     
-    return jsonify({"programs": [p.to_dict() for p in programs]}), 200
+    return jsonify({"programs": [p.to_dict(nationality=nationality) for p in programs]}), 200
 
 
 @admission_bp.route("/programs/<int:program_id>", methods=["GET"])
@@ -572,6 +581,90 @@ def update_application_status(app_id):
     db.session.commit()
 
     return jsonify(application.to_dict()), 200
+
+
+@admission_bp.route("/recommend", methods=["POST"])
+def recommend_programs():
+    """
+    Recommend programs based on A-Level subject combination.
+    
+    Request Body:
+        alevelSubjects (list): List of A-Level subjects with grades
+            [{"subject": "Mathematics", "grade": "A", "subjectType": "principal"}, ...]
+        campus (str, optional): Filter by campus - "kampala" or "western"
+    
+    Returns:
+        200: List of recommended programs with match score
+    """
+    user, error = get_current_user()
+    if error:
+        return jsonify({"error": "Unauthorized", "message": error}), 401
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
+
+    alevel_subjects = data.get("alevelSubjects", [])
+    campus_filter = data.get("campus")
+
+    if not alevel_subjects:
+        return jsonify({"error": "Validation error", "message": "alevelSubjects is required"}), 400
+
+    # Extract principal subjects (main subjects for matching)
+    principal_subjects = []
+    for subj in alevel_subjects:
+        if subj.get("subjectType", "").lower() == "principal":
+            principal_subjects.append(subj.get("subject", "").lower())
+
+    # Define subject-to-program mapping based on Ugandan university requirements
+    SUBJECT_PROGRAM_MAP = {
+        "mathematics": ["BCS", "BIT", "BSE", "BCE", "BEE", "BME", "BCmpE", "BTE", "BSc-MATH", "BSc-STAT", "BSc-PHYS", "BSc-CHEM", "BSc-IC", "BEAS", "BBA-FA", "BBA-FB", "BBA-IB", "BBA-MKT", "BBA", "BHRM", "BSPM", "BTHM", "BESBM", "BCOM-DL", "BHRM-DL", "BSPM-DL"],
+        "physics": ["BCS", "BIT", "BSE", "BCE", "BEE", "BME", "BCmpE", "BTE", "BSc-PHYS", "BSc-CHEM", "BSc-IC", "BSc-MRIT"],
+        "chemistry": ["BSc-CHEM", "BSc-IC", "BSc-BIOCHEM", "BSc-PHARM", "BSc-MICRO", "BSc-ANAT", "BSc-PHYSIO", "MBChB", "BPharm", "BDS-DENT", "BNS-DIRECT", "BCMCH-DIRECT", "BMLS-DIRECT"],
+        "biology": ["BSc-BIOCHEM", "BSc-PHARM", "BSc-MICRO", "BSc-ANAT", "BSc-PHYSIO", "BSc-WMCM", "MBChB", "BPharm", "BDS-DENT", "BNS-DIRECT", "BCMCH-DIRECT", "BMLS-DIRECT", "BPH", "BSc-PHYSIO", "BSc-MRIT", "BAME", "BAE", "BAERI"],
+        "economics": ["BAEC", "BBA-FA", "BBA-FB", "BBA-IB", "BBA-MKT", "BBA", "BEAS", "BESBM", "BTHM", "BCOM-DL"],
+        "history": ["BAIRDS", "BAPA", "BGC", "BSCD", "BAED", "LLB-DAY", "LLB-WE", "BPA", "BLIS", "BPA-DL"],
+        "geography": ["BSCD", "BDS", "BDS-DL", "BSc-ENVM", "BAME", "BAE", "BAERI", "BTHM"],
+        "literature": ["BAIRDS", "BAMC", "BAPA", "BGC", "BAED", "LLB-DAY", "LLB-WE", "BPA", "BLIS", "BPA-DL"],
+        "entrepreneurship": ["BESBM", "BTHM", "BAME"],
+        "religious education": ["BAIRDS", "BAPA", "BGC", "BAED", "BPA"],
+    }
+
+    # Calculate match scores
+    program_scores = {}
+    for subject in principal_subjects:
+        matching_codes = SUBJECT_PROGRAM_MAP.get(subject, [])
+        for code in matching_codes:
+            program_scores[code] = program_scores.get(code, 0) + 1
+
+    # Get programs from database
+    query = Program.query.filter(Program.level == "degree")
+    if campus_filter:
+        query = query.filter_by(campus=campus_filter)
+
+    programs = query.all()
+    recommendations = []
+
+    for program in programs:
+        score = program_scores.get(program.code, 0)
+        if score > 0:
+            # Calculate match percentage (max score is number of principal subjects)
+            match_percentage = min(100, int((score / max(len(principal_subjects), 1)) * 100))
+            recommendations.append({
+                **program.to_dict(),
+                "matchScore": score,
+                "matchPercentage": match_percentage,
+                "matchedSubjects": [s for s in principal_subjects if program.code in SUBJECT_PROGRAM_MAP.get(s, [])]
+            })
+
+    # Sort by match score (descending)
+    recommendations.sort(key=lambda x: x["matchScore"], reverse=True)
+
+    return jsonify({
+        "recommendations": recommendations,
+        "total": len(recommendations),
+        "subjectsAnalyzed": principal_subjects
+    }), 200
 
 
 @admission_bp.route("/analytics", methods=["GET"])

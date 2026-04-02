@@ -96,8 +96,26 @@ class Program(db.Model):
     min_alevel_points = db.Column(db.Integer)
     available_slots = db.Column(db.Integer, default=100)
     campus = db.Column(db.String(50), nullable=False, default="kampala")  # 'kampala' or 'western'
+    fees_local = db.Column(db.Integer)  # Tuition fees for local/East African students (UGX)
+    fees_international = db.Column(db.Integer)  # Tuition fees for international students (USD)
+    functional_fees_local = db.Column(db.Integer)  # Functional fees for local students (UGX)
+    functional_fees_international = db.Column(db.Integer)  # Functional fees for international students (USD)
 
-    def to_dict(self):
+    def to_dict(self, nationality=None):
+        """Return program dict, showing appropriate fees based on nationality."""
+        # Determine if student is local (East African) or international
+        is_local = True  # Default to local
+        if nationality:
+            ea_countries = ["ugandan", "uganda", "kenyan", "kenya", "tanzanian", "tanzania", 
+                          "rwandan", "rwanda", "burundian", "burundi", "south sudanese", 
+                          "south sudan", "east african"]
+            is_local = nationality.lower().strip() in ea_countries
+        
+        # Calculate fees based on nationality
+        tuition_fees = self.fees_local if is_local else self.fees_international
+        functional_fees = self.functional_fees_local if is_local else self.functional_fees_international
+        total_fees = (tuition_fees or 0) + (functional_fees or 0)
+        
         return {
             "id": self.id,
             "name": self.name,
@@ -112,6 +130,14 @@ class Program(db.Model):
             "minAlevelPoints": self.min_alevel_points,
             "availableSlots": self.available_slots,
             "campus": self.campus,
+            "feesLocal": self.fees_local,
+            "feesInternational": self.fees_international,
+            "functionalFeesLocal": self.functional_fees_local,
+            "functionalFeesInternational": self.functional_fees_international,
+            "tuitionFees": tuition_fees,
+            "functionalFees": functional_fees,
+            "totalFees": total_fees,
+            "feesCurrency": "UGX" if is_local else "USD",
         }
 
 
@@ -344,4 +370,31 @@ class OpportunityApplication(db.Model):
             "updatedAt": self.updated_at.isoformat() if self.updated_at else None,
             "applicantName": f"{self.user.first_name} {self.user.last_name}" if self.user else None,
             "applicantEmail": self.user.email if self.user else None,
+        }
+
+
+class Notification(db.Model):
+    __tablename__ = "notifications"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    notification_type = db.Column(db.String(50), nullable=False)  # 'application_status', 'new_opportunity', 'deadline', 'general'
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+    link = db.Column(db.String(255))  # Optional link to related content
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship("User", backref="notifications", lazy="joined")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "userId": self.user_id,
+            "title": self.title,
+            "message": self.message,
+            "type": self.notification_type,
+            "isRead": self.is_read,
+            "link": self.link,
+            "createdAt": self.created_at.isoformat() if self.created_at else None,
         }
