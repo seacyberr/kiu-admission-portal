@@ -110,6 +110,30 @@ def run_migrations():
             ))
             log.info("Added admin_notes column to admission_applications table")
 
+    # ── programs table ──────────────────────────────────────────────────────
+    prog_cols = {c["name"] for c in insp.get_columns("programs")}
+    with db.engine.begin() as conn:
+        if "fees_local" not in prog_cols:
+            conn.execute(text(
+                "ALTER TABLE programs ADD COLUMN fees_local INTEGER"
+            ))
+            log.info("Added fees_local column to programs table")
+        if "fees_international" not in prog_cols:
+            conn.execute(text(
+                "ALTER TABLE programs ADD COLUMN fees_international INTEGER"
+            ))
+            log.info("Added fees_international column to programs table")
+        if "functional_fees_local" not in prog_cols:
+            conn.execute(text(
+                "ALTER TABLE programs ADD COLUMN functional_fees_local INTEGER"
+            ))
+            log.info("Added functional_fees_local column to programs table")
+        if "functional_fees_international" not in prog_cols:
+            conn.execute(text(
+                "ALTER TABLE programs ADD COLUMN functional_fees_international INTEGER"
+            ))
+            log.info("Added functional_fees_international column to programs table")
+
     # Ensure admin is always verified
     with db.engine.begin() as conn:
         conn.execute(text(
