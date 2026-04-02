@@ -2,7 +2,26 @@
 
 ## Recent Changes
 
-### Test Configuration Fix (Latest)
+### Authentication Redirect Fix (Latest)
+**Date:** April 2, 2026
+**Commit:** `1ff42c2` - "fix: Redirect authenticated users from login page to dashboard"
+
+**Problem:**
+- After OTP verification, users remained logged in but the login page was still displayed
+- The "Welcome Back" sign-in page appeared even though users were authenticated
+- No check existed to redirect authenticated users away from login page
+
+**Solution:**
+- Added authentication check in `apps/kiu-portal/src/pages/auth/login.tsx`
+- Checks localStorage for existing user data on component mount
+- Redirects authenticated users to their appropriate dashboard based on role
+
+**Files Modified:**
+- `apps/kiu-portal/src/pages/auth/login.tsx` - Added useEffect hook to check authentication status
+
+---
+
+### Test Configuration Fix
 **Date:** April 2, 2026
 **Commit:** `c7c63e0` - "fix: Skip test_submission.py in pytest - requires running server"
 
