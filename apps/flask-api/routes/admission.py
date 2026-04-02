@@ -586,15 +586,16 @@ def update_application_status(app_id):
 @admission_bp.route("/recommend", methods=["POST"])
 def recommend_programs():
     """
-    Recommend programs based on A-Level subject combination.
+    Recommend programs based on A-Level subject combination with NCHE compliance.
     
     Request Body:
         alevelSubjects (list): List of A-Level subjects with grades
             [{"subject": "Mathematics", "grade": "A", "subjectType": "principal"}, ...]
+            Must include General Paper (GP) as subsidiary subject
         campus (str, optional): Filter by campus - "kampala" or "western"
     
     Returns:
-        200: List of recommended programs with match score
+        200: List of recommended programs with match score and NCHE compliance status
     """
     user, error = get_current_user()
     if error:
@@ -610,11 +611,47 @@ def recommend_programs():
     if not alevel_subjects:
         return jsonify({"error": "Validation error", "message": "alevelSubjects is required"}), 400
 
-    # Extract principal subjects (main subjects for matching)
+    # Extract principal and subsidiary subjects
     principal_subjects = []
+    subsidiary_subjects = []
+    has_general_paper = False
+    gp_grade = None
+    
     for subj in alevel_subjects:
-        if subj.get("subjectType", "").lower() == "principal":
-            principal_subjects.append(subj.get("subject", "").lower())
+        subject_name = subj.get("subject", "").lower()
+        subject_type = subj.get("subjectType", "").lower()
+        grade = subj.get("grade", "").upper()
+        
+        if subject_type == "principal":
+            principal_subjects.append({"name": subject_name, "grade": grade})
+        elif subject_type == "subsidiary":
+            subsidiary_subjects.append({"name": subject_name, "grade": grade})
+            # Check for General Paper (GP)
+            if subject_name in ["general paper", "gp"]:
+                has_general_paper = True
+                gp_grade = grade
+
+    # NCHE Compliance Validation
+    nche_warnings = []
+    nche_errors = []
+    
+    # Rule 1: Must have at least 2 principal subjects
+    if len(principal_subjects) < 2:
+        nche_errors.append("NCHE requires at least 2 principal subjects at A-Level")
+    
+    # Rule 2: General Paper is strongly recommended
+    if not has_general_paper:
+        nche_warnings.append("General Paper (GP) is recommended for most university programs")
+    elif gp_grade and gp_grade in ["F", "O"]:
+        nche_warnings.append(f"GP grade ({gp_grade}) may affect eligibility for some programs")
+    
+    # Rule 3: Check for minimum points based on NCHE guidelines
+    # A=6, B=5, C=4, D=3, E=2, O=1, F=0
+    ALEVEL_GRADE_POINTS = {"A": 6, "B": 5, "C": 4, "D": 3, "E": 2, "O": 1, "F": 0}
+    total_principal_points = sum(ALEVEL_GRADE_POINTS.get(p["grade"], 0) for p in principal_subjects)
+    
+    if total_principal_points < 6:  # Minimum 2 principals with at least E each
+        nche_errors.append(f"Total principal points ({total_principal_points}) below NCHE minimum (6 points)")
 
     # Define subject-to-program mapping based on Ugandan university requirements
     SUBJECT_PROGRAM_MAP = {
@@ -628,14 +665,24 @@ def recommend_programs():
         "literature": ["BAIRDS", "BAMC", "BAPA", "BGC", "BAED", "LLB-DAY", "LLB-WE", "BPA", "BLIS", "BPA-DL"],
         "entrepreneurship": ["BESBM", "BTHM", "BAME"],
         "religious education": ["BAIRDS", "BAPA", "BGC", "BAED", "BPA"],
+        "general paper": [],  # GP doesn't directly map to programs but affects eligibility
+        "subsidiary mathematics": ["BCS", "BIT", "BSE", "BCE", "BEE", "BME", "BCmpE", "BTE"],
+        "subsidiary physics": ["BCS", "BIT", "BSE", "BCE", "BEE", "BME", "BCmpE", "BTE"],
     }
 
-    # Calculate match scores
+    # Calculate match scores (only from principal subjects)
     program_scores = {}
-    for subject in principal_subjects:
+    principal_names = [p["name"] for p in principal_subjects]
+    
+    for subject in principal_names:
         matching_codes = SUBJECT_PROGRAM_MAP.get(subject, [])
         for code in matching_codes:
             program_scores[code] = program_scores.get(code, 0) + 1
+    
+    # Bonus for having GP (affects many programs positively)
+    if has_general_paper and gp_grade and gp_grade not in ["F", "O"]:
+        for code in program_scores:
+            program_scores[code] += 0.5  # Small bonus for having passed GP
 
     # Get programs from database
     query = Program.query.filter(Program.level == "degree")
@@ -648,13 +695,33 @@ def recommend_programs():
     for program in programs:
         score = program_scores.get(program.code, 0)
         if score > 0:
-            # Calculate match percentage (max score is number of principal subjects)
+            # Calculate match percentage
             match_percentage = min(100, int((score / max(len(principal_subjects), 1)) * 100))
+            
+            # Determine NCHE compliance for this specific program
+            program_nche_status = "compliant"
+            program_warnings = []
+            
+            # Some programs have stricter requirements
+            if program.code in ["MBChB", "BDS-DENT", "BPharm", "BNS-DIRECT"]:
+                # Medical programs require higher points
+                if total_principal_points < 12:
+                    program_nche_status = "conditional"
+                    program_warnings.append("Medical programs typically require 12+ principal points")
+            
+            if program.code in ["LLB-DAY", "LLB-WE"]:
+                # Law requires good GP
+                if not has_general_paper:
+                    program_nche_status = "conditional"
+                    program_warnings.append("Law programs strongly require General Paper")
+            
             recommendations.append({
                 **program.to_dict(),
                 "matchScore": score,
                 "matchPercentage": match_percentage,
-                "matchedSubjects": [s for s in principal_subjects if program.code in SUBJECT_PROGRAM_MAP.get(s, [])]
+                "matchedSubjects": [s["name"] for s in principal_subjects if program.code in SUBJECT_PROGRAM_MAP.get(s["name"], [])],
+                "ncheStatus": program_nche_status,
+                "programWarnings": program_warnings
             })
 
     # Sort by match score (descending)
@@ -663,19 +730,39 @@ def recommend_programs():
     return jsonify({
         "recommendations": recommendations,
         "total": len(recommendations),
-        "subjectsAnalyzed": principal_subjects
+        "subjectsAnalyzed": principal_names,
+        "ncheCompliance": {
+            "hasGeneralPaper": has_general_paper,
+            "gpGrade": gp_grade,
+            "totalPrincipalPoints": total_principal_points,
+            "errors": nche_errors,
+            "warnings": nche_warnings
+        }
     }), 200
 
 
 @admission_bp.route("/analytics", methods=["GET"])
 def get_analytics():
+    """
+    Get advanced admission analytics with dropout prediction and program demand trends.
+    
+    Returns comprehensive analytics including:
+    - Application statistics by status and program
+    - Dropout risk prediction based on program mismatch
+    - Program demand trends over time
+    - NCHE compliance statistics
+    - Fee distribution (local vs international)
+    """
     user, error = get_current_user()
     if error:
         return jsonify({"error": "Unauthorized", "message": error}), 401
     if user.role != "admin":
         return jsonify({"error": "Forbidden"}), 403
 
-    from sqlalchemy import func
+    from sqlalchemy import func, extract
+    from datetime import datetime, timedelta
+    
+    # Basic statistics
     total = AdmissionApplication.query.count()
     by_status = db.session.query(
         AdmissionApplication.status, func.count(AdmissionApplication.id)
@@ -683,9 +770,164 @@ def get_analytics():
     by_program = db.session.query(
         Program.name, func.count(AdmissionApplication.id)
     ).join(AdmissionApplication).group_by(Program.name).all()
+    
+    # Dropout risk prediction: Applications where student's points don't meet program minimum
+    dropout_risk_apps = []
+    applications = AdmissionApplication.query.all()
+    
+    for app in applications:
+        program = Program.query.get(app.program_id)
+        if not program:
+            continue
+            
+        # Calculate student's points
+        alevel_grades = app.uneb_grades.get("alevel", []) if app.uneb_grades else []
+        principal_grades = [g for g in alevel_grades if g.get("subjectType", "").lower() == "principal"]
+        
+        ALEVEL_GRADE_POINTS = {"A": 6, "B": 5, "C": 4, "D": 3, "E": 2, "O": 1, "F": 0}
+        total_points = sum(ALEVEL_GRADE_POINTS.get(g.get("grade", "").upper(), 0) for g in principal_grades)
+        
+        # Check if student meets minimum requirements
+        risk_level = "low"
+        risk_factors = []
+        
+        if program.min_alevel_points and total_points < program.min_alevel_points:
+            risk_level = "high"
+            risk_factors.append(f"A-Level points ({total_points}) below minimum ({program.min_alevel_points})")
+        
+        # Check for missing GP
+        has_gp = any(g.get("subject", "").lower() in ["general paper", "gp"] for g in alevel_grades)
+        if not has_gp and program.code in ["LLB-DAY", "LLB-WE", "BAIRDS", "BAPA"]:
+            risk_level = "high" if risk_level == "high" else "medium"
+            risk_factors.append("Missing General Paper for program that requires it")
+        
+        # Check program mismatch (student applied for competitive program with low points)
+        competitive_programs = ["MBChB", "BDS-DENT", "BPharm", "LLB-DAY", "LLB-WE"]
+        if program.code in competitive_programs and total_points < 12:
+            risk_level = "high" if risk_level == "high" else "medium"
+            risk_factors.append(f"Competitive program ({program.code}) with low points")
+        
+        if risk_level != "low":
+            dropout_risk_apps.append({
+                "applicationId": app.id,
+                "applicationNumber": app.application_number,
+                "studentName": f"{app.user.first_name} {app.user.last_name}" if app.user else "Unknown",
+                "program": program.name,
+                "programCode": program.code,
+                "totalPoints": total_points,
+                "minRequired": program.min_alevel_points,
+                "riskLevel": risk_level,
+                "riskFactors": risk_factors,
+                "status": app.status
+            })
+    
+    # Program demand trends (by month for current year)
+    current_year = datetime.now().year
+    monthly_trends = []
+    for month in range(1, 13):
+        count = AdmissionApplication.query.filter(
+            extract('year', AdmissionApplication.submitted_at) == current_year,
+            extract('month', AdmissionApplication.submitted_at) == month
+        ).count()
+        monthly_trends.append({
+            "month": month,
+            "monthName": datetime(current_year, month, 1).strftime("%B"),
+            "applications": count
+        })
+    
+    # Top programs by demand
+    top_programs = db.session.query(
+        Program.name,
+        Program.code,
+        Program.faculty,
+        func.count(AdmissionApplication.id).label('application_count')
+    ).join(AdmissionApplication).group_by(
+        Program.id, Program.name, Program.code, Program.faculty
+    ).order_by(
+        func.count(AdmissionApplication.id).desc()
+    ).limit(10).all()
+    
+    # NCHE compliance statistics
+    nche_compliance = {
+        "withGeneralPaper": 0,
+        "withoutGeneralPaper": 0,
+        "sufficientPoints": 0,
+        "insufficientPoints": 0
+    }
+    
+    for app in applications:
+        alevel_grades = app.uneb_grades.get("alevel", []) if app.uneb_grades else []
+        has_gp = any(g.get("subject", "").lower() in ["general paper", "gp"] for g in alevel_grades)
+        
+        if has_gp:
+            nche_compliance["withGeneralPaper"] += 1
+        else:
+            nche_compliance["withoutGeneralPaper"] += 1
+        
+        principal_grades = [g for g in alevel_grades if g.get("subjectType", "").lower() == "principal"]
+        ALEVEL_GRADE_POINTS = {"A": 6, "B": 5, "C": 4, "D": 3, "E": 2, "O": 1, "F": 0}
+        total_points = sum(ALEVEL_GRADE_POINTS.get(g.get("grade", "").upper(), 0) for g in principal_grades)
+        
+        if total_points >= 6:  # NCHE minimum
+            nche_compliance["sufficientPoints"] += 1
+        else:
+            nche_compliance["insufficientPoints"] += 1
+    
+    # Fee distribution (local vs international)
+    fee_distribution = {
+        "local": 0,
+        "international": 0
+    }
+    
+    for app in applications:
+        nationality = (app.nationality or "Ugandan").lower()
+        ea_countries = ["ugandan", "uganda", "kenyan", "kenya", "tanzanian", "tanzania", 
+                       "rwandan", "rwanda", "burundian", "burundi", "south sudanese", "south sudan"]
+        if any(country in nationality for country in ea_countries):
+            fee_distribution["local"] += 1
+        else:
+            fee_distribution["international"] += 1
+    
+    # Gender distribution
+    gender_distribution = db.session.query(
+        AdmissionApplication.gender,
+        func.count(AdmissionApplication.id)
+    ).group_by(AdmissionApplication.gender).all()
+    
+    # Session of study distribution
+    session_distribution = db.session.query(
+        AdmissionApplication.session_of_study,
+        func.count(AdmissionApplication.id)
+    ).group_by(AdmissionApplication.session_of_study).all()
 
     return jsonify({
-        "total": total,
-        "byStatus": {s: c for s, c in by_status},
-        "byProgram": [{"program": p, "count": c} for p, c in by_program],
+        "summary": {
+            "totalApplications": total,
+            "byStatus": {s: c for s, c in by_status},
+            "byProgram": [{"program": p, "count": c} for p, c in by_program]
+        },
+        "dropoutRisk": {
+            "totalAtRisk": len(dropout_risk_apps),
+            "highRisk": len([a for a in dropout_risk_apps if a["riskLevel"] == "high"]),
+            "mediumRisk": len([a for a in dropout_risk_apps if a["riskLevel"] == "medium"]),
+            "applications": dropout_risk_apps[:20]  # Return top 20 at-risk applications
+        },
+        "programDemand": {
+            "monthlyTrends": monthly_trends,
+            "topPrograms": [
+                {
+                    "name": p.name,
+                    "code": p.code,
+                    "faculty": p.faculty,
+                    "applications": p.application_count
+                } for p in top_programs
+            ]
+        },
+        "ncheCompliance": nche_compliance,
+        "demographics": {
+            "feeDistribution": fee_distribution,
+            "genderDistribution": {g: c for g, c in gender_distribution},
+            "sessionDistribution": {s or "Not specified": c for s, c in session_distribution}
+        },
+        "generatedAt": datetime.utcnow().isoformat()
     }), 200

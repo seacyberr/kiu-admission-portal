@@ -1,6 +1,11 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from models import db, Notification, User, AdmissionApplication, OpportunityApplication
 from routes.auth import get_current_user
+import os
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime
 
 notifications_bp = Blueprint("notifications", __name__)
 
@@ -87,8 +92,58 @@ def delete_notification(notification_id):
     return "", 204
 
 
-def create_notification(user_id, title, message, notification_type, link=None):
-    """Helper function to create a notification."""
+def send_email(to_email, subject, body_html, body_text=None):
+    """
+    Send email notification using SMTP.
+    
+    Uses environment variables for SMTP configuration:
+    - SMTP_HOST: SMTP server hostname
+    - SMTP_PORT: SMTP server port (default 587)
+    - SMTP_USER: SMTP username/email
+    - SMTP_PASSWORD: SMTP password
+    - SMTP_FROM_EMAIL: Sender email address
+    - SMTP_FROM_NAME: Sender name (default: KIU Admissions)
+    """
+    smtp_host = os.environ.get("SMTP_HOST")
+    smtp_port = int(os.environ.get("SMTP_PORT", 587))
+    smtp_user = os.environ.get("SMTP_USER")
+    smtp_password = os.environ.get("SMTP_PASSWORD")
+    from_email = os.environ.get("SMTP_FROM_EMAIL", smtp_user)
+    from_name = os.environ.get("SMTP_FROM_NAME", "KIU Admissions")
+    
+    # Skip email if SMTP not configured
+    if not all([smtp_host, smtp_user, smtp_password]):
+        current_app.logger.warning("SMTP not configured, skipping email notification")
+        return False
+    
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"{from_name} <{from_email}>"
+        msg["To"] = to_email
+        
+        # Add plain text version
+        if body_text:
+            msg.attach(MIMEText(body_text, "plain"))
+        
+        # Add HTML version
+        msg.attach(MIMEText(body_html, "html"))
+        
+        # Send email
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.sendmail(from_email, to_email, msg.as_string())
+        
+        current_app.logger.info(f"Email sent to {to_email}: {subject}")
+        return True
+    except Exception as e:
+        current_app.logger.error(f"Failed to send email to {to_email}: {str(e)}")
+        return False
+
+
+def create_notification(user_id, title, message, notification_type, link=None, send_email_notification=True):
+    """Helper function to create a notification and optionally send email."""
     notification = Notification(
         user_id=user_id,
         title=title,
@@ -98,6 +153,52 @@ def create_notification(user_id, title, message, notification_type, link=None):
     )
     db.session.add(notification)
     db.session.commit()
+    
+    # Send email notification if enabled
+    if send_email_notification:
+        user = User.query.get(user_id)
+        if user and user.email:
+            email_html = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #1a56db; color: white; padding: 20px; text-align: center; }}
+                    .content {{ padding: 20px; background-color: #f9fafb; }}
+                    .footer {{ padding: 20px; text-align: center; font-size: 12px; color: #666; }}
+                    .button {{ display: inline-block; padding: 10px 20px; background-color: #1a56db; color: white; text-decoration: none; border-radius: 5px; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>KIU Admission Portal</h1>
+                    </div>
+                    <div class="content">
+                        <h2>{title}</h2>
+                        <p>{message}</p>
+                        {f'<p><a href="{link}" class="button">View Details</a></p>' if link else ''}
+                    </div>
+                    <div class="footer">
+                        <p>This is an automated message from KIU Admission Portal.</p>
+                        <p>&copy; {datetime.now().year} Kampala International University</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            
+            email_text = f"{title}\n\n{message}\n\n{f'View details: {link}' if link else ''}\n\n---\nKIU Admission Portal"
+            
+            send_email(
+                to_email=user.email,
+                subject=f"KIU: {title}",
+                body_html=email_html,
+                body_text=email_text
+            )
+    
     return notification
 
 
