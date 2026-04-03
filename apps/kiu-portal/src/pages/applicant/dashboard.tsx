@@ -43,7 +43,7 @@ export default function ApplicantDashboard() {
           <p className="text-muted-foreground max-w-md mx-auto mb-8">
             You haven't submitted an application for admission yet. Start your journey by filling out the application form.
           </p>
-          <Link href="/new-applicant">
+          <Link href="/apply">
             <Button size="lg" className="px-8 shadow-xl">Start Application Process</Button>
           </Link>
         </Card>
