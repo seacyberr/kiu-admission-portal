@@ -1,0 +1,108 @@
+=== BACKEND CORE ===
+./apps/flask-api/app.py
+./apps/flask-api/models.py
+./apps/flask-api/config.py
+./apps/flask-api/seed.py
+./apps/flask-api/migrations.py
+./apps/flask-api/metrics.py
+./apps/flask-api/wsgi.py
+./apps/flask-api/requirements.txt
+./apps/flask-api/alembic.ini
+./apps/flask-api/pytest.ini
+
+=== BACKEND ROUTES ===
+./apps/flask-api/routes/__init__.py
+./apps/flask-api/routes/auth.py
+./apps/flask-api/routes/admission.py
+./apps/flask-api/routes/career.py
+./apps/flask-api/routes/opportunities.py
+./apps/flask-api/routes/users.py
+./apps/flask-api/routes/notifications.py
+./apps/flask-api/routes/docs.py
+
+=== BACKEND MIGRATIONS ===
+./apps/flask-api/migrations/env.py
+
+=== BACKEND DATA ===
+./apps/flask-api/data/seed-programs.json
+./apps/flask-api/data/seed-career-paths.json
+./apps/flask-api/data/seed-opportunities.json
+
+=== FRONTEND CORE ===
+./apps/kiu-portal/package.json
+./apps/kiu-portal/vite.config.ts
+./apps/kiu-portal/tsconfig.json
+./apps/kiu-portal/index.html
+./apps/kiu-portal/components.json
+
+=== FRONTEND SRC ===
+./apps/kiu-portal/src/App.tsx
+./apps/kiu-portal/src/main.tsx
+./apps/kiu-portal/src/index.css
+
+=== FRONTEND SERVICES ===
+./apps/kiu-portal/src/services/api.ts
+./apps/kiu-portal/src/types/api.ts
+
+=== FRONTEND LIB ===
+./apps/kiu-portal/src/lib/utils.ts
+./apps/kiu-portal/src/lib/is-public-path.ts
+./apps/kiu-portal/src/lib/fetch-patch.ts
+
+=== FRONTEND HOOKS ===
+./apps/kiu-portal/src/hooks/use-toast.ts
+./apps/kiu-portal/src/hooks/use-mobile.tsx
+
+=== FRONTEND PAGES - AUTH ===
+./apps/kiu-portal/src/pages/auth/login.tsx
+./apps/kiu-portal/src/pages/auth/register.tsx
+./apps/kiu-portal/src/pages/auth/verify-otp.tsx
+./apps/kiu-portal/src/pages/auth/forgot-password.tsx
+./apps/kiu-portal/src/pages/auth/reset-password.tsx
+
+=== FRONTEND PAGES - MAIN ===
+./apps/kiu-portal/src/pages/home.tsx
+./apps/kiu-portal/src/pages/not-found.tsx
+
+=== FRONTEND PAGES - APPLICANT ===
+./apps/kiu-portal/src/pages/applicant/dashboard.tsx
+./apps/kiu-portal/src/pages/applicant/apply.tsx
+./apps/kiu-portal/src/pages/applicant/new-applicant.tsx
+
+=== FRONTEND PAGES - FINALIST ===
+./apps/kiu-portal/src/pages/finalist/dashboard.tsx
+./apps/kiu-portal/src/pages/finalist/career-paths.tsx
+./apps/kiu-portal/src/pages/finalist/opportunities.tsx
+
+=== FRONTEND PAGES - ADMIN ===
+./apps/kiu-portal/src/pages/admin/dashboard.tsx
+./apps/kiu-portal/src/pages/admin/admissions.tsx
+./apps/kiu-portal/src/pages/admin/opportunities.tsx
+
+=== FRONTEND COMPONENTS ===
+./apps/kiu-portal/src/components/layout.tsx
+./apps/kiu-portal/src/components/role-guard.tsx
+./apps/kiu-portal/src/components/error-boundary.tsx
+
+=== SHARED LIBRARY ===
+./lib/api-client-react/src/index.ts
+./lib/api-client-react/package.json
+./lib/api-client-react/tsconfig.json
+
+=== CONFIGURATION ===
+./package.json
+./pnpm-workspace.yaml
+./pyproject.toml
+./tsconfig.json
+./tsconfig.base.json
+./.env.example
+./.gitignore
+./.npmrc
+
+=== DOCUMENTATION ===
+./README.md
+./DEPLOYMENT.md
+./IMPLEMENTATION_PLAN.md
+./IMPLEMENTATION_PHASE2.md
+./IMPLEMENTATION_PHASE3.md
+./CHANGES.md
