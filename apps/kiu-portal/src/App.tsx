@@ -15,6 +15,7 @@ import ResetPassword from "@/pages/auth/reset-password";
 import ApplicantDashboard from "@/pages/applicant/dashboard";
 import ApplyForm from "@/pages/applicant/apply";
 import NewApplicant from "@/pages/applicant/new-applicant";
+import Recommend from "@/pages/applicant/recommend";          // ← NEW
 import FinalistDashboard from "@/pages/finalist/dashboard";
 import CareerPaths from "@/pages/finalist/career-paths";
 import Opportunities from "@/pages/finalist/opportunities";
@@ -50,6 +51,15 @@ function Router() {
           {() => (
             <RoleGuard roles={["applicant"]}>
               <NewApplicant />
+            </RoleGuard>
+          )}
+        </Route>
+
+        {/* ── NEW: A-Level Program Recommendation Tool ── */}
+        <Route path="/recommend">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <Recommend />
             </RoleGuard>
           )}
         </Route>

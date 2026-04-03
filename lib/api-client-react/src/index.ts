@@ -20,6 +20,14 @@ export type Program = {
   minAlevelPoints?: number | null;
   availableSlots?: number | null;
   campus?: string | null;
+  feesLocal?: number | null;
+  feesInternational?: number | null;
+  functionalFeesLocal?: number | null;
+  functionalFeesInternational?: number | null;
+  tuitionFees?: number | null;
+  functionalFees?: number | null;
+  totalFees?: number | null;
+  feesCurrency?: string | null;
 };
 
 export type UserRole = "admin" | "applicant" | "finalist";
@@ -127,6 +135,87 @@ export type Opportunity = {
   updatedAt?: string | null;
 };
 
+// NEW: Recommendation types
+export type RecommendedProgram = Program & {
+  matchScore: number;
+  matchPercentage: number;
+  matchedSubjects: string[];
+  ncheStatus: "compliant" | "conditional";
+  programWarnings: string[];
+};
+
+export type NcheCompliance = {
+  hasGeneralPaper: boolean;
+  gpGrade: string | null;
+  totalPrincipalPoints: number;
+  errors: string[];
+  warnings: string[];
+};
+
+export type RecommendResult = {
+  recommendations: RecommendedProgram[];
+  total: number;
+  subjectsAnalyzed: string[];
+  ncheCompliance: NcheCompliance;
+};
+
+// NEW: Analytics types
+export type DropoutRiskApp = {
+  applicationId: number;
+  applicationNumber: string;
+  studentName: string;
+  program: string;
+  programCode: string;
+  totalPoints: number;
+  minRequired: number | null;
+  riskLevel: "high" | "medium";
+  riskFactors: string[];
+  status: string;
+};
+
+export type MonthlyTrend = {
+  month: number;
+  monthName: string;
+  applications: number;
+};
+
+export type TopProgram = {
+  name: string;
+  code: string;
+  faculty: string;
+  applications: number;
+};
+
+export type Analytics = {
+  summary: {
+    totalApplications: number;
+    byStatus: Record<string, number>;
+    byProgram: Array<{ program: string; count: number }>;
+  };
+  dropoutRisk: {
+    totalAtRisk: number;
+    highRisk: number;
+    mediumRisk: number;
+    applications: DropoutRiskApp[];
+  };
+  programDemand: {
+    monthlyTrends: MonthlyTrend[];
+    topPrograms: TopProgram[];
+  };
+  ncheCompliance: {
+    withGeneralPaper: number;
+    withoutGeneralPaper: number;
+    sufficientPoints: number;
+    insufficientPoints: number;
+  };
+  demographics: {
+    feeDistribution: { local: number; international: number };
+    genderDistribution: Record<string, number>;
+    sessionDistribution: Record<string, number>;
+  };
+  generatedAt: string;
+};
+
 // -----------------------------------------------------------------------------
 // Internals
 // -----------------------------------------------------------------------------
@@ -142,7 +231,6 @@ const BASE_URL = getBaseUrl();
 
 /** Primary auth is httpOnly cookie - no localStorage token needed. */
 function getToken(): string | null {
-  // httpOnly cookies are sent automatically; no token in localStorage needed
   return null;
 }
 
@@ -181,16 +269,12 @@ async function refreshAccessToken(): Promise<boolean> {
   try {
     const storedUser = typeof window !== "undefined" ? localStorage.getItem("kiu_user") : null;
     if (!storedUser) return false;
-    
-    // Get refresh token from stored data (if available)
-    // Note: Refresh token should be in httpOnly cookie, but we'll try the refresh endpoint
     const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({}), // Server reads refresh token from cookie
+      body: JSON.stringify({}),
     });
-    
     if (res.ok) {
       const json = await res.json();
       if (json.user) {
@@ -221,7 +305,6 @@ async function apiFetchJson<T>(path: string, init?: RequestInit & { token?: stri
     credentials: "include",
   });
 
-  // If 401, try to refresh token and retry once
   if (res.status === 401 && !init?.token) {
     if (!isRefreshing) {
       isRefreshing = true;
@@ -230,10 +313,8 @@ async function apiFetchJson<T>(path: string, init?: RequestInit & { token?: stri
         refreshPromise = null;
       });
     }
-    
     const refreshed = await refreshPromise;
     if (refreshed) {
-      // Retry the original request
       res = await fetch(`${BASE_URL}${path}`, {
         ...init,
         headers,
@@ -272,7 +353,9 @@ function mergeQueryOverrides<TData>(overrides?: QueryOverrides<TData>): QueryOve
 // -----------------------------------------------------------------------------
 
 export function useListPrograms(params?: { level?: ProgramLevel }) {
-  const url = params?.level ? `/api/admission/programs?level=${encodeURIComponent(params.level)}` : `/api/admission/programs`;
+  const url = params?.level
+    ? `/api/admission/programs?level=${encodeURIComponent(params.level)}`
+    : `/api/admission/programs`;
   return useQuery<{ programs: Program[] }, Error>({
     queryKey: ["programs", params?.level ?? null],
     queryFn: () => apiFetchJson<{ programs: Program[] }>(url, { method: "GET" }),
@@ -347,12 +430,18 @@ export function useListAdmissionApplications(options?: {
   });
 }
 
-export function useListOpportunities(options?: { type?: string; field?: string; page?: number; limit?: number; query?: QueryOverrides<{
-  opportunities: Opportunity[];
-  total: number;
-  page: number;
-  limit: number;
-}> } | undefined) {
+export function useListOpportunities(options?: {
+  type?: string;
+  field?: string;
+  page?: number;
+  limit?: number;
+  query?: QueryOverrides<{
+    opportunities: Opportunity[];
+    total: number;
+    page: number;
+    limit: number;
+  }>;
+} | undefined) {
   const queryParams: QueryParams = {
     type: options?.type,
     field: options?.field,
@@ -377,19 +466,17 @@ export function useListOpportunities(options?: { type?: string; field?: string; 
   });
 }
 
-export function useListCareerPaths(options?: { program?: string; query?: QueryOverrides<{
-  careerPaths: CareerPath[];
-  total: number;
-}>; faculty?: string }) {
+export function useListCareerPaths(options?: {
+  program?: string;
+  query?: QueryOverrides<{ careerPaths: CareerPath[]; total: number }>;
+  faculty?: string;
+}) {
   const queryParams: QueryParams = {
     program: options?.program,
     faculty: options?.faculty,
   };
 
-  type Resp = {
-    careerPaths: CareerPath[];
-    total: number;
-  };
+  type Resp = { careerPaths: CareerPath[]; total: number };
   return useQuery<Resp, Error>({
     queryKey: ["careerPaths", queryParams],
     queryFn: () =>
@@ -412,19 +499,37 @@ export function useGetFinalistProfile(options?: { query?: QueryOverrides<Finalis
   } as UseQueryOptions<FinalistProfile, Error, FinalistProfile, readonly unknown[]>);
 }
 
+/** NEW: Get admin analytics (dropout risk, program demand, NCHE compliance, demographics) */
+export function useGetAnalytics(options?: { query?: QueryOverrides<Analytics> }) {
+  const { data: user, isLoading: authLoading } = useGetCurrentUser({ query: { retry: false } });
+  const merged = mergeQueryOverrides(options?.query);
+  return useQuery<Analytics, Error>({
+    queryKey: ["admin-analytics"],
+    queryFn: () => apiFetchJson<Analytics>(`/api/admission/analytics`, { method: "GET" }),
+    ...merged,
+    enabled: (merged.enabled ?? true) && !authLoading && user?.role === "admin",
+    staleTime: 5 * 60 * 1000, // 5 minutes — analytics are relatively static
+  } as UseQueryOptions<Analytics, Error, Analytics, readonly unknown[]>);
+}
+
 // -----------------------------------------------------------------------------
 // Mutations
 // -----------------------------------------------------------------------------
 
-type MutVars<T> = T;
-
 export function useUpdateAdmissionStatus() {
   return useMutation({
-    mutationFn: async (vars: { id: number; data: { status: AdmissionApplicationStatus; adminNotes?: string | undefined; programId?: number | undefined } }) => {
-      return apiFetchJson<AdmissionApplication>(`/api/admission/applications/${vars.id}/status`, {
-        method: "PATCH",
-        body: JSON.stringify(vars.data),
-      });
+    mutationFn: async (vars: {
+      id: number;
+      data: {
+        status: AdmissionApplicationStatus;
+        adminNotes?: string | undefined;
+        programId?: number | undefined;
+      };
+    }) => {
+      return apiFetchJson<AdmissionApplication>(
+        `/api/admission/applications/${vars.id}/status`,
+        { method: "PATCH", body: JSON.stringify(vars.data) },
+      );
     },
   });
 }
@@ -454,11 +559,9 @@ export function useUpdateOpportunity() {
 export function useDeleteOpportunity() {
   return useMutation({
     mutationFn: async (vars: { id: number }) => {
-      const token = getToken();
       const res = await fetch(`${BASE_URL}/api/opportunities/${vars.id}`, {
         method: "DELETE",
         credentials: "include",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!res.ok) throw new Error(`Delete failed (${res.status})`);
       return true;
@@ -468,7 +571,10 @@ export function useDeleteOpportunity() {
 
 export function useApplyForOpportunity() {
   return useMutation({
-    mutationFn: async (vars: { id: number; data: { coverLetter: string; cvUrl?: string; additionalInfo?: string } }) => {
+    mutationFn: async (vars: {
+      id: number;
+      data: { coverLetter: string; cvUrl?: string; additionalInfo?: string };
+    }) => {
       return apiFetchJson<Opportunity>(`/api/opportunities/${vars.id}/apply`, {
         method: "POST",
         body: JSON.stringify(vars.data),
@@ -477,8 +583,25 @@ export function useApplyForOpportunity() {
   });
 }
 
-// Login/register mutations are not used by the current UI (login/register pages do direct fetch),
-// but exporting them keeps the build consistent.
+/** NEW: POST /api/admission/recommend — get A-Level based program recommendations */
+export function useRecommendPrograms() {
+  return useMutation({
+    mutationFn: async (vars: {
+      alevelSubjects: Array<{
+        subject: string;
+        grade: string;
+        subjectType: "principal" | "subsidiary";
+      }>;
+      campus?: string;
+    }) => {
+      return apiFetchJson<RecommendResult>(`/api/admission/recommend`, {
+        method: "POST",
+        body: JSON.stringify(vars),
+      });
+    },
+  });
+}
+
 export function useLoginUser() {
   return useMutation({
     mutationFn: async (vars: { email: string; password: string }) => {
@@ -500,4 +623,3 @@ export function useRegisterUser() {
     },
   });
 }
-
