@@ -9,6 +9,42 @@ interface RoleGuardProps {
   children: ReactNode;
 }
 
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+/**
+ * Determine the correct redirect path for a user based on their role and data status.
+ * - Applicants without an application → /apply (new-applicant guidance)
+ * - Applicants with an application → /dashboard
+ * - Finalists without a profile → /career/profile
+ * - Finalists with a profile → /career
+ * - Others → their default dashboard
+ */
+async function getRedirectPath(user: { role: string }): Promise<string> {
+  if (user.role === 'admin') return '/admin';
+  
+  try {
+    if (user.role === 'applicant') {
+      const res = await fetch(`${BASE}/api/admission/applications/me`, {
+        credentials: 'include',
+      });
+      if (res.ok) return '/dashboard';
+      return '/apply';
+    }
+    
+    if (user.role === 'finalist') {
+      const res = await fetch(`${BASE}/api/career/profile/me`, {
+        credentials: 'include',
+      });
+      if (res.ok) return '/career';
+      return '/career/profile';
+    }
+  } catch {
+    // On error, fall through to default redirects
+  }
+  
+  return '/dashboard';
+}
+
 export function RoleGuard({ roles, children }: RoleGuardProps) {
   const [, setLocation] = useLocation();
   const { data: user, isLoading } = useGetCurrentUser({ query: { retry: false } });
@@ -20,10 +56,8 @@ export function RoleGuard({ roles, children }: RoleGuardProps) {
       return;
     }
     if (!roles.includes(user.role as Role)) {
-      if (user.role === "admin") setLocation("/admin");
-      else if (user.role === "finalist") setLocation("/career");
-      else if (user.role === "applicant") setLocation("/dashboard");
-      else setLocation("/login");
+      // Use conditional redirect based on user's data status
+      getRedirectPath(user).then(setLocation);
     }
   }, [isLoading, user, roles, setLocation]);
 

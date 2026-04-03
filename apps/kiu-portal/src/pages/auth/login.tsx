@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation, Link } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,6 +8,42 @@ import { Button, Input, Label, Card } from '@/components/ui/shared';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+/**
+ * Determine the correct redirect path for a user based on their role and data status.
+ * - Applicants without an application → /apply (new-applicant guidance)
+ * - Applicants with an application → /dashboard
+ * - Finalists without a profile → /career/profile
+ * - Finalists with a profile → /career
+ * - Others → their default dashboard
+ */
+async function getRedirectPath(user: { role: string }): Promise<string> {
+  if (user.role === 'admin') return '/admin';
+  
+  try {
+    if (user.role === 'applicant') {
+      const res = await fetch(`${BASE}/api/admission/applications/me`, {
+        credentials: 'include',
+      });
+      if (res.ok) return '/dashboard';
+      return '/apply';
+    }
+    
+    if (user.role === 'finalist') {
+      const res = await fetch(`${BASE}/api/career/profile/me`, {
+        credentials: 'include',
+      });
+      if (res.ok) return '/career';
+      return '/career/profile';
+    }
+  } catch {
+    // On error, fall through to default redirects
+  }
+  
+  return '/dashboard';
+}
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -27,10 +63,8 @@ export default function Login() {
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        // Redirect to appropriate dashboard based on role
-        if (user.role === "admin") setLocation("/admin");
-        else if (user.role === "finalist") setLocation("/career");
-        else setLocation("/dashboard");
+        // Use conditional redirect based on user's data status
+        getRedirectPath(user).then(setLocation);
       } catch {
         // Invalid user data, clear it
         localStorage.removeItem("kiu_user");
@@ -43,7 +77,6 @@ export default function Login() {
   });
 
   const onSubmit = async (data: LoginForm) => {
-    const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
     try {
       const res = await fetch(`${BASE}/api/auth/login`, {
         method: "POST",
@@ -75,9 +108,9 @@ export default function Login() {
       localStorage.setItem("kiu_user", JSON.stringify(json.user));
       toast({ title: "Welcome back!", description: "Logged in successfully." });
 
-      if (json.user.role === "admin") setLocation("/admin");
-      else if (json.user.role === "finalist") setLocation("/career");
-      else setLocation("/dashboard");
+      // Use conditional redirect based on user's data status
+      const redirectPath = await getRedirectPath(json.user);
+      setLocation(redirectPath);
     } catch {
       toast({ title: "Network error", description: "Could not connect to the server.", variant: "destructive" });
     }
