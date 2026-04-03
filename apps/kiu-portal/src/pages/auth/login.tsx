@@ -76,44 +76,34 @@ export default function Login() {
     resolver: zodResolver(loginSchema)
   });
 
-  const onSubmit = async (data: LoginForm) => {
-    try {
-      const res = await fetch(`${BASE}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
+  const onSubmit = (data: LoginForm) => {
+    loginMutation.mutate(data, {
+      onSuccess: async (json) => {
+        // Token is now stored in httpOnly cookie by the server
+        // Store user data for UI purposes only
+        localStorage.setItem("kiu_user", JSON.stringify(json.user));
+        toast({ title: "Welcome back!", description: "Logged in successfully." });
 
-      // Account exists but email not verified
-      if (res.status === 403 && json.needsVerification) {
-        localStorage.setItem("kiu_pending_email", json.email);
-        toast({
-          title: "Email not verified",
-          description: "A new OTP has been sent. Please verify your account.",
-          variant: "destructive",
-        });
-        setLocation("/verify-otp");
-        return;
-      }
-
-      if (!res.ok) {
-        toast({ title: "Login failed", description: json.message || "Invalid credentials", variant: "destructive" });
-        return;
-      }
-
-      // Token is now stored in httpOnly cookie by the server
-      // Store user data for UI purposes only
-      localStorage.setItem("kiu_user", JSON.stringify(json.user));
-      toast({ title: "Welcome back!", description: "Logged in successfully." });
-
-      // Use conditional redirect based on user's data status
-      const redirectPath = await getRedirectPath(json.user);
-      setLocation(redirectPath);
-    } catch {
-      toast({ title: "Network error", description: "Could not connect to the server.", variant: "destructive" });
-    }
+        // Use conditional redirect based on user's data status
+        const redirectPath = await getRedirectPath(json.user);
+        setLocation(redirectPath);
+      },
+      onError: (error: Error) => {
+        // Account exists but email not verified
+        if (error.message.includes("needsVerification") || error.message.includes("Email not verified")) {
+          const email = data.email;
+          localStorage.setItem("kiu_pending_email", email);
+          toast({
+            title: "Email not verified",
+            description: "A new OTP has been sent. Please verify your account.",
+            variant: "destructive",
+          });
+          setLocation("/verify-otp");
+          return;
+        }
+        toast({ title: "Login failed", description: error.message || "Invalid credentials", variant: "destructive" });
+      },
+    });
   };
 
   return (

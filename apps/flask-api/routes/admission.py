@@ -635,9 +635,9 @@ def recommend_programs():
     nche_warnings = []
     nche_errors = []
     
-    # Rule 1: Must have at least 2 principal subjects
-    if len(principal_subjects) < 2:
-        nche_errors.append("NCHE requires at least 2 principal subjects at A-Level")
+    # Rule 1: Must have at least 3 principal subjects
+    if len(principal_subjects) < 3:
+        nche_errors.append("NCHE requires at least 3 principal subjects at A-Level")
     
     # Rule 2: General Paper is strongly recommended
     if not has_general_paper:
@@ -650,7 +650,7 @@ def recommend_programs():
     ALEVEL_GRADE_POINTS = {"A": 6, "B": 5, "C": 4, "D": 3, "E": 2, "O": 1, "F": 0}
     total_principal_points = sum(ALEVEL_GRADE_POINTS.get(p["grade"], 0) for p in principal_subjects)
     
-    if total_principal_points < 6:  # Minimum 2 principals with at least E each
+    if total_principal_points < 6:  # Minimum 3 principals with at least E each (3 × 2 = 6 points)
         nche_errors.append(f"Total principal points ({total_principal_points}) below NCHE minimum (6 points)")
 
     # Define subject-to-program mapping based on Ugandan university requirements
