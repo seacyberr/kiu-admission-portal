@@ -78,40 +78,15 @@ type SubjectEntry = {
   subjectType: "principal" | "subsidiary";
 };
 
-type RecommendedProgram = {
-  id: number;
-  name: string;
-  code: string;
-  faculty: string;
-  department?: string;
-  level: string;
-  duration?: string;
-  description?: string;
-  entryRequirements?: string;
-  campus: string;
-  feesLocal?: number;
-  feesInternational?: number;
-  matchScore: number;
-  matchPercentage: number;
-  matchedSubjects: string[];
-  ncheStatus: "compliant" | "conditional";
-  programWarnings: string[];
-};
+import type {
+  RecommendedProgram as ApiRecommendedProgram,
+  NcheCompliance as ApiNcheCompliance,
+  RecommendResult as ApiRecommendResult,
+} from "@workspace/api-client-react";
 
-type NcheCompliance = {
-  hasGeneralPaper: boolean;
-  gpGrade: string | null;
-  totalPrincipalPoints: number;
-  errors: string[];
-  warnings: string[];
-};
-
-type RecommendResult = {
-  recommendations: RecommendedProgram[];
-  total: number;
-  subjectsAnalyzed: string[];
-  ncheCompliance: NcheCompliance;
-};
+type RecommendedProgram = ApiRecommendedProgram;
+type NcheCompliance = ApiNcheCompliance;
+type RecommendResult = ApiRecommendResult;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -134,7 +109,7 @@ function matchBar(pct: number) {
   );
 }
 
-function formatFee(amount: number | undefined, currency: string) {
+function formatFee(amount: number | null | undefined, currency: string) {
   if (!amount) return "Contact admissions";
   return `${currency} ${amount.toLocaleString()}`;
 }
