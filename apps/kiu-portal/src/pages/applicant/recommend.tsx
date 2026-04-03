@@ -323,8 +323,17 @@ export default function Recommend() {
 
   // ── Validation ───────────────────────────────────────────────────────────
 
-  const principalCount = subjects.filter(
-    (s) => s.subjectType === "principal" && s.subject && s.grade
+  const principalSubjects = subjects.filter(
+    (s) => s.subjectType === "principal"
+  );
+  const principalCount = principalSubjects.filter(
+    (s) => s.subject && s.grade
+  ).length;
+  const principalSubjectsWithoutGrade = principalSubjects.filter(
+    (s) => s.subject && !s.grade
+  ).length;
+  const principalSubjectsWithoutSubject = principalSubjects.filter(
+    (s) => !s.subject && s.grade
   ).length;
   const hasGP = subjects.some(
     (s) => s.subject === "General Paper" && s.subjectType === "subsidiary"
@@ -567,8 +576,20 @@ export default function Recommend() {
                 ) : (
                   <AlertCircle className="w-4 h-4" />
                 )}
-                {principalCount}/3 principal subjects entered
+                {principalCount}/3 principal subjects with grades
               </div>
+              {principalSubjectsWithoutGrade > 0 && (
+                <div className="flex items-center gap-2 text-xs text-amber-600">
+                  <AlertCircle className="w-4 h-4" />
+                  {principalSubjectsWithoutGrade} subject(s) missing grade
+                </div>
+              )}
+              {principalSubjectsWithoutSubject > 0 && (
+                <div className="flex items-center gap-2 text-xs text-amber-600">
+                  <AlertCircle className="w-4 h-4" />
+                  {principalSubjectsWithoutSubject} grade(s) missing subject
+                </div>
+              )}
               <div
                 className={`flex items-center gap-2 text-xs ${
                   hasGP ? "text-green-600" : "text-amber-500"
