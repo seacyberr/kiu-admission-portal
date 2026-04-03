@@ -37,6 +37,25 @@ const COUNTRIES = [
   "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
 ];
 
+// ── Uganda Districts ──────────────────────────────────────────────────────────
+
+const UGANDA_DISTRICTS = [
+  "Abim", "Adjumani", "Agago", "Alebtong", "Amolatar", "Amudat", "Amuria", "Amuru", "Apac", "Arua",
+  "Budaka", "Bududa", "Bugiri", "Bugweri", "Buhweju", "Buikwe", "Bukedea", "Bukomansimbi", "Bukwo", "Bulambuli",
+  "Buliisa", "Bundibugyo", "Bushenyi", "Busia", "Butaleja", "Butambala", "Buvuma", "Buyende", "Dokolo", "Gomba",
+  "Gulu", "Hoima", "Ibanda", "Iganga", "Isingiro", "Jinja", "Kaabong", "Kabale", "Kabarole", "Kaberamaido",
+  "Kagadi", "Kakumiro", "Kalaki", "Kaliro", "Kalungu", "Kampala", "Kamuli", "Kamwenge", "Kanungu", "Kapchorwa",
+  "Kapelebyong", "Karenga", "Kasanda", "Kasese", "Katakwi", "Kayunga", "Kazo", "Kibaale", "Kiboga", "Kibuku",
+  "Kikuube", "Kiruhura", "Kiryandongo", "Kisoro", "Kitagwenda", "Kitgum", "Koboko", "Kole", "Kotido", "Kumi",
+  "Kwania", "Kween", "Kyankwanzi", "Kyegegwa", "Kyenjojo", "Kyotera", "Lamwo", "Lira", "Luuka", "Luwero",
+  "Lwengo", "Lyantonde", "Madi-Okollo", "Manafwa", "Maracha", "Masaka", "Masindi", "Mayuge", "Mbale", "Mbarara",
+  "Mitooma", "Mityana", "Moroto", "Moyo", "Mpigi", "Mubende", "Mukono", "Nabilatuk", "Nakapiripirit", "Nakaseke",
+  "Nakasongola", "Namayingo", "Namisindwa", "Namutumba", "Napak", "Nebbi", "Ngora", "Ntoroko", "Ntungamo", "Nwoya",
+  "Obongi", "Omoro", "Otuke", "Oyam", "Pader", "Pakwach", "Pallisa", "Rakai", "Rubanda", "Rubirizi",
+  "Rukiga", "Rukungiri", "Rwampara", "Sembabule", "Serere", "Sheema", "Sironko", "Soroti", "Tororo", "Wakiso",
+  "Yumbe", "Zombo"
+];
+
 // ── UNEB Subject lists ────────────────────────────────────────────────────────
 
 const OLEVEL_SUBJECTS = [
@@ -635,8 +654,8 @@ export default function Apply({ target }: { target: ApplyTarget }) {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
       <div className="mb-8">
-        <button onClick={() => (currentIdx === 0 ? setLocation("/dashboard") : goBack())} className="inline-flex items-center text-sm font-semibold text-muted-foreground hover:text-primary mb-4 transition-colors">
-          <ArrowLeft className="w-4 h-4 mr-2" /> {currentIdx === 0 ? "Back to Dashboard" : "Previous Step"}
+        <button onClick={() => (currentIdx === 0 ? setLocation("/apply") : goBack())} className="inline-flex items-center text-sm font-semibold text-muted-foreground hover:text-primary mb-4 transition-colors">
+          <ArrowLeft className="w-4 h-4 mr-2" /> {currentIdx === 0 ? "Back to Program Selection" : "Previous Step"}
         </button>
         <h1 className="text-3xl font-display font-bold text-primary">Admission Application</h1>
         <p className="text-muted-foreground mt-1">KIU Online Admissions — {new Date().getFullYear()}/{new Date().getFullYear() + 1} Academic Year</p>
@@ -1026,7 +1045,14 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                   </div>
                   <div className="space-y-2">
                     <Label>Nationality</Label>
-                    <select {...register("nationality")} className="w-full h-10 px-3 rounded-lg border border-border bg-white text-sm">
+                    <select
+                      {...register("nationality")}
+                      onChange={(e) => {
+                        setValue("nationality", e.target.value);
+                        setValue("district", ""); // Reset district when nationality changes
+                      }}
+                      className="w-full h-10 px-3 rounded-lg border border-border bg-white text-sm"
+                    >
                       {COUNTRIES.map((country) => (
                         <option key={country} value={country}>{country}</option>
                       ))}
@@ -1037,8 +1063,17 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
                 <div className="grid md:grid-cols-2 gap-5 mb-5">
                   <div className="space-y-2">
-                    <Label>District of Origin <span className="text-primary">(Required)</span></Label>
-                    <Input {...register("district")} placeholder="e.g. Kampala" />
+                    <Label>{watch("nationality") === "Uganda" ? "District of Origin" : "City/District"} <span className="text-primary">(Required)</span></Label>
+                    {watch("nationality") === "Uganda" ? (
+                      <select {...register("district")} className="w-full h-10 px-3 rounded-lg border border-border bg-white text-sm">
+                        <option value="">Select district…</option>
+                        {UGANDA_DISTRICTS.map((district) => (
+                          <option key={district} value={district}>{district}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input {...register("district")} placeholder="e.g. Nairobi, New York" />
+                    )}
                     {errors.district && <p className="text-xs text-destructive">{errors.district.message}</p>}
                   </div>
                   <div className="space-y-2">
@@ -1168,8 +1203,8 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                 </div>
 
                 <div className="mt-8 flex gap-3 justify-end">
-                  <Button type="button" variant="outline" onClick={() => setLocation("/dashboard")}>
-                    Skip for Now
+                  <Button type="button" variant="outline" onClick={() => setLocation("/apply")}>
+                    Back to Program Selection
                   </Button>
                   <Button type="button" isLoading={uploadingCerts} onClick={uploadCertificates} className="gap-2">
                     <Upload className="w-4 h-4" /> Submit Application
