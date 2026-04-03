@@ -23,14 +23,12 @@ while IFS= read -r file; do
         echo "📁 Creating $batch_dir/"
     fi
     
-    # Copy file to batch (preserving directory structure)
+    # Copy file to batch (flat - no directory structure)
     if [ -f "$file" ]; then
-        # Get directory path
-        dir_path=$(dirname "$file")
-        # Create subdirectory in batch if needed
-        mkdir -p "$batch_dir/$dir_path"
-        # Copy file
-        cp "$file" "$batch_dir/$file" 2>/dev/null
+        # Get just the filename
+        filename=$(basename "$file")
+        # Copy file flat to batch folder
+        cp "$file" "$batch_dir/$filename" 2>/dev/null
     fi
     
     file_count=$((file_count + 1))

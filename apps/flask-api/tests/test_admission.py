@@ -81,4 +81,9 @@ class TestApplications:
         response = client.get("/api/admission/analytics", headers=admin_headers)
         assert response.status_code == 200
         data = response.get_json()
-        assert "total" in data
+        # New analytics format has nested structure
+        assert "summary" in data
+        assert "totalApplications" in data["summary"]
+        assert "dropoutRisk" in data
+        assert "programDemand" in data
+        assert "ncheCompliance" in data

@@ -1,0 +1,47 @@
+# Core
+flask>=3.0.0
+flask-sqlalchemy>=3.1.1
+flask-bcrypt>=1.0.1
+flask-cors>=4.0.0
+Werkzeug>=3.0.1
+SQLAlchemy>=2.0.0
+
+# Auth & Security
+PyJWT>=2.8.0
+cryptography>=41.0.7
+
+# Database drivers (MySQL; DATABASE_URL must use mysql+pymysql — see config.py)
+pymysql>=1.1.0
+
+# Structured logging (used in app.py)
+structlog>=24.1.0
+
+# Configuration
+python-dotenv>=1.0.0
+
+# Rate limiting
+flask-limiter>=3.5.0
+redis>=5.0.0
+
+# Email validation
+email-validator>=2.1.0
+
+# Production server
+gunicorn>=22.0.0
+
+# Date utilities
+python-dateutil>=2.9.0
+
+# Caching
+flask-caching>=2.1.0
+
+# Monitoring
+sentry-sdk[flask]>=1.40.0
+prometheus-client>=0.19.0
+
+# Database migrations
+alembic>=1.13.0
+
+# Tests
+pytest>=8.0.0
+pytest-cov>=4.1.0
