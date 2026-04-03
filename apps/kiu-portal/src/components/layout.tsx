@@ -82,7 +82,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <>
                 <Link href="/login" className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors">Sign In</Link>
                 <Link href="/register">
-                  <Button variant="accent" size="sm" className="rounded-full px-6">Apply Now</Button>
+                  <Button variant="accent" size="sm" className="rounded-full px-6">Register</Button>
                 </Link>
               </>
             )}
@@ -124,7 +124,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {!user && (
                 <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-border">
                   <Link href="/login"><Button variant="outline" className="w-full">Sign In</Button></Link>
-                  <Link href="/register"><Button variant="accent" className="w-full">Apply Now</Button></Link>
+                  <Link href="/register"><Button variant="accent" className="w-full">Register</Button></Link>
                 </div>
               )}
               {user && (

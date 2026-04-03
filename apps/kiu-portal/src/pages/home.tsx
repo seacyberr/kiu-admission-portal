@@ -42,12 +42,6 @@ export default function Home() {
                   Get Started
                 </Button>
               </Link>
-              <Link href="/login">
-                <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2 text-white border-white/30 hover:bg-white/10 hover:text-white backdrop-blur-sm text-base">
-                  <Briefcase className="w-5 h-5" />
-                  Sign In
-                </Button>
-              </Link>
             </div>
           </motion.div>
         </div>
