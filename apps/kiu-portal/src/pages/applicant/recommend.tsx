@@ -289,7 +289,9 @@ export default function Recommend() {
   const [subjects, setSubjects] = useState<SubjectEntry[]>([
     { subject: "", grade: "", subjectType: "principal" },
     { subject: "", grade: "", subjectType: "principal" },
+    { subject: "", grade: "", subjectType: "principal" },
     { subject: "", grade: "", subjectType: "subsidiary" }, // GP slot
+    { subject: "", grade: "", subjectType: "subsidiary" }, // 2nd subsidiary
   ]);
   const [campus, setCampus] = useState<"" | "kampala" | "western">("");
   const [result, setResult] = useState<RecommendResult | null>(null);
@@ -327,7 +329,7 @@ export default function Recommend() {
   const hasGP = subjects.some(
     (s) => s.subject === "General Paper" && s.subjectType === "subsidiary"
   );
-  const isValid = principalCount >= 2;
+  const isValid = principalCount >= 3;
 
   // ── Submit ───────────────────────────────────────────────────────────────
 
@@ -408,7 +410,7 @@ export default function Recommend() {
               <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
               <div className="text-xs text-blue-700 space-y-1">
                 <p className="font-semibold">NCHE Requirements:</p>
-                <p>• Minimum 2 principal subjects</p>
+                <p>• Minimum 3 principal subjects</p>
                 <p>• General Paper (GP) as subsidiary</p>
                 <p>• Points: A=6, B=5, C=4, D=3, E=2, O=1, F=0</p>
               </div>
@@ -557,15 +559,15 @@ export default function Recommend() {
             <div className="mb-5 space-y-2">
               <div
                 className={`flex items-center gap-2 text-xs ${
-                  principalCount >= 2 ? "text-green-600" : "text-muted-foreground"
+                  principalCount >= 3 ? "text-green-600" : "text-muted-foreground"
                 }`}
               >
-                {principalCount >= 2 ? (
+                {principalCount >= 3 ? (
                   <CheckCircle className="w-4 h-4" />
                 ) : (
                   <AlertCircle className="w-4 h-4" />
                 )}
-                {principalCount}/2 principal subjects entered
+                {principalCount}/3 principal subjects entered
               </div>
               <div
                 className={`flex items-center gap-2 text-xs ${
@@ -667,7 +669,7 @@ export default function Recommend() {
                   Enter your A-Level subjects
                 </p>
                 <p className="text-sm mt-2 max-w-xs mx-auto">
-                  Fill in at least 2 principal subjects with grades, then click
+                  Fill in at least 3 principal subjects with grades, then click
                   "Get Program Recommendations"
                 </p>
               </div>
