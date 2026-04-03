@@ -24,7 +24,7 @@ async function getRedirectPath(user: { role: string }): Promise<string> {
   
   try {
     if (user.role === 'applicant') {
-      const res = await fetch(`${BASE}/api/admission/applications/me`, {
+      const res = await fetch(`${BASE}/api/admission/applications/mine`, {
         credentials: 'include',
       });
       if (res.ok) return '/dashboard';
@@ -32,7 +32,7 @@ async function getRedirectPath(user: { role: string }): Promise<string> {
     }
     
     if (user.role === 'finalist') {
-      const res = await fetch(`${BASE}/api/career/profile/me`, {
+      const res = await fetch(`${BASE}/api/career/my-profile`, {
         credentials: 'include',
       });
       if (res.ok) return '/career';
