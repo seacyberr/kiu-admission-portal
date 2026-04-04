@@ -593,6 +593,7 @@ export function useRecommendPrograms() {
         subjectType: "principal" | "subsidiary";
       }>;
       campus?: string;
+      curriculum?: string;
     }) => {
       return apiFetchJson<RecommendResult>(`/api/admission/recommend`, {
         method: "POST",

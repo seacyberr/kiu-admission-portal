@@ -294,6 +294,7 @@ export default function Recommend() {
     { subject: "", grade: "", subjectType: "subsidiary" }, // 2nd subsidiary
   ]);
   const [campus, setCampus] = useState<"" | "kampala" | "western">("");
+  const [curriculum, setCurriculum] = useState<"" | "uneb" | "cambridge" | "other">("");
   const [result, setResult] = useState<RecommendResult | null>(null);
 
   // ── Subject management ───────────────────────────────────────────────────
@@ -338,7 +339,7 @@ export default function Recommend() {
   const hasGP = subjects.some(
     (s) => s.subject === "General Paper" && s.subjectType === "subsidiary"
   );
-  const isValid = principalCount >= 3;
+  const isValid = principalCount >= 3 && curriculum !== "";
 
   // ── Submit ───────────────────────────────────────────────────────────────
 
@@ -352,6 +353,7 @@ export default function Recommend() {
           subjectType: s.subjectType,
         })),
         campus: campus || undefined,
+        curriculum: curriculum || undefined,
       },
       {
         onSuccess: (data: RecommendResult) => {
@@ -490,6 +492,62 @@ export default function Recommend() {
               </button>
             </div>
 
+            {/* Insert Grades for Principal Subjects */}
+            <div className="mb-5 p-4 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20">
+              <div className="flex items-center gap-2 mb-3">
+                <GraduationCap className="w-5 h-5 text-primary" />
+                <p className="text-sm font-semibold text-primary">
+                  Insert Your Principal Subject Grades
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground mb-4">
+                Enter the grades you achieved in your A-Level principal subjects. Each grade contributes to your total points.
+              </p>
+              <div className="space-y-3">
+                {subjects
+                  .map((s, i) => ({ s, i }))
+                  .filter(({ s }) => s.subjectType === "principal" && s.subject)
+                  .map(({ s, i }) => (
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-white border border-border">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{s.subject}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Grade:</span>
+                        <select
+                          value={s.grade}
+                          onChange={(e) =>
+                            updateSubject(i, "grade", e.target.value)
+                          }
+                          className={`w-20 h-8 px-2 rounded-md border text-sm font-semibold ${
+                            s.grade 
+                              ? "border-primary bg-primary/5 text-primary" 
+                              : "border-border bg-white text-muted-foreground"
+                          }`}
+                        >
+                          <option value="">—</option>
+                          {ALEVEL_GRADES.map((g) => (
+                            <option key={g.value} value={g.value}>
+                              {g.value}
+                            </option>
+                          ))}
+                        </select>
+                        {s.grade && (
+                          <span className="text-xs font-medium text-primary">
+                            ({ALEVEL_GRADES.find(g => g.value === s.grade)?.points || 0} pts)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                {subjects.filter(s => s.subjectType === "principal" && s.subject).length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-4">
+                    Please select your principal subjects above to insert grades
+                  </p>
+                )}
+              </div>
+            </div>
+
             {/* Subsidiary Subjects */}
             <div className="mb-5">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
@@ -546,6 +604,30 @@ export default function Recommend() {
               >
                 <Plus className="w-3.5 h-3.5" /> Add Subsidiary Subject
               </button>
+            </div>
+
+            {/* Curriculum Type */}
+            <div className="mb-5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                A-Level Curriculum <span className="text-destructive">*</span>
+              </p>
+              <select
+                value={curriculum}
+                onChange={(e) => setCurriculum(e.target.value as any)}
+                className="w-full h-9 px-3 rounded-lg border border-border bg-white text-sm"
+              >
+                <option value="">Select curriculum…</option>
+                <option value="uneb">UNEB (Uganda National Examinations Board)</option>
+                <option value="cambridge">Cambridge International A-Level</option>
+                <option value="other">Other / International</option>
+              </select>
+              {curriculum && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {curriculum === "uneb" && "Grades: A (6pts), B (5pts), C (4pts), D (3pts), E (2pts), O (1pt), F (0pt)"}
+                  {curriculum === "cambridge" && "Grades: A* (6pts), A (5pts), B (4pts), C (3pts), D (2pts), E (1pt)"}
+                  {curriculum === "other" && "Contact admissions for grade equivalency"}
+                </p>
+              )}
             </div>
 
             {/* Campus Filter */}
