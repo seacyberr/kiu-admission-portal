@@ -39,11 +39,12 @@ class UgandaQualificationChecker:
             result.message = "O-Level results are required"
             return result
         
-        # Count valid passes (grades 1-9 are passes in UCE)
+        # Count valid passes (NCHE defines PASS as grades D1 to P8. F9 / F is FAIL)
         passes = 0
         for grade in olevel_grades:
-            grade_val = grade.get('points', 0)
-            if 1 <= grade_val <= 9:
+            grade_val = grade.get('points', 9)
+            # ONLY grades 1 through 8 are considered PASSES. Grade 9 is FAIL.
+            if 1 <= grade_val <= 8:
                 passes += 1
         
         if passes >= 5:
