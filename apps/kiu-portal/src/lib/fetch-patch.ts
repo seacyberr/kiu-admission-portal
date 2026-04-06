@@ -85,9 +85,15 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
 
      // If still 401 after refresh attempt, clear stale state and redirect
      if (response.status === 401) {
-       localStorage.removeItem("kiu_user");
-       localStorage.removeItem("react-query-cache");
+       // COMPLETE AND FULL STATE CLEANUP ON UNAUTHORIZED
+       localStorage.clear();
        sessionStorage.clear();
+       
+       // Clear all cookies for this domain
+       document.cookie.split(";").forEach(c => {
+         document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+       });
+       
        // Hard reload ensures complete state reset and prevents race conditions
        window.location.replace("/login");
        // Prevent further code execution
