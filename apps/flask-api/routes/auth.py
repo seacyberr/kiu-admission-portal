@@ -158,14 +158,14 @@ def _set_refresh_cookie(response, token):
         secure=is_production,
         samesite="Strict",
         max_age=7 * 24 * 60 * 60,   # 7 days
-        path="/api/auth/refresh",    # only sent to the refresh endpoint
+        path="/",    # Send refresh cookie with all requests so token refresh works globally
     )
     return response
 
 
 def _clear_auth_cookie(response):
     response.delete_cookie("auth_token", path="/")
-    response.delete_cookie("refresh_token", path="/api/auth/refresh")
+    response.delete_cookie("refresh_token", path="/")
     return response
 
 
