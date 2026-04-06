@@ -146,6 +146,7 @@ const applySchema = z
     aLevelYear: z.coerce.number().min(1990).max(new Date().getFullYear()).optional(),
     aLevelIndexNumber: z.string().optional(),
     aLevelGrades: z.array(aGradeEntry).optional(),
+    aLevelCurriculum: z.enum(["old", "new"]).optional(),
 
     // Certificate-only inputs for degree qualification via diploma/hec
     certYear: z.coerce.number().min(1990).max(new Date().getFullYear()).optional(),
@@ -889,7 +890,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                 <h2 className="text-xl font-bold mb-1">Uganda Advanced Certificate of Education (UACE)</h2>
                 <p className="text-muted-foreground text-sm mb-6">Enter your A-Level results. Degree programs require at least 2 principal subjects.</p>
 
-                <div className="grid md:grid-cols-2 gap-5 mb-6">
+                <div className="grid md:grid-cols-3 gap-5 mb-6">
                   <div className="space-y-2">
                     <Label>Examination Year <span className="text-primary">(Required)</span></Label>
                     <Input type="number" {...register("aLevelYear")} min={1990} max={new Date().getFullYear()} />
@@ -897,6 +898,13 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                   <div className="space-y-2">
                     <Label>UNEB Index Number <span className="text-primary">(Required)</span></Label>
                     <Input placeholder="e.g. A001/001" {...register("aLevelIndexNumber")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Curriculum Type</Label>
+                    <select {...register("aLevelCurriculum")} className="w-full h-10 px-3 rounded-lg border border-border bg-white text-sm">
+                      <option value="new">New Curriculum (2020+)</option>
+                      <option value="old">Old Curriculum (Pre-2020)</option>
+                    </select>
                   </div>
                 </div>
 
