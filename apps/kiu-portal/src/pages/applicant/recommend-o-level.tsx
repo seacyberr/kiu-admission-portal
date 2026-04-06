@@ -1,13 +1,12 @@
 /**
- * recommend.tsx — A-Level Subject Combination → Program Recommendation
+ * recommend-o-level.tsx — O-Level Subject Combination → Program Recommendation
  *
  * Core feature from the project proposal:
- * "Allow input of Advanced Level subject combinations, grades, General Paper,
- *  and subsidiary subjects (pass/fail) to receive personalized program
+ * "Allow input of O-Level subject combinations and grades to receive personalized program
  *  recommendations, complete with entry requirements, fees, duration and
  *  career prospects."
  *
- * Route: /recommend  (accessible to authenticated applicants)
+ * Route: /recommend/o-level  (accessible to authenticated applicants)
  * Backend: POST /api/admission/recommend
  */
 
@@ -35,39 +34,40 @@ import {
 
 // ── Subject lists (same as apply.tsx for consistency) ─────────────────────────
 
-const PRINCIPAL_SUBJECTS = [
-  "Mathematics",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "Geography",
-  "History",
-  "Literature in English",
-  "Economics",
-  "Entrepreneurship Education",
-  "Art & Design",
-  "Technical Drawing",
-  "Christian Religious Education (CRE)",
-  "Islamic Religious Education (IRE)",
-  "Divinity",
-  "Fine Art",
-  "Music",
+const OLEVEL_SUBJECTS = [
+  "English Language", "Mathematics", "Physics", "Chemistry", "Biology",
+  "Geography", "History", "Christian Religious Education (CRE)",
+  "Islamic Religious Education (IRE)", "Fine Art", "Music",
+  "Entrepreneurship Education", "Computer Studies", "Agriculture",
+  "Home Economics", "Commerce", "French", "Kiswahili",
+  "Literature in English", "Technical Drawing", "Physical Education",
+  "Additional Mathematics",
 ];
 
-const SUBSIDIARY_SUBJECTS = [
-  "General Paper",
-  "Subsidiary ICT",
-  "Subsidiary Mathematics",
+// Old Curriculum: D1, D2, C3, C4, C5, C6, P7, P8, F9
+const OLEVEL_GRADES_OLD = [
+  { label: "D1 – Distinction 1 (best)", value: "D1", points: 1 },
+  { label: "D2 – Distinction 2", value: "D2", points: 2 },
+  { label: "C3 – Credit 3", value: "C3", points: 3 },
+  { label: "C4 – Credit 4", value: "C4", points: 4 },
+  { label: "C5 – Credit 5", value: "C5", points: 5 },
+  { label: "C6 – Credit 6", value: "C6", points: 6 },
+  { label: "P7 – Pass 7", value: "P7", points: 7 },
+  { label: "P8 – Pass 8", value: "P8", points: 8 },
+  { label: "F9 – Fail", value: "F9", points: 9 },
 ];
 
-const ALEVEL_GRADES = [
-  { label: "A – 6 pts", value: "A", points: 6 },
-  { label: "B – 5 pts", value: "B", points: 5 },
-  { label: "C – 4 pts", value: "C", points: 4 },
-  { label: "D – 3 pts", value: "D", points: 3 },
-  { label: "E – 2 pts", value: "E", points: 2 },
-  { label: "O – 1 pt",  value: "O", points: 1 },
-  { label: "F – Fail",  value: "F", points: 0 },
+// New Curriculum: D1, D2, D3, D4, D5, D6, D7, D8, F
+const OLEVEL_GRADES_NEW = [
+  { label: "D1 – Distinction 1 (best)", value: "D1", points: 1 },
+  { label: "D2 – Distinction 2", value: "D2", points: 2 },
+  { label: "D3 – Distinction 3", value: "D3", points: 3 },
+  { label: "D4 – Credit 4", value: "D4", points: 4 },
+  { label: "D5 – Credit 5", value: "D5", points: 5 },
+  { label: "D6 – Credit 6", value: "D6", points: 6 },
+  { label: "D7 – Pass 7", value: "D7", points: 7 },
+  { label: "D8 – Pass 8", value: "D8", points: 8 },
+  { label: "F – Fail", value: "F", points: 9 },
 ];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -75,7 +75,6 @@ const ALEVEL_GRADES = [
 type SubjectEntry = {
   subject: string;
   grade: string;
-  subjectType: "principal" | "subsidiary";
 };
 
 import type {
@@ -282,27 +281,28 @@ function ProgramCard({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export default function Recommend() {
+export default function RecommendOLevel() {
   const [, setLocation] = useLocation();
   const recommendMutation = useRecommendPrograms();
 
   const [subjects, setSubjects] = useState<SubjectEntry[]>([
-    { subject: "", grade: "", subjectType: "principal" },
-    { subject: "", grade: "", subjectType: "principal" },
-    { subject: "", grade: "", subjectType: "principal" },
-    { subject: "", grade: "", subjectType: "subsidiary" }, // GP slot
-    { subject: "", grade: "", subjectType: "subsidiary" }, // 2nd subsidiary
+    { subject: "", grade: "" },
+    { subject: "", grade: "" },
+    { subject: "", grade: "" },
+    { subject: "", grade: "" },
+    { subject: "", grade: "" },
   ]);
   const [campus, setCampus] = useState<"" | "kampala" | "western">("");
   const [curriculum, setCurriculum] = useState<"" | "uneb" | "cambridge" | "other">("");
+  const [oLevelCurriculum, setOLevelCurriculum] = useState<"old" | "new">("old");
   const [result, setResult] = useState<RecommendResult | null>(null);
 
   // ── Subject management ───────────────────────────────────────────────────
 
-  const addSubject = (type: "principal" | "subsidiary") => {
+  const addSubject = () => {
     setSubjects((prev) => [
       ...prev,
-      { subject: "", grade: "", subjectType: type },
+      { subject: "", grade: "" },
     ]);
   };
 
@@ -324,22 +324,16 @@ export default function Recommend() {
 
   // ── Validation ───────────────────────────────────────────────────────────
 
-  const principalSubjects = subjects.filter(
-    (s) => s.subjectType === "principal"
-  );
-  const principalCount = principalSubjects.filter(
+  const subjectCount = subjects.filter(
     (s) => s.subject && s.grade
   ).length;
-  const principalSubjectsWithoutGrade = principalSubjects.filter(
+  const subjectsWithoutGrade = subjects.filter(
     (s) => s.subject && !s.grade
   ).length;
-  const principalSubjectsWithoutSubject = principalSubjects.filter(
+  const subjectsWithoutSubject = subjects.filter(
     (s) => !s.subject && s.grade
   ).length;
-  const hasGP = subjects.some(
-    (s) => s.subject === "General Paper" && s.subjectType === "subsidiary"
-  );
-  const isValid = principalCount >= 3 && curriculum !== "";
+  const isValid = subjectCount >= 5 && curriculum !== "";
 
   // ── Submit ───────────────────────────────────────────────────────────────
 
@@ -350,7 +344,6 @@ export default function Recommend() {
         alevelSubjects: filledSubjects.map((s) => ({
           subject: s.subject.toLowerCase(),
           grade: s.grade,
-          subjectType: s.subjectType,
         })),
         campus: campus || undefined,
         curriculum: curriculum || undefined,
@@ -375,7 +368,7 @@ export default function Recommend() {
     // Store pre-selected program in sessionStorage for the apply form to pick up
     sessionStorage.setItem("recommended_program_id", String(programId));
     sessionStorage.setItem("recommended_program_name", programName);
-    setLocation("/apply/degree?qualification=a_level");
+    setLocation("/apply/diploma");
   };
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -399,7 +392,7 @@ export default function Recommend() {
               Program Recommendation Tool
             </h1>
             <p className="text-muted-foreground">
-              Enter your A-Level subjects and grades to find the best-matching
+              Enter your O-Level subjects and grades to find the best-matching
               KIU programs
             </p>
           </div>
@@ -410,32 +403,29 @@ export default function Recommend() {
         {/* ── Input Panel ──────────────────────────────────────────────── */}
         <div className="lg:col-span-1 space-y-6">
           <Card className="p-6">
-            <h2 className="font-bold text-lg mb-1">Your A-Level Subjects</h2>
+            <h2 className="font-bold text-lg mb-1">Your O-Level Subjects</h2>
             <p className="text-xs text-muted-foreground mb-5">
-              Add your principal subjects and at least General Paper (GP) as
-              subsidiary.
+              Add your O-Level subjects and grades. Minimum 5 subjects required.
             </p>
 
             {/* NCHE Quick Guide */}
             <div className="mb-5 p-3 rounded-xl bg-blue-50 border border-blue-200 flex items-start gap-2">
               <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
               <div className="text-xs text-blue-700 space-y-1">
-                <p className="font-semibold">NCHE Requirements:</p>
-                <p>• Minimum 3 principal subjects</p>
-                <p>• General Paper (GP) as subsidiary</p>
-                <p>• Points: A=6, B=5, C=4, D=3, E=2, O=1, F=0</p>
+                <p className="font-semibold">Requirements:</p>
+                <p>• Minimum 5 subjects with grades</p>
+                <p>• Points: D1=1, D2=2, C3=3, C4=4, C5=5, C6=6, P7=7, P8=8, F9=9</p>
               </div>
             </div>
 
-            {/* Principal Subjects */}
+            {/* O-Level Subjects */}
             <div className="mb-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-2">
-                Principal Subjects
+                O-Level Subjects
               </p>
               <div className="space-y-3">
                 {subjects
                   .map((s, i) => ({ s, i }))
-                  .filter(({ s }) => s.subjectType === "principal")
                   .map(({ s, i }) => (
                     <div key={i} className="flex gap-2 items-center">
                       <select
@@ -446,7 +436,7 @@ export default function Recommend() {
                         className="flex-1 h-9 px-2 rounded-lg border border-border bg-white text-sm"
                       >
                         <option value="">Subject…</option>
-                        {PRINCIPAL_SUBJECTS.map((sub) => (
+                        {OLEVEL_SUBJECTS.map((sub) => (
                           <option key={sub} value={sub}>
                             {sub}
                           </option>
@@ -460,14 +450,13 @@ export default function Recommend() {
                         className="w-24 h-9 px-2 rounded-lg border border-border bg-white text-sm"
                       >
                         <option value="">Grade</option>
-                        {ALEVEL_GRADES.map((g) => (
+                        {(oLevelCurriculum === "old" ? OLEVEL_GRADES_OLD : OLEVEL_GRADES_NEW).map((g: any) => (
                           <option key={g.value} value={g.value}>
                             {g.label}
                           </option>
                         ))}
                       </select>
-                      {subjects.filter((x) => x.subjectType === "principal")
-                        .length > 1 && (
+                      {subjects.length > 1 && (
                         <button
                           type="button"
                           onClick={() => removeSubject(i)}
@@ -481,32 +470,31 @@ export default function Recommend() {
               </div>
               <button
                 type="button"
-                onClick={() => addSubject("principal")}
+                onClick={() => addSubject()}
                 disabled={
-                  subjects.filter((s) => s.subjectType === "principal")
-                    .length >= PRINCIPAL_SUBJECTS.length
+                  subjects.length >= OLEVEL_SUBJECTS.length
                 }
                 className="mt-2 flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 disabled:opacity-40"
               >
-                <Plus className="w-3.5 h-3.5" /> Add Principal Subject
+                  <Plus className="w-3.5 h-3.5" /> Add Subject
               </button>
             </div>
 
-            {/* Insert Grades for Principal Subjects */}
+            {/* Insert Grades for Subjects */}
             <div className="mb-5 p-4 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20">
               <div className="flex items-center gap-2 mb-3">
                 <GraduationCap className="w-5 h-5 text-primary" />
                 <p className="text-sm font-semibold text-primary">
-                  Insert Your Principal Subject Grades
+                  Insert Your Subject Grades
                 </p>
               </div>
               <p className="text-xs text-muted-foreground mb-4">
-                Enter the grades you achieved in your A-Level principal subjects. Each grade contributes to your total points.
+                  Enter the grades you achieved in your O-Level subjects. Each grade contributes to your total points.
               </p>
               <div className="space-y-3">
                 {subjects
                   .map((s, i) => ({ s, i }))
-                  .filter(({ s }) => s.subjectType === "principal" && s.subject)
+                  .filter(({ s }) => s.subject)
                   .map(({ s, i }) => (
                     <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-white border border-border">
                       <div className="flex-1">
@@ -526,105 +514,82 @@ export default function Recommend() {
                           }`}
                         >
                           <option value="">—</option>
-                          {ALEVEL_GRADES.map((g) => (
-                            <option key={g.value} value={g.value}>
-                              {g.value}
-                            </option>
-                          ))}
+                        {OLEVEL_GRADES.map((g) => (
+                          <option key={g.value} value={g.value}>
+                            {g.value}
+                          </option>
+                        ))}
                         </select>
                         {s.grade && (
                           <span className="text-xs font-medium text-primary">
-                            ({ALEVEL_GRADES.find(g => g.value === s.grade)?.points || 0} pts)
+                            ({OLEVEL_GRADES.find(g => g.value === s.grade)?.points || 0} pts)
                           </span>
                         )}
                       </div>
                     </div>
                   ))}
-                {subjects.filter(s => s.subjectType === "principal" && s.subject).length === 0 && (
+                {subjects.filter(s => s.subject).length === 0 && (
                   <p className="text-xs text-muted-foreground text-center py-4">
-                    Please select your principal subjects above to insert grades
+                    Please select your subjects above to insert grades
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Subsidiary Subjects */}
+            {/* UNEB Syllabus Version */}
             <div className="mb-5">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                Subsidiary Subjects (incl. GP)
+                UNEB Syllabus Version
               </p>
-              <div className="space-y-3">
-                {subjects
-                  .map((s, i) => ({ s, i }))
-                  .filter(({ s }) => s.subjectType === "subsidiary")
-                  .map(({ s, i }) => (
-                    <div key={i} className="flex gap-2 items-center">
-                      <select
-                        value={s.subject}
-                        onChange={(e) =>
-                          updateSubject(i, "subject", e.target.value)
-                        }
-                        className="flex-1 h-9 px-2 rounded-lg border border-border bg-white text-sm"
-                      >
-                        <option value="">Subject…</option>
-                        {SUBSIDIARY_SUBJECTS.map((sub) => (
-                          <option key={sub} value={sub}>
-                            {sub}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={s.grade}
-                        onChange={(e) =>
-                          updateSubject(i, "grade", e.target.value)
-                        }
-                        className="w-24 h-9 px-2 rounded-lg border border-border bg-white text-sm"
-                      >
-                        <option value="">Grade</option>
-                        {ALEVEL_GRADES.map((g) => (
-                          <option key={g.value} value={g.value}>
-                            {g.label}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => removeSubject(i)}
-                        className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setOLevelCurriculum("old")}
+                  className={`flex-1 h-9 px-3 rounded-lg text-sm font-medium transition-all ${
+                    oLevelCurriculum === "old" 
+                      ? "bg-primary text-white shadow-sm" 
+                      : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                  }`}
+                >
+                  Old Curriculum
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOLevelCurriculum("new")}
+                  className={`flex-1 h-9 px-3 rounded-lg text-sm font-medium transition-all ${
+                    oLevelCurriculum === "new" 
+                      ? "bg-primary text-white shadow-sm" 
+                      : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                  }`}
+                >
+                  New Curriculum
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => addSubject("subsidiary")}
-                className="mt-2 flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary disabled:opacity-40"
-              >
-                <Plus className="w-3.5 h-3.5" /> Add Subsidiary Subject
-              </button>
+              <p className="text-xs text-muted-foreground mt-2">
+                {oLevelCurriculum === "old" 
+                  ? "Old Curriculum" 
+                  : "New Curriculum"}
+              </p>
             </div>
 
-            {/* Curriculum Type */}
+            {/* Examination Board */}
             <div className="mb-5">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                A-Level Curriculum <span className="text-destructive">*</span>
+                Examination Board <span className="text-destructive">*</span>
               </p>
               <select
                 value={curriculum}
                 onChange={(e) => setCurriculum(e.target.value as any)}
                 className="w-full h-9 px-3 rounded-lg border border-border bg-white text-sm"
               >
-                <option value="">Select curriculum…</option>
+                <option value="">Select exam board…</option>
                 <option value="uneb">UNEB (Uganda National Examinations Board)</option>
-                <option value="cambridge">Cambridge International A-Level</option>
+                <option value="cambridge">Cambridge International O-Level</option>
                 <option value="other">Other / International</option>
               </select>
-              {curriculum && (
+              {curriculum && curriculum !== "uneb" && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  {curriculum === "uneb" && "Grades: A (6pts), B (5pts), C (4pts), D (3pts), E (2pts), O (1pt), F (0pt)"}
-                  {curriculum === "cambridge" && "Grades: A* (6pts), A (5pts), B (4pts), C (3pts), D (2pts), E (1pt)"}
+                  {curriculum === "cambridge" && "Grades: A*=1, A=2, B=3, C=4, D=5, E=6, F=7, G=8, U=9"}
                   {curriculum === "other" && "Contact admissions for grade equivalency"}
                 </p>
               )}
@@ -650,40 +615,28 @@ export default function Recommend() {
             <div className="mb-5 space-y-2">
               <div
                 className={`flex items-center gap-2 text-xs ${
-                  principalCount >= 3 ? "text-green-600" : "text-muted-foreground"
+                  subjectCount >= 5 ? "text-green-600" : "text-muted-foreground"
                 }`}
               >
-                {principalCount >= 3 ? (
+                {subjectCount >= 5 ? (
                   <CheckCircle className="w-4 h-4" />
                 ) : (
                   <AlertCircle className="w-4 h-4" />
                 )}
-                {principalCount}/3 principal subjects with grades
+                {subjectCount}/5 subjects with grades
               </div>
-              {principalSubjectsWithoutGrade > 0 && (
+              {subjectsWithoutGrade > 0 && (
                 <div className="flex items-center gap-2 text-xs text-amber-600">
                   <AlertCircle className="w-4 h-4" />
-                  {principalSubjectsWithoutGrade} subject(s) missing grade
+                  {subjectsWithoutGrade} subject(s) missing grade
                 </div>
               )}
-              {principalSubjectsWithoutSubject > 0 && (
+              {subjectsWithoutSubject > 0 && (
                 <div className="flex items-center gap-2 text-xs text-amber-600">
                   <AlertCircle className="w-4 h-4" />
-                  {principalSubjectsWithoutSubject} grade(s) missing subject
+                  {subjectsWithoutSubject} grade(s) missing subject
                 </div>
               )}
-              <div
-                className={`flex items-center gap-2 text-xs ${
-                  hasGP ? "text-green-600" : "text-amber-500"
-                }`}
-              >
-                {hasGP ? (
-                  <CheckCircle className="w-4 h-4" />
-                ) : (
-                  <AlertCircle className="w-4 h-4" />
-                )}
-                General Paper {hasGP ? "added ✓" : "not added (recommended)"}
-              </div>
             </div>
 
             <Button
@@ -704,34 +657,20 @@ export default function Recommend() {
             )}
           </Card>
 
-          {/* NCHE Compliance Summary (shown after first result) */}
+          {/* Compliance Summary (shown after first result) */}
           {result && (
             <Card className="p-5">
               <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-primary" />
-                NCHE Compliance Summary
+                Compliance Summary
               </h3>
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">
-                    Principal Points
+                    Total Points
                   </span>
                   <span className="font-bold">
-                    {result.ncheCompliance.totalPrincipalPoints}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">General Paper</span>
-                  <span
-                    className={`font-bold ${
-                      result.ncheCompliance.hasGeneralPaper
-                        ? "text-green-600"
-                        : "text-amber-500"
-                    }`}
-                  >
-                    {result.ncheCompliance.hasGeneralPaper
-                      ? `Yes (${result.ncheCompliance.gpGrade})`
-                      : "Not added"}
+                    {result.ncheCompliance.totalPoints}
                   </span>
                 </div>
                 {result.ncheCompliance.errors.map((e, i) => (
@@ -754,7 +693,7 @@ export default function Recommend() {
                   result.ncheCompliance.warnings.length === 0 && (
                     <div className="p-2 rounded-lg bg-green-50 text-green-700 flex items-center gap-1">
                       <CheckCircle className="w-3.5 h-3.5" />
-                      NCHE requirements met
+                      Requirements met
                     </div>
                   )}
               </div>
@@ -769,10 +708,10 @@ export default function Recommend() {
               <div className="text-center text-muted-foreground py-24">
                 <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-20" />
                 <p className="font-semibold text-lg">
-                  Enter your A-Level subjects
+                  Enter your O-Level subjects
                 </p>
                 <p className="text-sm mt-2 max-w-xs mx-auto">
-                  Fill in at least 3 principal subjects with grades, then click
+                  Fill in at least 5 subjects with grades, then click
                   "Get Program Recommendations"
                 </p>
               </div>
