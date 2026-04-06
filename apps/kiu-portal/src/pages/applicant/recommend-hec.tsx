@@ -339,7 +339,27 @@ export default function Recommend() {
   const hasGP = subjects.some(
     (s) => s.subject === "General Paper" && s.subjectType === "subsidiary"
   );
-  const isValid = principalCount >= 3 && curriculum !== "";
+  // Calculate actual valid passes
+  const principalPasses = principalSubjects
+    .filter(s => s.subject && s.grade)
+    .filter(s => {
+      const grade = ALEVEL_GRADES.find(g => g.value === s.grade);
+      const points = grade?.points || 0;
+      return points >= 1;
+    }).length;
+
+  const subsidiaryPasses = subjects
+    .filter(s => s.subjectType === "subsidiary" && s.subject && s.grade)
+    .filter(s => {
+      const grade = ALEVEL_GRADES.find(g => g.value === s.grade);
+      const points = grade?.points || 0;
+      return points >= 1;
+    }).length;
+
+  // NCHE HEC Requirements:
+  // 1 Principal Pass OR 2 Subsidiary Passes
+  const hecEligible = principalPasses >= 1 || subsidiaryPasses >= 2;
+  const isValid = hecEligible && curriculum !== "";
 
   // ── Submit ───────────────────────────────────────────────────────────────
 
