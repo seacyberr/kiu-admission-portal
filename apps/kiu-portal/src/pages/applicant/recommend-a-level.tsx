@@ -435,14 +435,49 @@ export default function RecommendALevel() {
               subsidiary.
             </p>
 
+            {/* Official UHEQF Requirements */}
+            <div className="mb-5 p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center gap-2 mb-3">
+                <GraduationCap className="w-4 h-4 text-slate-700" />
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                  Official UHEQF Entry Requirements
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                <div className="p-3 rounded-lg bg-green-50 border border-green-200">
+                  <p className="text-xs font-bold text-green-800 mb-1">✅ A-Level (UACE) Level 3</p>
+                  <ul className="text-xs text-green-700 space-y-0.5">
+                    <li>• 2 Principal Passes <strong>OR</strong></li>
+                    <li>• 1 Principal + 2 Subsidiary Passes</li>
+                    <li>• Eligible for <strong>Direct Bachelor Degree Entry</strong></li>
+                  </ul>
+                </div>
+                <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <p className="text-xs font-bold text-blue-800 mb-1">✅ Higher Education Certificate (HEC) Level 4</p>
+                  <ul className="text-xs text-blue-700 space-y-0.5">
+                    <li>• 1 Principal Pass <strong>OR</strong> 2 Subsidiary Passes</li>
+                    <li>• 1 Year bridging program</li>
+                    <li>• Progress to Diploma / Degree</li>
+                  </ul>
+                </div>
+                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                  <p className="text-xs font-bold text-amber-800 mb-1">✅ Diploma Level 5</p>
+                  <ul className="text-xs text-amber-700 space-y-0.5">
+                    <li>• 1 Principal + 2 Subsidiary Passes</li>
+                    <li>• 70-75% practical focus</li>
+                    <li>• Progress to Bachelor Degree</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
             {/* NCHE Quick Guide */}
             <div className="mb-5 p-3 rounded-xl bg-blue-50 border border-blue-200 flex items-start gap-2">
               <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
               <div className="text-xs text-blue-700 space-y-1">
-                <p className="font-semibold">NCHE Requirements:</p>
-                <p>• Minimum 3 principal subjects</p>
-                <p>• General Paper (GP) as subsidiary</p>
-                <p>• Points: A=6, B=5, C=4, D=3, E=2, O=1, F=0</p>
+                <p className="font-semibold">Grade Point Values:</p>
+                <p>• A=6, B=5, C=4, D=3, E=2, O=1, F=0</p>
+                <p>• General Paper recommended for all programs</p>
               </div>
             </div>
 
