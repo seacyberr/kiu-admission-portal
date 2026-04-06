@@ -567,20 +567,25 @@ def recommend_programs():
     programs = query.all()
     recommendations = []
     
+    # Get actual qualification status
+    qualification_result = UgandaQualificationChecker.get_recommended_pathways(olevel_grades, alevel_grades)
+    
     # Determine which program levels are allowed based on qualification
     allowed_levels = []
-    if 'bachelor_direct' in eligible_pathways:
+    eligible_programs = qualification_result.get('recommendedPathways', [])
+    
+    if 'bachelor_direct' in eligible_programs:
         allowed_levels.append('degree')
-    if 'diploma' in eligible_pathways:
+    if 'diploma' in eligible_programs:
         allowed_levels.append('diploma')
-    if 'hec' in eligible_pathways:
+    if 'hec' in eligible_programs:
         allowed_levels.append('hec')
 
     for prog in programs:
         score = program_scores.get(prog.code, 0)
         
-        # Only recommend programs that the student actually qualifies for
-        if score > 0 and prog.level in allowed_levels:
+        # ONLY recommend programs that the student ACTUALLY QUALIFIES FOR
+        if score > 0 and prog.level in allowed_levels and qualification_result['olevel']['eligible']:
             match_percentage = min(100, int((score / max(len(principal_subjects), 1)) * 100))
             program_nche_status = "compliant"
             program_warnings = list(nche_warnings)
@@ -611,6 +616,8 @@ def recommend_programs():
         "total": len(recommendations),
         "qualificationCheck": qualification_result,
         "allowedProgramLevels": allowed_levels,
+        "totalProgramsScanned": len(programs),
+        "programsExcludedByQualification": len(programs) - len(recommendations),
         "subjectsAnalyzed": principal_names,
         "ncheCompliance": {
             "hasGeneralPaper": has_general_paper,
