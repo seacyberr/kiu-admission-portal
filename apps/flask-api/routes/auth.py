@@ -363,7 +363,17 @@ def verify_otp():
     user.is_verified = True
     db.session.commit()
 
-    return jsonify({"message": "Email verified successfully. You can now sign in."}), 200
+    access_token  = generate_token(user.id, user.role)
+    refresh_token = generate_refresh_token(user.id)
+
+    response = jsonify({
+        "message": "Email verified successfully. You can now sign in.",
+        "token": access_token,
+        "user": user.to_dict()
+    })
+    _set_auth_cookie(response, access_token)
+    _set_refresh_cookie(response, refresh_token)
+    return response, 200
 
 
 @auth_bp.route("/resend-otp", methods=["POST"])
@@ -440,7 +450,11 @@ def login():
     access_token  = generate_token(user.id, user.role)
     refresh_token = generate_refresh_token(user.id)
 
-    response = jsonify({"user": user.to_dict()})
+    response = jsonify({
+        "user": user.to_dict(),
+        "accessToken": access_token,
+        "refreshToken": refresh_token
+    })
     _set_auth_cookie(response, access_token)
     _set_refresh_cookie(response, refresh_token)
     return response, 200
@@ -481,7 +495,11 @@ def refresh_token_route():
     new_refresh   = generate_refresh_token(user.id)
     db.session.commit()
 
-    response = jsonify({"user": user.to_dict()})
+    response = jsonify({
+        "user": user.to_dict(),
+        "accessToken": new_access,
+        "refreshToken": new_refresh
+    })
     _set_auth_cookie(response, new_access)
     _set_refresh_cookie(response, new_refresh)
     return response, 200
