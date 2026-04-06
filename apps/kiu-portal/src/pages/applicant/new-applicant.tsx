@@ -143,17 +143,52 @@ export default function NewApplicant() {
         {/* ── O-Level ─────────────────────────────────────────────────────── */}
         {highest === 'o_level' && (
           <Card className="p-8">
-            <div className="flex items-center justify-between gap-3 mb-6">
-              <div className="space-y-1">
-                <h2 className="text-lg font-bold">For O-Level applicants</h2>
-                <p className="text-muted-foreground text-sm">
-                  You should apply to Diploma or Higher Education Certificate (HEC).
+            <div className="space-y-5">
+              <div className="bg-green-50 p-4 rounded-xl text-sm">
+                <p className="font-semibold text-green-800">✓ Eligible for HEC / Diploma</p>
+                <p className="text-green-700 mt-1">
+                  We recommend using the Program Recommendation Tool first to find the best match for your subjects.
                 </p>
               </div>
-              <Badge className="bg-primary/10 text-primary border-primary/20">
-                No degree at O-Level
-              </Badge>
-            </div>
+
+              {/* ── PRIMARY CTA: Recommendation Tool ── */}
+              <div className="p-5 rounded-2xl border-2 border-accent/40 bg-accent/5">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5 text-accent-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base">
+                       Get Personalised Program Recommendations
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Enter your O-Level subjects and grades. Our NCHE-compliant engine will
+                      show you the best matching HEC and Diploma programs.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  className="w-full gap-2"
+                  variant="accent"
+                  onClick={() => setLocation('/recommend/o-level')}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Use Program Recommendation Tool
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {/* ── Secondary: Apply directly ── */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-3 text-muted-foreground">
+                    or apply directly
+                  </span>
+                </div>
+              </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Card className="p-5 border-border bg-secondary/20">
@@ -195,6 +230,7 @@ export default function NewApplicant() {
                   </div>
                 </div>
               </Card>
+            </div>
             </div>
           </Card>
         )}
@@ -353,32 +389,114 @@ export default function NewApplicant() {
         {/* ── Diploma → Degree ─────────────────────────────────────────────── */}
         {highest === 'diploma' && (
           <Card className="p-8">
-            <div className="bg-secondary/30 rounded-xl p-5 mb-6">
-              <h2 className="text-lg font-bold">Diploma holder → Degree application</h2>
-              <p className="text-muted-foreground text-sm mt-1">
-                Your Diploma certificate qualifies you to apply for Degree programs.
-              </p>
+            <div className="space-y-5">
+              <div className="bg-green-50 p-4 rounded-xl text-sm">
+                <p className="font-semibold text-green-800">✓ Eligible for Degree</p>
+                <p className="text-green-700 mt-1">
+                  We recommend using the Program Recommendation Tool first to find the best matching programs for your Diploma.
+                </p>
+              </div>
+
+              {/* ── PRIMARY CTA: Recommendation Tool ── */}
+              <div className="p-5 rounded-2xl border-2 border-accent/40 bg-accent/5">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5 text-accent-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base">
+                      🎯 Get Personalised Program Recommendations
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Enter your Diploma subjects and grades to find the best matching Degree programs.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  className="w-full gap-2"
+                  variant="accent"
+                  onClick={() => setLocation('/recommend/diploma')}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Use Program Recommendation Tool
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {/* ── Secondary: Apply directly ── */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-3 text-muted-foreground">
+                    or apply directly
+                  </span>
+                </div>
+              </div>
+
+              <Button className="w-full" variant="accent" onClick={() => setLocation(toDegreeApply('diploma'))}>
+                Continue to Degree Application
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
             </div>
-            <Button className="w-full" variant="accent" onClick={() => setLocation(toDegreeApply('diploma'))}>
-              Continue to Degree Application
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
           </Card>
         )}
 
         {/* ── HEC → Degree ─────────────────────────────────────────────────── */}
         {highest === 'hec' && (
           <Card className="p-8">
-            <div className="bg-secondary/30 rounded-xl p-5 mb-6">
-              <h2 className="text-lg font-bold">HEC holder → Degree application</h2>
-              <p className="text-muted-foreground text-sm mt-1">
-                Your Higher Education Certificate (HEC) qualifies you to apply for Degree programs.
-              </p>
+            <div className="space-y-5">
+              <div className="bg-green-50 p-4 rounded-xl text-sm">
+                <p className="font-semibold text-green-800">✓ Eligible for Degree</p>
+                <p className="text-green-700 mt-1">
+                  We recommend using the Program Recommendation Tool first to find the best matching programs for your HEC.
+                </p>
+              </div>
+
+              {/* ── PRIMARY CTA: Recommendation Tool ── */}
+              <div className="p-5 rounded-2xl border-2 border-accent/40 bg-accent/5">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5 text-accent-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base">
+                      🎯 Get Personalised Program Recommendations
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Enter your HEC subjects and grades to find the best matching Degree programs.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  className="w-full gap-2"
+                  variant="accent"
+                  onClick={() => setLocation('/recommend/hec')}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Use Program Recommendation Tool
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {/* ── Secondary: Apply directly ── */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-3 text-muted-foreground">
+                    or apply directly
+                  </span>
+                </div>
+              </div>
+
+              <Button className="w-full" variant="accent" onClick={() => setLocation(toDegreeApply('hec'))}>
+                Continue to Degree Application
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
             </div>
-            <Button className="w-full" variant="accent" onClick={() => setLocation(toDegreeApply('hec'))}>
-              Continue to Degree Application
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
           </Card>
         )}
 
