@@ -1,5 +1,5 @@
 /**
- * recommend.tsx — A-Level Subject Combination → Program Recommendation
+ * recommend-a-level.tsx — A-Level Subject Combination → Program Recommendation
  *
  * Core feature from the project proposal:
  * "Allow input of Advanced Level subject combinations, grades, General Paper,
@@ -7,7 +7,7 @@
  *  recommendations, complete with entry requirements, fees, duration and
  *  career prospects."
  *
- * Route: /recommend  (accessible to authenticated applicants)
+ * Route: /recommend/a-level  (accessible to authenticated applicants)
  * Backend: POST /api/admission/recommend
  */
 
@@ -131,10 +131,10 @@ function ProgramCard({
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1">
-            <h3 className="font-bold text-lg leading-tight">{program.name}</h3>
+            <h3 className="font-bold text-lg leading-tight truncate">{program.name}</h3>
             {ncheStatusBadge(program.ncheStatus)}
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground truncate">
             {program.faculty}
             {program.department ? ` · ${program.department}` : ""}
           </p>
@@ -152,8 +152,8 @@ function ProgramCard({
                 : "Western (Ishaka)"}
             </span>
             {program.duration && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-secondary text-muted-foreground flex items-center gap-1">
-                <Clock className="w-3 h-3" />
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-secondary text-muted-foreground flex items-center gap-1 truncate">
+                <Clock className="w-3 h-3 shrink-0" />
                 {program.duration}
               </span>
             )}
@@ -184,7 +184,7 @@ function ProgramCard({
       <div className="mb-4">
         {matchBar(program.matchPercentage)}
         {program.matchedSubjects.length > 0 && (
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1 truncate">
             Matched:{" "}
             <span className="font-medium text-primary">
               {program.matchedSubjects.join(", ")}
@@ -207,19 +207,19 @@ function ProgramCard({
 
       {/* Fees row */}
       <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-secondary/50 rounded-xl">
-        <div>
+        <div className="min-w-0">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
-            <DollarSign className="w-3 h-3" /> Local Tuition
+            <DollarSign className="w-3 h-3 shrink-0" /> Local Tuition
           </p>
-          <p className="font-bold text-sm text-primary">
+          <p className="font-bold text-sm text-primary truncate">
             {formatFee(program.feesLocal, "UGX")}
           </p>
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
-            <DollarSign className="w-3 h-3" /> Int'l Tuition
+            <DollarSign className="w-3 h-3 shrink-0" /> Int'l Tuition
           </p>
-          <p className="font-bold text-sm">
+          <p className="font-bold text-sm truncate">
             {formatFee(program.feesInternational, "USD")}
           </p>
         </div>
@@ -250,7 +250,7 @@ function ProgramCard({
               <p className="font-semibold text-xs uppercase tracking-wider text-primary mb-1">
                 Entry Requirements
               </p>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed break-words">
                 {program.entryRequirements}
               </p>
             </div>
@@ -260,7 +260,7 @@ function ProgramCard({
               <p className="font-semibold text-xs uppercase tracking-wider text-muted-foreground mb-1">
                 About This Program
               </p>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed break-words">
                 {program.description}
               </p>
             </div>
@@ -282,7 +282,7 @@ function ProgramCard({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export default function Recommend() {
+export default function RecommendALevel() {
   const [, setLocation] = useLocation();
   const recommendMutation = useRecommendPrograms();
 
@@ -381,7 +381,7 @@ export default function Recommend() {
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Header */}
       <div className="mb-10">
         <Link
@@ -406,9 +406,9 @@ export default function Recommend() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid lg:grid-cols-3 gap-6">
         {/* ── Input Panel ──────────────────────────────────────────────── */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className="lg:col-span-1 space-y-6 min-w-0">
           <Card className="p-6">
             <h2 className="font-bold text-lg mb-1">Your A-Level Subjects</h2>
             <p className="text-xs text-muted-foreground mb-5">
@@ -443,7 +443,7 @@ export default function Recommend() {
                         onChange={(e) =>
                           updateSubject(i, "subject", e.target.value)
                         }
-                        className="flex-1 h-9 px-2 rounded-lg border border-border bg-white text-sm"
+                        className="flex-1 h-9 px-2 rounded-lg border border-border bg-white text-sm min-w-0"
                       >
                         <option value="">Subject…</option>
                         {PRINCIPAL_SUBJECTS.map((sub) => (
@@ -457,7 +457,7 @@ export default function Recommend() {
                         onChange={(e) =>
                           updateSubject(i, "grade", e.target.value)
                         }
-                        className="w-24 h-9 px-2 rounded-lg border border-border bg-white text-sm"
+                        className="w-24 h-9 px-2 rounded-lg border border-border bg-white text-sm shrink-0"
                       >
                         <option value="">Grade</option>
                         {ALEVEL_GRADES.map((g) => (
@@ -471,7 +471,7 @@ export default function Recommend() {
                         <button
                           type="button"
                           onClick={() => removeSubject(i)}
-                          className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-destructive"
+                          className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-destructive shrink-0"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -488,7 +488,7 @@ export default function Recommend() {
                 }
                 className="mt-2 flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 disabled:opacity-40"
               >
-                <Plus className="w-3.5 h-3.5" /> Add Principal Subject
+                  <Plus className="w-3.5 h-3.5" /> Add Principal Subject
               </button>
             </div>
 
@@ -497,43 +497,39 @@ export default function Recommend() {
               <div className="flex items-center gap-2 mb-3">
                 <GraduationCap className="w-5 h-5 text-primary" />
                 <p className="text-sm font-semibold text-primary">
-                  Insert Your Principal Subject Grades
+                  Subject Grades Summary
                 </p>
               </div>
-              <p className="text-xs text-muted-foreground mb-4">
-                Enter the grades you achieved in your A-Level principal subjects. Each grade contributes to your total points.
-              </p>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {subjects
                   .map((s, i) => ({ s, i }))
                   .filter(({ s }) => s.subjectType === "principal" && s.subject)
                   .map(({ s, i }) => (
-                    <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-white border border-border">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">{s.subject}</p>
+                    <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white border border-border">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{s.subject}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Grade:</span>
+                      <div className="flex items-center gap-2 shrink-0">
                         <select
                           value={s.grade}
                           onChange={(e) =>
                             updateSubject(i, "grade", e.target.value)
                           }
-                          className={`w-20 h-8 px-2 rounded-md border text-sm font-semibold ${
+                          className={`w-16 h-7 px-1 rounded border text-sm font-semibold ${
                             s.grade 
                               ? "border-primary bg-primary/5 text-primary" 
                               : "border-border bg-white text-muted-foreground"
                           }`}
                         >
                           <option value="">—</option>
-                          {ALEVEL_GRADES.map((g) => (
-                            <option key={g.value} value={g.value}>
-                              {g.value}
-                            </option>
-                          ))}
+                        {ALEVEL_GRADES.map((g) => (
+                          <option key={g.value} value={g.value}>
+                            {g.value}
+                          </option>
+                        ))}
                         </select>
                         {s.grade && (
-                          <span className="text-xs font-medium text-primary">
+                          <span className="text-xs font-medium text-primary w-12 text-right">
                             ({ALEVEL_GRADES.find(g => g.value === s.grade)?.points || 0} pts)
                           </span>
                         )}
@@ -542,7 +538,7 @@ export default function Recommend() {
                   ))}
                 {subjects.filter(s => s.subjectType === "principal" && s.subject).length === 0 && (
                   <p className="text-xs text-muted-foreground text-center py-4">
-                    Please select your principal subjects above to insert grades
+                    Please select your principal subjects above
                   </p>
                 )}
               </div>
@@ -564,7 +560,7 @@ export default function Recommend() {
                         onChange={(e) =>
                           updateSubject(i, "subject", e.target.value)
                         }
-                        className="flex-1 h-9 px-2 rounded-lg border border-border bg-white text-sm"
+                        className="flex-1 h-9 px-2 rounded-lg border border-border bg-white text-sm min-w-0"
                       >
                         <option value="">Subject…</option>
                         {SUBSIDIARY_SUBJECTS.map((sub) => (
@@ -578,7 +574,7 @@ export default function Recommend() {
                         onChange={(e) =>
                           updateSubject(i, "grade", e.target.value)
                         }
-                        className="w-24 h-9 px-2 rounded-lg border border-border bg-white text-sm"
+                        className="w-24 h-9 px-2 rounded-lg border border-border bg-white text-sm shrink-0"
                       >
                         <option value="">Grade</option>
                         {ALEVEL_GRADES.map((g) => (
@@ -590,7 +586,7 @@ export default function Recommend() {
                       <button
                         type="button"
                         onClick={() => removeSubject(i)}
-                        className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-destructive"
+                        className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-destructive shrink-0"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -602,7 +598,7 @@ export default function Recommend() {
                 onClick={() => addSubject("subsidiary")}
                 className="mt-2 flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary disabled:opacity-40"
               >
-                <Plus className="w-3.5 h-3.5" /> Add Subsidiary Subject
+                  <Plus className="w-3.5 h-3.5" /> Add Subsidiary Subject
               </button>
             </div>
 
@@ -737,7 +733,7 @@ export default function Recommend() {
                 {result.ncheCompliance.errors.map((e, i) => (
                   <div
                     key={i}
-                    className="p-2 rounded-lg bg-destructive/10 text-destructive"
+                    className="p-2 rounded-lg bg-destructive/10 text-destructive break-words"
                   >
                     {e}
                   </div>
@@ -745,7 +741,7 @@ export default function Recommend() {
                 {result.ncheCompliance.warnings.map((w, i) => (
                   <div
                     key={i}
-                    className="p-2 rounded-lg bg-amber-50 text-amber-700"
+                    className="p-2 rounded-lg bg-amber-50 text-amber-700 break-words"
                   >
                     {w}
                   </div>
@@ -763,7 +759,7 @@ export default function Recommend() {
         </div>
 
         {/* ── Results Panel ─────────────────────────────────────────────── */}
-        <div className="lg:col-span-2" id="results-section">
+        <div className="lg:col-span-2 min-w-0" id="results-section">
           {!result && !recommendMutation.isPending && (
             <div className="h-full flex items-center justify-center">
               <div className="text-center text-muted-foreground py-24">
@@ -791,20 +787,20 @@ export default function Recommend() {
           {result && (
             <div className="space-y-6">
               {/* Summary bar */}
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="min-w-0">
                   <h2 className="text-xl font-bold">
                     {result.total} Program
                     {result.total !== 1 ? "s" : ""} Found
                   </h2>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground truncate">
                     Based on:{" "}
                     <span className="font-medium text-foreground">
                       {result.subjectsAnalyzed.join(", ")}
                     </span>
                   </p>
                 </div>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs shrink-0">
                   Sorted by subject match
                 </Badge>
               </div>
