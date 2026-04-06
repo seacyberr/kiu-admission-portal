@@ -9,6 +9,7 @@ from functools import wraps
 from werkzeug.utils import secure_filename
 from models import db, AdmissionApplication, Program, User
 from routes.auth import get_current_user
+from lib.qualification_checker import UgandaQualificationChecker
 
 
 def sanitize_text(text):
@@ -508,6 +509,21 @@ def recommend_programs():
 
     total_principal_points = sum(ALEVEL_GRADE_POINTS.get(p["grade"], 0) for p in principal_subjects)
 
+    # Run NCHE Qualification Check first
+    olevel_grades = data.get("olevelGrades", [])
+    alevel_grades = alevel_subjects
+    
+    qualification_result = UgandaQualificationChecker.get_recommended_pathways(olevel_grades, alevel_grades)
+    
+    # Add qualification check results
+    if not qualification_result['olevel']['eligible']:
+        nche_errors.extend(qualification_result['olevel']['requirementsMissing'])
+    
+    if qualification_result['alevel'] and not qualification_result['alevel']['eligible']:
+        nche_errors.extend(qualification_result['alevel']['requirementsMissing'])
+    
+    eligible_pathways = qualification_result.get('recommendedPathways', [])
+    
     if total_principal_points < 6:
         nche_errors.append(f"Total principal points ({total_principal_points}) below NCHE minimum (6 points)")
 
@@ -550,10 +566,21 @@ def recommend_programs():
 
     programs = query.all()
     recommendations = []
+    
+    # Determine which program levels are allowed based on qualification
+    allowed_levels = []
+    if 'bachelor_direct' in eligible_pathways:
+        allowed_levels.append('degree')
+    if 'diploma' in eligible_pathways:
+        allowed_levels.append('diploma')
+    if 'hec' in eligible_pathways:
+        allowed_levels.append('hec')
 
     for prog in programs:
         score = program_scores.get(prog.code, 0)
-        if score > 0:
+        
+        # Only recommend programs that the student actually qualifies for
+        if score > 0 and prog.level in allowed_levels:
             match_percentage = min(100, int((score / max(len(principal_subjects), 1)) * 100))
             program_nche_status = "compliant"
             program_warnings = list(nche_warnings)
@@ -582,6 +609,8 @@ def recommend_programs():
     return jsonify({
         "recommendations": recommendations,
         "total": len(recommendations),
+        "qualificationCheck": qualification_result,
+        "allowedProgramLevels": allowed_levels,
         "subjectsAnalyzed": principal_names,
         "ncheCompliance": {
             "hasGeneralPaper": has_general_paper,
@@ -591,6 +620,44 @@ def recommend_programs():
             "warnings": nche_warnings,
         },
     }), 200
+
+
+@admission_bp.route("/check-qualifications", methods=["POST"])
+def check_qualifications():
+    """
+    Check qualifications against official NCHE/UHEQF standards
+    Returns eligibility status, met requirements, missing requirements and recommended pathways
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
+    
+    olevel_grades = data.get("olevelGrades", [])
+    alevel_grades = data.get("alevelGrades", [])
+    program_level = data.get("programLevel")
+    
+    result = UgandaQualificationChecker.get_recommended_pathways(olevel_grades, alevel_grades)
+    
+    # If specific program level is provided, check eligibility
+    if program_level:
+        olevel_result = UgandaQualificationChecker.validate_olevel(olevel_grades)
+        alevel_result = UgandaQualificationChecker.validate_alevel(alevel_grades) if alevel_grades else None
+        
+        eligible, message = UgandaQualificationChecker.check_program_eligibility(
+            program_level,
+            olevel_result,
+            alevel_result,
+            has_diploma = data.get("hasDiploma", False),
+            has_hec = data.get("hasHec", False)
+        )
+        
+        result["programEligibility"] = {
+            "level": program_level,
+            "eligible": eligible,
+            "message": message
+        }
+    
+    return jsonify(result), 200
 
 
 @admission_bp.route("/analytics", methods=["GET"])
