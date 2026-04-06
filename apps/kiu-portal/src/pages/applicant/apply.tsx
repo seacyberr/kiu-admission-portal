@@ -229,10 +229,12 @@ export default function Apply({ target }: { target: ApplyTarget }) {
   const programs = allPrograms;
 
   const degreeQualification = readDegreeQualificationFromUrl();
-  const examLevel: ExamLevel = target === "degree" ? degreeQualification : "o_level";
+  const examLevel: ExamLevel = target === "degree" ? degreeQualification : target;
   const shouldShowALevel = examLevel === "a_level";
   const shouldShowOlevel = examLevel === "o_level";
   const shouldShowCert = examLevel === "diploma" || examLevel === "hec";
+  const shouldShowMasters = examLevel === "masters";
+  const shouldShowPhd = examLevel === "phd";
 
   const { register, control, handleSubmit, watch, setValue, getValues, formState: { errors } } = useForm<ApplyForm>({
     resolver: zodResolver(applySchema),

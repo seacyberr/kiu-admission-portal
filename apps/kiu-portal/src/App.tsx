@@ -16,6 +16,10 @@ import ApplicantDashboard from "@/pages/applicant/dashboard";
 import ApplyForm from "@/pages/applicant/apply";
 import NewApplicant from "@/pages/applicant/new-applicant";
 import Recommend from "@/pages/applicant/recommend";          // ← NEW
+import RecommendALevel from "@/pages/applicant/recommend-a-level";
+import RecommendOLevel from "@/pages/applicant/recommend-o-level";
+import RecommendDiploma from "@/pages/applicant/recommend-diploma";
+import RecommendHec from "@/pages/applicant/recommend-hec";
 import FinalistDashboard from "@/pages/finalist/dashboard";
 import CareerPaths from "@/pages/finalist/career-paths";
 import Opportunities from "@/pages/finalist/opportunities";
@@ -60,6 +64,34 @@ function Router() {
           {() => (
             <RoleGuard roles={["applicant"]}>
               <Recommend />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/recommend/a-level">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <RecommendALevel />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/recommend/o-level">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <RecommendOLevel />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/recommend/diploma">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <RecommendDiploma />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/recommend/hec">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <RecommendHec />
             </RoleGuard>
           )}
         </Route>
