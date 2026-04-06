@@ -141,7 +141,7 @@ def _set_auth_cookie(response, token):
         value=token,
         httponly=True,
         secure=is_production,
-        samesite="Strict",
+        samesite="Lax",
         max_age=15 * 60,   # 15 minutes — matches JWT expiry
         path="/",
     )
@@ -156,9 +156,9 @@ def _set_refresh_cookie(response, token):
         value=token,
         httponly=True,
         secure=is_production,
-        samesite="Strict",
+        samesite="Lax",
         max_age=7 * 24 * 60 * 60,   # 7 days
-        path="/",    # Send refresh cookie with all requests so token refresh works globally
+        path="/",
     )
     return response
 
