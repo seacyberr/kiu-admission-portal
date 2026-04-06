@@ -152,9 +152,28 @@ export type RecommendedProgram = Program & {
   feesInternational?: number | null;
 };
 
+export type QualificationCheckResult = {
+  eligible: boolean;
+  message: string;
+  eligiblePrograms: string[];
+  requirementsMet: string[];
+  requirementsMissing: string[];
+};
+
+export type QualificationResult = {
+  olevel: QualificationCheckResult;
+  alevel?: QualificationCheckResult;
+  recommendedPathways: string[];
+  nextSteps: string[];
+};
+
 export type RecommendResult = {
   recommendations: RecommendedProgram[];
   total: number;
+  qualificationCheck: QualificationResult;
+  allowedProgramLevels: string[];
+  totalProgramsScanned: number;
+  programsExcludedByQualification: number;
   subjectsAnalyzed: string[];
   ncheCompliance: NcheCompliance;
 };

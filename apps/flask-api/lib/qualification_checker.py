@@ -94,10 +94,9 @@ class UgandaQualificationChecker:
             result.requirements_met.append("✅ Eligible for Direct Bachelor Degree Entry (1 Principal + 2 Subsidiaries)")
             pathways.append("bachelor_direct")
         
-        # HEC Entry
-        if principal_passes >= 1 or subsidiary_passes >= 2:
-            result.requirements_met.append("✅ Eligible for Higher Education Certificate (HEC) Program")
-            pathways.append("hec")
+        # HEC Entry - A-Level holders are ALWAYS eligible for HEC
+        result.requirements_met.append("✅ Eligible for Higher Education Certificate (HEC) Program")
+        pathways.append("hec")
         
         # Diploma Entry
         if principal_passes >= 1 and subsidiary_passes >= 2:
@@ -131,24 +130,32 @@ class UgandaQualificationChecker:
         
         # Certificate / Diploma
         if program_level in ['certificate', 'diploma']:
+            if has_hec:
+                return True, "Eligible via HEC entry route"
+            if olevel_result.eligible:
+                return True, "Eligible via O-Level entry route"
             if alevel_result and alevel_result.eligible and 'diploma' in alevel_result.eligible_programs:
                 return True, "Eligible for Diploma program"
             return False, "Does not meet Diploma entry requirements"
         
         # Bachelor Degree
         elif program_level in ['bachelor', 'degree', 'undergraduate']:
-            if has_diploma or has_hec:
-                return True, "Eligible via Diploma/HEC entry route"
+            if has_diploma:
+                return True, "Eligible via Diploma entry route"
+            if has_hec:
+                return True, "Eligible via HEC entry route"
             if alevel_result and alevel_result.eligible and 'bachelor_direct' in alevel_result.eligible_programs:
                 return True, "Eligible via Direct A-Level entry route"
             return False, "Does not meet Bachelor degree entry requirements"
         
         # Masters
         elif program_level in ['master', 'masters', 'postgraduate']:
+            # Bachelor degree required for Masters
             return True, "Bachelor degree required for Masters entry (verified separately)"
         
         # PhD
         elif program_level in ['phd', 'doctorate']:
+            # Masters degree required for PhD
             return True, "Masters degree required for PhD entry (verified separately)"
         
         return False, "Unknown program level"

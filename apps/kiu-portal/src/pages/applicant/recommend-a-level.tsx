@@ -721,6 +721,86 @@ export default function RecommendALevel() {
 
           {/* NCHE Compliance Summary (shown after first result) */}
           {result && (
+            <>
+            {/* ✅ QUALIFICATION STATUS - THIS WAS COMPLETELY MISSING */}
+            <Card className="p-5 mb-4">
+              <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
+                {result.qualificationCheck.alevel?.eligible ? <CheckCircle className="w-5 h-5 text-green-600" /> : <AlertCircle className="w-5 h-5 text-amber-600" />}
+                Qualification Status
+              </h3>
+
+              <div className="space-y-4">
+                {/* Overall Status */}
+                <div className={`p-3 rounded-lg ${result.qualificationCheck.alevel?.eligible ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
+                  <p className={`font-semibold text-sm ${result.qualificationCheck.alevel?.eligible ? 'text-green-800' : 'text-amber-800'}`}>
+                    {result.qualificationCheck.alevel?.message}
+                  </p>
+                </div>
+
+                {/* Requirements Met */}
+                {result.qualificationCheck.alevel?.requirementsMet && result.qualificationCheck.alevel.requirementsMet.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-green-700 mb-2">✅ Requirements Met:</p>
+                    <ul className="space-y-1">
+                      {result.qualificationCheck.alevel.requirementsMet.map((req, i) => (
+                        <li key={i} className="text-xs text-green-700 pl-1">{req}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Requirements Missing */}
+                {result.qualificationCheck.alevel?.requirementsMissing && result.qualificationCheck.alevel.requirementsMissing.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-red-700 mb-2">❌ Missing Requirements:</p>
+                    <ul className="space-y-1">
+                      {result.qualificationCheck.alevel.requirementsMissing.map((req, i) => (
+                        <li key={i} className="text-xs text-red-700 pl-1">{req}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Eligible Program Levels */}
+                <div className="grid grid-cols-3 gap-2">
+                  {['degree', 'diploma', 'hec'].map(level => (
+                    <div key={level} className={`p-2 rounded text-center text-xs font-medium ${
+                      result.allowedProgramLevels.includes(level)
+                        ? 'bg-green-100 text-green-800 border border-green-200'
+                        : 'bg-slate-100 text-slate-500 border border-slate-200'
+                    }`}>
+                      {result.allowedProgramLevels.includes(level) ? '✅ ' : '❌ '}
+                      {level.toUpperCase()}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Transparency Stats */}
+                <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Programs Scanned</p>
+                    <p className="text-lg font-bold">{result.totalProgramsScanned}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Excluded (Not Qualified)</p>
+                    <p className="text-lg font-bold text-amber-600">{result.programsExcludedByQualification}</p>
+                  </div>
+                </div>
+
+                {/* Next Steps */}
+                {result.qualificationCheck.nextSteps.length > 0 && (
+                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <p className="text-xs font-semibold text-blue-800 mb-2">📋 Recommended Next Steps:</p>
+                    <ul className="space-y-1">
+                      {result.qualificationCheck.nextSteps.map((step, i) => (
+                        <li key={i} className="text-xs text-blue-700 pl-1">• {step}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </Card>
+
             <Card className="p-5">
               <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-primary" />
@@ -774,6 +854,7 @@ export default function RecommendALevel() {
                   )}
               </div>
             </Card>
+            </>
           )}
         </div>
 
