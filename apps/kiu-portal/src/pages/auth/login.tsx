@@ -21,28 +21,38 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  // BUG FIX: replaced loginMutation (which was defined but never called, making
-  // isPending always false) with local state that accurately tracks the request.
   const [isLoading, setIsLoading] = useState(false);
 
-  // If user is already authenticated redirect them away from the login page.
-  // Per the changelog: visiting /login while authenticated clears the session
-  // so the user can sign in with different credentials.
+  /**
+   * BUG FIX — root cause of the navigation-logout loop.
+   *
+   * The previous version called /api/auth/logout whenever a logged-in user
+   * arrived at the login page, then removed kiu_user from localStorage.
+   * This created a fatal chain:
+   *
+   *   JWT expires (15 min)
+   *   → any API call returns 401
+   *   → fetch-patch.ts redirects to /login
+   *   → login.tsx calls logout (clears httpOnly cookie + localStorage)
+   *   → user is permanently wiped on every navigation after 15 min
+   *
+   * Correct behaviour (original): if kiu_user is present, redirect the user
+   * to their dashboard.  Let the RoleGuard and /api/auth/me decide whether
+   * the session is truly valid.  Only an explicit logout should clear state.
+   */
   useEffect(() => {
     const userStr = localStorage.getItem("kiu_user");
-    if (!userStr) return;
-    try {
-      const user = JSON.parse(userStr);
-      // Clear stale local state and let /api/auth/me validate the session.
-      // If the session cookie is still valid the user will be redirected by
-      // the RoleGuard on the target page.  If it's expired they stay on /login.
-      localStorage.removeItem("kiu_user");
-      // Call logout to clear the httpOnly cookie too
-      fetch(`${BASE}/api/auth/logout`, { method: "POST", credentials: "include" }).catch(() => {});
-    } catch {
-      localStorage.removeItem("kiu_user");
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.role === "admin") setLocation("/admin");
+        else if (user.role === "finalist") setLocation("/career");
+        else setLocation("/dashboard");
+      } catch {
+        localStorage.removeItem("kiu_user");
+      }
     }
-  }, []);
+  }, [setLocation]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),

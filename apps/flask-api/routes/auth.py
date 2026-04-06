@@ -19,26 +19,31 @@ auth_bp = Blueprint("auth", __name__)
 BREVO_SMTP_HOST = "smtp-relay.brevo.com"
 BREVO_SMTP_PORT = 587
 BREVO_SMTP_USER = os.environ.get("BREVO_SMTP_USER", "")
-BREVO_SMTP_KEY = os.environ.get("BREVO_SMTP_KEY", "")
-EMAIL_FROM = "KIU Portal <noreply@kiu.ac.ug>"
+BREVO_SMTP_KEY  = os.environ.get("BREVO_SMTP_KEY",  "")
+EMAIL_FROM      = "KIU Portal <noreply@kiu.ac.ug>"
 
-OTP_EXPIRY_MINUTES = 10
+OTP_EXPIRY_MINUTES          = 10
 OTP_RESEND_COOLDOWN_SECONDS = 60
 
 # ---------------------------------------------------------------------------
-# User-based Rate Limiting
-# BUG FIX: The original implementation used limiter._storage (a private
-# internal attribute that does not exist in Flask-Limiter 3.x) and also
-# double-counted by calling both .incr() and .set().  Replaced with a
-# simple, portable in-process counter that degrades gracefully when Redis
-# is not available.  For production, configure RATE_LIMIT_STORAGE_URI=redis://
-# and Flask-Limiter's own @limiter.limit() decorators for per-route limits.
+# BUG FIX — JWT lifetime
+# The original value was 15 minutes.  With that setting, every navigation
+# click after the first quarter-hour hit an expired JWT → 401 on any API
+# call → fetch-patch redirected to /login → the login page called logout
+# (a bug introduced in the previous patch) → full session wipe on every
+# navigation.  8 hours covers a full working session.  The 7-day refresh
+# token handles longer sessions transparently.
+# ---------------------------------------------------------------------------
+JWT_ACCESS_TOKEN_HOURS = 8
+
+# ---------------------------------------------------------------------------
+# User-based rate limiting
 # ---------------------------------------------------------------------------
 
-_ip_counters: dict = {}   # fallback in-memory store when Redis not configured
+_ip_counters: dict = {}
 
-def _get_storage():
-    """Return Redis client if available, else None."""
+
+def _get_redis():
     try:
         import redis as redis_lib
         url = os.environ.get("RATE_LIMIT_STORAGE_URI", "")
@@ -50,45 +55,33 @@ def _get_storage():
 
 
 def user_rate_limit(max_requests: int = 100, window_seconds: int = 3600):
-    """
-    Simple per-IP (or per-user-id when authenticated) rate-limit decorator.
-
-    Uses Redis INCR/EXPIRE when RATE_LIMIT_STORAGE_URI is a Redis URL,
-    otherwise falls back to an in-process dict (suitable for single-worker
-    dev/test environments only).
-    """
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            user = getattr(g, 'current_user', None)
+            user     = getattr(g, "current_user", None)
             identity = f"user:{user.id}" if user else (request.remote_addr or "unknown")
-            window_slot = int(datetime.utcnow().timestamp()) // window_seconds
-            key = f"rl:{f.__name__}:{identity}:{window_slot}"
-
+            slot     = int(datetime.utcnow().timestamp()) // window_seconds
+            key      = f"rl:{f.__name__}:{identity}:{slot}"
             try:
-                r = _get_storage()
+                r = _get_redis()
                 if r is not None:
-                    # Redis path — atomic and correct
                     count = r.incr(key)
                     if count == 1:
                         r.expire(key, window_seconds)
                 else:
-                    # In-process fallback
                     _ip_counters[key] = _ip_counters.get(key, 0) + 1
                     count = _ip_counters[key]
-
                 if count > max_requests:
                     return jsonify({
                         "error": "Rate limited",
                         "message": (
-                            f"Too many requests. Maximum {max_requests} per "
+                            f"Too many requests. Max {max_requests} per "
                             f"{window_seconds // 60} minutes."
                         ),
                         "retryAfter": window_seconds,
                     }), 429
             except Exception:
-                pass  # Fail open — never block a request due to a rate-limit error
-
+                pass  # fail open
             return f(*args, **kwargs)
         return wrapper
     return decorator
@@ -99,25 +92,22 @@ def user_rate_limit(max_requests: int = 100, window_seconds: int = 3600):
 # ---------------------------------------------------------------------------
 
 def generate_token(user_id, role):
-    """Generate short-lived access token (15 minutes)."""
     jwt_secret = current_app.config.get("SECRET_KEY", "")
     payload = {
         "userId": user_id,
-        "role": role,
-        "exp": datetime.utcnow() + timedelta(minutes=15),
-        "type": "access",
+        "role":   role,
+        "exp":    datetime.utcnow() + timedelta(hours=JWT_ACCESS_TOKEN_HOURS),
+        "type":   "access",
     }
     return jwt.encode(payload, jwt_secret, algorithm="HS256")
 
 
-def generate_refresh_token_value(user_id):
-    """Generate long-lived refresh token (7 days) and persist to DB."""
+def generate_refresh_token(user_id):
     token = secrets.token_urlsafe(64)
-    expires_at = datetime.utcnow() + timedelta(days=7)
-    rt = RefreshToken(
+    rt    = RefreshToken(
         user_id=user_id,
         token=token,
-        expires_at=expires_at,
+        expires_at=datetime.utcnow() + timedelta(days=7),
         user_agent=request.headers.get("User-Agent", ""),
         ip_address=request.remote_addr,
     )
@@ -127,44 +117,35 @@ def generate_refresh_token_value(user_id):
 
 
 def _set_auth_cookie(response, token):
-    """Set JWT access token as httpOnly cookie.
-
-    BUG FIX: The cookie used to be set with max_age=7 days, but the JWT
-    itself expires in 15 minutes.  After expiry the browser would still send
-    the cookie on every request but every call would return 401, making the
-    app appear broken.  The cookie now matches the 15-minute token lifetime;
-    the refresh-token flow (separate httpOnly cookie) extends the session.
-    """
-    is_production = os.environ.get("FLASK_ENV", "").lower() == "production"
+    is_prod = os.environ.get("FLASK_ENV", "").lower() == "production"
     response.set_cookie(
         "auth_token",
         value=token,
         httponly=True,
-        secure=is_production,
-        samesite="Lax",
-        max_age=15 * 60,   # 15 minutes — matches JWT expiry
+        secure=is_prod,
+        samesite="Strict",
+        max_age=JWT_ACCESS_TOKEN_HOURS * 3600,
         path="/",
     )
     return response
 
 
 def _set_refresh_cookie(response, token):
-    """Set refresh token as a separate long-lived httpOnly cookie."""
-    is_production = os.environ.get("FLASK_ENV", "").lower() == "production"
+    is_prod = os.environ.get("FLASK_ENV", "").lower() == "production"
     response.set_cookie(
         "refresh_token",
         value=token,
         httponly=True,
-        secure=is_production,
-        samesite="Lax",
-        max_age=7 * 24 * 60 * 60,   # 7 days
-        path="/",
+        secure=is_prod,
+        samesite="Strict",
+        max_age=7 * 24 * 3600,
+        path="/",   # path="/" so fetch-patch can reach /api/auth/refresh with it
     )
     return response
 
 
-def _clear_auth_cookie(response):
-    response.delete_cookie("auth_token", path="/")
+def _clear_auth_cookies(response):
+    response.delete_cookie("auth_token",    path="/")
     response.delete_cookie("refresh_token", path="/")
     return response
 
@@ -175,17 +156,16 @@ def verify_token(token):
 
 
 def get_current_user():
-    """Get current user from httpOnly cookie or Authorization header."""
     token = request.cookies.get("auth_token")
     if not token:
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            token = auth_header[7:]
+        ah = request.headers.get("Authorization", "")
+        if ah.startswith("Bearer "):
+            token = ah[7:]
     if not token:
         return None, "No token provided"
     try:
         payload = verify_token(token)
-        user = db.session.get(User, payload["userId"])
+        user    = db.session.get(User, payload["userId"])
         if not user:
             return None, "User not found"
         return user, None
@@ -194,6 +174,10 @@ def get_current_user():
     except jwt.InvalidTokenError:
         return None, "Invalid token"
 
+
+# ---------------------------------------------------------------------------
+# OTP helpers
+# ---------------------------------------------------------------------------
 
 def _generate_otp():
     return str(random.randint(100000, 999999))
@@ -210,11 +194,7 @@ def _print_otp_to_terminal(email, otp, full_name=""):
     if not _otp_debug_enabled():
         return
     line = "=" * 56
-    msg = (
-        f"\n{line}\n"
-        f"  KIU PORTAL — OTP VERIFICATION CODE\n"
-        f"{line}\n"
-    )
+    msg  = f"\n{line}\n  KIU PORTAL — OTP VERIFICATION CODE\n{line}\n"
     if full_name:
         msg += f"  Name    : {full_name}\n"
     msg += (
@@ -230,43 +210,31 @@ def _send_otp_email(to_email, otp, full_name=""):
     if not BREVO_SMTP_KEY:
         log.warning("BREVO_SMTP_KEY not set — email not sent (see terminal for OTP)")
         return False
-    greeting = f"Dear {full_name}," if full_name else "Hello,"
+    greeting  = f"Dear {full_name}," if full_name else "Hello,"
     html_body = f"""
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;
                 border:1px solid #e5e7eb;border-radius:12px;">
-      <div style="text-align:center;margin-bottom:24px;">
-        <h2 style="color:#1e3a5f;margin:0;">Kampala International University</h2>
-        <p style="color:#6b7280;margin:4px 0 0;">Admission &amp; Career Portal</p>
-      </div>
+      <h2 style="color:#1e3a5f;text-align:center;">Kampala International University</h2>
       <p style="color:#374151;">{greeting}</p>
-      <p style="color:#374151;">
-        Your One-Time Password (OTP) for verifying your KIU Portal account is:
-      </p>
+      <p style="color:#374151;">Your One-Time Password (OTP):</p>
       <div style="text-align:center;margin:32px 0;">
-        <span style="font-size:40px;font-weight:bold;letter-spacing:12px;
-                     color:#1e3a5f;background:#f0f4ff;padding:16px 32px;
-                     border-radius:8px;display:inline-block;">{otp}</span>
+        <span style="font-size:40px;font-weight:bold;letter-spacing:12px;color:#1e3a5f;
+                     background:#f0f4ff;padding:16px 32px;border-radius:8px;
+                     display:inline-block;">{otp}</span>
       </div>
       <p style="color:#6b7280;font-size:14px;">
-        This code expires in <strong>{OTP_EXPIRY_MINUTES} minutes</strong>.
-        Do not share it with anyone.
-      </p>
-      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-      <p style="color:#9ca3af;font-size:12px;text-align:center;">
-        Kampala International University · Kansanga, Kampala, Uganda<br>
-        admissions@kiu.ac.ug
+        Expires in <strong>{OTP_EXPIRY_MINUTES} minutes</strong>. Do not share it.
       </p>
     </div>
     """
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Your KIU Portal Verification Code"
-    msg["From"] = EMAIL_FROM
-    msg["To"] = to_email
+    msg["From"]    = EMAIL_FROM
+    msg["To"]      = to_email
     msg.attach(MIMEText(html_body, "html"))
     try:
         with smtplib.SMTP(BREVO_SMTP_HOST, BREVO_SMTP_PORT, timeout=10) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
+            smtp.ehlo(); smtp.starttls()
             smtp.login(BREVO_SMTP_USER, BREVO_SMTP_KEY)
             smtp.sendmail(EMAIL_FROM, to_email, msg.as_string())
         log.info("Email sent to %s via Brevo", to_email)
@@ -277,13 +245,11 @@ def _send_otp_email(to_email, otp, full_name=""):
 
 
 def _create_and_dispatch_otp(user):
-    """Invalidate old OTPs, create a fresh one, print + email it."""
     OtpCode.query.filter_by(user_id=user.id, is_used=False).update({"is_used": True})
     db.session.flush()
     code = _generate_otp()
-    otp = OtpCode(
-        user_id=user.id,
-        code=code,
+    otp  = OtpCode(
+        user_id=user.id, code=code,
         expires_at=datetime.utcnow() + timedelta(minutes=OTP_EXPIRY_MINUTES),
         is_used=False,
     )
@@ -305,16 +271,17 @@ def register():
     if not data:
         return jsonify({"error": "Bad request", "message": "No JSON body provided"}), 400
 
-    email = data.get("email", "").strip().lower()
-    password = data.get("password", "")
-    first_name = data.get("firstName", "").strip()
-    last_name = data.get("lastName", "").strip()
-    phone = data.get("phone", "")
-    national_id = data.get("nationalId", "")
-    role = data.get("role", "applicant")
+    email       = data.get("email",       "").strip().lower()
+    password    = data.get("password",    "")
+    first_name  = data.get("firstName",   "").strip()
+    last_name   = data.get("lastName",    "").strip()
+    phone       = data.get("phone",       "")
+    national_id = data.get("nationalId",  "")
+    role        = data.get("role",        "applicant")
 
     if not email or not password or not first_name or not last_name:
-        return jsonify({"error": "Validation error", "message": "email, password, firstName and lastName are required"}), 400
+        return jsonify({"error": "Validation error",
+                        "message": "email, password, firstName and lastName are required"}), 400
 
     from email_validator import validate_email, EmailNotValidError
     try:
@@ -323,29 +290,29 @@ def register():
         return jsonify({"error": "Validation error", "message": "Invalid email address"}), 400
 
     if len(password) < 8:
-        return jsonify({"error": "Validation error", "message": "Password must be at least 8 characters"}), 400
+        return jsonify({"error": "Validation error",
+                        "message": "Password must be at least 8 characters"}), 400
     if not any(c.isupper() for c in password):
-        return jsonify({"error": "Validation error", "message": "Password must contain at least one uppercase letter"}), 400
+        return jsonify({"error": "Validation error",
+                        "message": "Password must contain at least one uppercase letter"}), 400
     if not any(c.islower() for c in password):
-        return jsonify({"error": "Validation error", "message": "Password must contain at least one lowercase letter"}), 400
+        return jsonify({"error": "Validation error",
+                        "message": "Password must contain at least one lowercase letter"}), 400
     if not any(c.isdigit() for c in password):
-        return jsonify({"error": "Validation error", "message": "Password must contain at least one digit"}), 400
+        return jsonify({"error": "Validation error",
+                        "message": "Password must contain at least one digit"}), 400
 
     if role not in ("applicant", "finalist"):
         role = "applicant"
 
-    existing = User.query.filter_by(email=email).first()
-    if existing:
-        return jsonify({"error": "Conflict", "message": "An account with this email already exists"}), 409
+    if User.query.filter_by(email=email).first():
+        return jsonify({"error": "Conflict",
+                        "message": "An account with this email already exists"}), 409
 
     user = User(
-        email=email,
-        first_name=first_name,
-        last_name=last_name,
-        phone=phone or None,
-        national_id=national_id or None,
-        role=role,
-        is_verified=False,
+        email=email, first_name=first_name, last_name=last_name,
+        phone=phone or None, national_id=national_id or None,
+        role=role, is_verified=False,
     )
     user.set_password(password)
     db.session.add(user)
@@ -366,7 +333,7 @@ def verify_otp():
         return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
 
     email = data.get("email", "").strip().lower()
-    code = data.get("code", "").strip()
+    code  = data.get("code",  "").strip()
 
     if not email or not code:
         return jsonify({"error": "Validation error", "message": "email and code are required"}), 400
@@ -376,10 +343,7 @@ def verify_otp():
         return jsonify({"error": "Not found", "message": "No account found for this email"}), 404
 
     if user.is_verified:
-        token = generate_token(user.id, user.role)
-        resp = jsonify({"message": "Already verified", "user": user.to_dict()})
-        _set_auth_cookie(resp, token)
-        return resp, 200
+        return jsonify({"message": "Already verified. Please sign in."}), 200
 
     otp = (
         OtpCode.query
@@ -387,25 +351,19 @@ def verify_otp():
         .filter(OtpCode.expires_at > datetime.utcnow())
         .first()
     )
-
     if not otp:
         expired = OtpCode.query.filter_by(user_id=user.id, code=code, is_used=False).first()
         if expired:
-            return jsonify({"error": "OTP expired", "message": "This code has expired. Please request a new one."}), 410
-        return jsonify({"error": "Invalid OTP", "message": "Incorrect verification code. Please check and try again."}), 422
+            return jsonify({"error": "OTP expired",
+                            "message": "This code has expired. Please request a new one."}), 410
+        return jsonify({"error": "Invalid OTP",
+                        "message": "Incorrect verification code."}), 422
 
-    otp.is_used = True
+    otp.is_used      = True
     user.is_verified = True
     db.session.commit()
 
-    token = generate_token(user.id, user.role)
-    resp = jsonify({
-        "message": "Email verified successfully. You can now sign in.",
-        # Backward compatibility for existing API clients/tests expecting token in body
-        "token": token,
-    })
-    _set_auth_cookie(resp, token)
-    return resp, 200
+    return jsonify({"message": "Email verified successfully. You can now sign in."}), 200
 
 
 @auth_bp.route("/resend-otp", methods=["POST"])
@@ -421,20 +379,19 @@ def resend_otp():
     user = User.query.filter_by(email=email).first()
     if not user:
         return jsonify({"message": "If this email is registered, a new OTP has been sent."}), 200
-
     if user.is_verified:
-        return jsonify({"error": "Already verified", "message": "This account is already verified."}), 409
+        return jsonify({"error": "Already verified",
+                        "message": "This account is already verified."}), 409
 
     recent = (
-        OtpCode.query
-        .filter_by(user_id=user.id, is_used=False)
+        OtpCode.query.filter_by(user_id=user.id, is_used=False)
         .filter(OtpCode.created_at > datetime.utcnow() - timedelta(seconds=OTP_RESEND_COOLDOWN_SECONDS))
         .first()
     )
     if recent:
         seconds_left = int(
-            (recent.created_at + timedelta(seconds=OTP_RESEND_COOLDOWN_SECONDS) - datetime.utcnow())
-            .total_seconds()
+            (recent.created_at + timedelta(seconds=OTP_RESEND_COOLDOWN_SECONDS)
+             - datetime.utcnow()).total_seconds()
         )
         return jsonify({
             "error": "Rate limited",
@@ -452,21 +409,23 @@ def login():
     if not data:
         return jsonify({"error": "Bad request", "message": "No JSON body provided"}), 400
 
-    email = data.get("email", "").strip().lower()
+    email    = data.get("email",    "").strip().lower()
     password = data.get("password", "")
 
     if not email or not password:
-        return jsonify({"error": "Validation error", "message": "email and password are required"}), 400
+        return jsonify({"error": "Validation error",
+                        "message": "email and password are required"}), 400
 
     user = User.query.filter_by(email=email).first()
     if not user or not user.check_password(password):
-        return jsonify({"error": "Unauthorized", "message": "Invalid email or password"}), 401
+        return jsonify({"error": "Unauthorized",
+                        "message": "Invalid email or password"}), 401
 
     if not user.is_verified:
         recent = (
-            OtpCode.query
-            .filter_by(user_id=user.id, is_used=False)
-            .filter(OtpCode.created_at > datetime.utcnow() - timedelta(seconds=OTP_RESEND_COOLDOWN_SECONDS))
+            OtpCode.query.filter_by(user_id=user.id, is_used=False)
+            .filter(OtpCode.created_at > datetime.utcnow()
+                    - timedelta(seconds=OTP_RESEND_COOLDOWN_SECONDS))
             .first()
         )
         if not recent:
@@ -478,44 +437,35 @@ def login():
             "needsVerification": True,
         }), 403
 
-    access_token = generate_token(user.id, user.role)
-    # BUG FIX: refresh token stored in httpOnly cookie, not response body.
-    # The frontend was returning the refreshToken in JSON but never storing it,
-    # so token refresh always failed.  The refresh token is now a separate
-    # httpOnly cookie sent only to /api/auth/refresh.
-    refresh_token_str = generate_refresh_token_value(user.id)
+    access_token  = generate_token(user.id, user.role)
+    refresh_token = generate_refresh_token(user.id)
 
-    response = jsonify({
-        "user": user.to_dict(),
-        # Backward compatibility: keep token fields in JSON while using httpOnly cookies.
-        "accessToken": access_token,
-        "refreshToken": refresh_token_str,
-    })
+    response = jsonify({"user": user.to_dict()})
     _set_auth_cookie(response, access_token)
-    _set_refresh_cookie(response, refresh_token_str)
+    _set_refresh_cookie(response, refresh_token)
     return response, 200
 
 
 @auth_bp.route("/refresh", methods=["POST"])
-def refresh_token():
+def refresh_token_route():
     """
-    Refresh access token.
+    Silent token refresh.
 
-    BUG FIX: Now reads the refresh token from the httpOnly cookie
-    (set by /login) instead of the request body.  The previous implementation
-    expected { "refreshToken": "..." } in the body but the frontend never
-    stored or sent it, so refresh always returned 401.
+    BUG FIX: The original implementation expected { "refreshToken": "..." }
+    in the request body, but the JS client never stored that value — refresh
+    always returned 401.  The refresh token is now stored in an httpOnly
+    cookie (set by /login) and read here automatically by the browser.
     """
-    # Read from httpOnly cookie first, fall back to request body for API clients
-    refresh_token_str = request.cookies.get("refresh_token")
-    if not refresh_token_str:
-        data = request.get_json(silent=True) or {}
-        refresh_token_str = data.get("refreshToken")
+    rt_value = request.cookies.get("refresh_token")
+    if not rt_value:
+        # Fallback for API clients that still send token in body
+        body     = request.get_json(silent=True) or {}
+        rt_value = body.get("refreshToken")
 
-    if not refresh_token_str:
+    if not rt_value:
         return jsonify({"error": "Unauthorized", "message": "No refresh token provided"}), 401
 
-    rt = RefreshToken.query.filter_by(token=refresh_token_str, is_revoked=False).first()
+    rt = RefreshToken.query.filter_by(token=rt_value, is_revoked=False).first()
     if not rt:
         return jsonify({"error": "Unauthorized", "message": "Invalid refresh token"}), 401
 
@@ -524,21 +474,16 @@ def refresh_token():
         db.session.commit()
         return jsonify({"error": "Unauthorized", "message": "Refresh token expired"}), 401
 
-    # Token rotation
+    # Token rotation — revoke old, issue new pair
     rt.is_revoked = True
-    user = rt.user
-    new_access_token = generate_token(user.id, user.role)
-    new_refresh_token_str = generate_refresh_token_value(user.id)
+    user          = rt.user
+    new_access    = generate_token(user.id, user.role)
+    new_refresh   = generate_refresh_token(user.id)
     db.session.commit()
 
-    response = jsonify({
-        "user": user.to_dict(),
-        # Backward compatibility for non-browser API clients/tests.
-        "accessToken": new_access_token,
-        "refreshToken": new_refresh_token_str,
-    })
-    _set_auth_cookie(response, new_access_token)
-    _set_refresh_cookie(response, new_refresh_token_str)
+    response = jsonify({"user": user.to_dict()})
+    _set_auth_cookie(response, new_access)
+    _set_refresh_cookie(response, new_refresh)
     return response, 200
 
 
@@ -552,17 +497,26 @@ def me():
 
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
+    """
+    Clear auth cookies and revoke only the current session's refresh token.
+
+    BUG FIX: The previous implementation revoked ALL refresh tokens for the
+    user, logging them out of every device at once.  Now only the token
+    from the current request's cookie is revoked.
+    """
     user, _ = get_current_user()
     if user:
-        # Revoke only the current-session refresh token (identified by cookie)
-        rt_val = request.cookies.get("refresh_token")
-        if rt_val:
-            rt = RefreshToken.query.filter_by(token=rt_val, is_revoked=False).first()
+        rt_value = request.cookies.get("refresh_token")
+        if rt_value:
+            rt = RefreshToken.query.filter_by(
+                token=rt_value, is_revoked=False
+            ).first()
             if rt:
                 rt.is_revoked = True
                 db.session.commit()
+
     response = jsonify({"message": "Logged out"})
-    return _clear_auth_cookie(response), 200
+    return _clear_auth_cookies(response), 200
 
 
 @auth_bp.route("/forgot-password", methods=["POST"])
@@ -578,18 +532,20 @@ def forgot_password():
 
     user = User.query.filter_by(email=email).first()
     if not user:
-        return jsonify({"message": "If this email is registered, a password reset OTP has been sent."}), 200
+        return jsonify({
+            "message": "If this email is registered, a password reset OTP has been sent."
+        }), 200
 
     recent = (
-        OtpCode.query
-        .filter_by(user_id=user.id, is_used=False)
-        .filter(OtpCode.created_at > datetime.utcnow() - timedelta(seconds=OTP_RESEND_COOLDOWN_SECONDS))
+        OtpCode.query.filter_by(user_id=user.id, is_used=False)
+        .filter(OtpCode.created_at > datetime.utcnow()
+                - timedelta(seconds=OTP_RESEND_COOLDOWN_SECONDS))
         .first()
     )
     if recent:
         seconds_left = int(
-            (recent.created_at + timedelta(seconds=OTP_RESEND_COOLDOWN_SECONDS) - datetime.utcnow())
-            .total_seconds()
+            (recent.created_at + timedelta(seconds=OTP_RESEND_COOLDOWN_SECONDS)
+             - datetime.utcnow()).total_seconds()
         )
         return jsonify({
             "error": "Rate limited",
@@ -611,25 +567,31 @@ def reset_password():
     if not data:
         return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
 
-    email = data.get("email", "").strip().lower()
-    code = data.get("code", "").strip()
+    email    = data.get("email",    "").strip().lower()
+    code     = data.get("code",     "").strip()
     password = data.get("password", "")
 
     if not email or not code or not password:
-        return jsonify({"error": "Validation error", "message": "email, code, and password are required"}), 400
+        return jsonify({"error": "Validation error",
+                        "message": "email, code, and password are required"}), 400
 
     if len(password) < 8:
-        return jsonify({"error": "Validation error", "message": "Password must be at least 8 characters"}), 400
+        return jsonify({"error": "Validation error",
+                        "message": "Password must be at least 8 characters"}), 400
     if not any(c.isupper() for c in password):
-        return jsonify({"error": "Validation error", "message": "Password must contain at least one uppercase letter"}), 400
+        return jsonify({"error": "Validation error",
+                        "message": "Password must contain at least one uppercase letter"}), 400
     if not any(c.islower() for c in password):
-        return jsonify({"error": "Validation error", "message": "Password must contain at least one lowercase letter"}), 400
+        return jsonify({"error": "Validation error",
+                        "message": "Password must contain at least one lowercase letter"}), 400
     if not any(c.isdigit() for c in password):
-        return jsonify({"error": "Validation error", "message": "Password must contain at least one digit"}), 400
+        return jsonify({"error": "Validation error",
+                        "message": "Password must contain at least one digit"}), 400
 
     user = User.query.filter_by(email=email).first()
     if not user:
-        return jsonify({"error": "Not found", "message": "No account found for this email"}), 404
+        return jsonify({"error": "Not found",
+                        "message": "No account found for this email"}), 404
 
     otp = (
         OtpCode.query
@@ -637,14 +599,15 @@ def reset_password():
         .filter(OtpCode.expires_at > datetime.utcnow())
         .first()
     )
-
     if not otp:
         expired = OtpCode.query.filter_by(user_id=user.id, code=code, is_used=False).first()
         if expired:
-            return jsonify({"error": "OTP expired", "message": "This code has expired. Please request a new one."}), 410
-        return jsonify({"error": "Invalid OTP", "message": "Incorrect verification code. Please check and try again."}), 422
+            return jsonify({"error": "OTP expired",
+                            "message": "This code has expired. Please request a new one."}), 410
+        return jsonify({"error": "Invalid OTP",
+                        "message": "Incorrect verification code."}), 422
 
-    otp.is_used = True
+    otp.is_used      = True
     user.set_password(password)
     user.is_verified = True
     db.session.commit()
