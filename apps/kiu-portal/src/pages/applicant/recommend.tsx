@@ -295,6 +295,7 @@ export default function Recommend() {
   ]);
   const [campus, setCampus] = useState<"" | "kampala" | "western">("");
   const [curriculum, setCurriculum] = useState<"" | "uneb" | "cambridge" | "other">("");
+  const [qualification, setQualification] = useState<"a_level" | "o_level" | "diploma" | "hec">("a_level");
   const [result, setResult] = useState<RecommendResult | null>(null);
 
   // ── Subject management ───────────────────────────────────────────────────
@@ -416,6 +417,31 @@ export default function Recommend() {
               subsidiary.
             </p>
 
+            {/* Qualification Type */}
+            <div className="mb-5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                Qualification Level <span className="text-destructive">*</span>
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex items-center gap-2 p-3 rounded-lg border border-border cursor-pointer hover:bg-primary/5">
+                  <input type="radio" name="qualification" value="a_level" className="w-4 h-4" checked={qualification === "a_level"} onChange={() => setQualification("a_level")} />
+                  <span className="text-sm">A-Level</span>
+                </label>
+                <label className="flex items-center gap-2 p-3 rounded-lg border border-border cursor-pointer hover:bg-primary/5">
+                  <input type="radio" name="qualification" value="o_level" className="w-4 h-4" checked={qualification === "o_level"} onChange={() => setQualification("o_level")} />
+                  <span className="text-sm">O-Level</span>
+                </label>
+                <label className="flex items-center gap-2 p-3 rounded-lg border border-border cursor-pointer hover:bg-primary/5">
+                  <input type="radio" name="qualification" value="diploma" className="w-4 h-4" checked={qualification === "diploma"} onChange={() => setQualification("diploma")} />
+                  <span className="text-sm">Diploma</span>
+                </label>
+                <label className="flex items-center gap-2 p-3 rounded-lg border border-border cursor-pointer hover:bg-primary/5">
+                  <input type="radio" name="qualification" value="hec" className="w-4 h-4" checked={qualification === "hec"} onChange={() => setQualification("hec")} />
+                  <span className="text-sm">HEC</span>
+                </label>
+              </div>
+            </div>
+
             {/* NCHE Quick Guide */}
             <div className="mb-5 p-3 rounded-xl bg-blue-50 border border-blue-200 flex items-start gap-2">
               <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
@@ -514,12 +540,12 @@ export default function Recommend() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">Grade:</span>
-                        <select
+                         <select
                           value={s.grade}
                           onChange={(e) =>
                             updateSubject(i, "grade", e.target.value)
                           }
-                          className={`w-20 h-8 px-2 rounded-md border text-sm font-semibold ${
+                          className={`w-28 h-8 px-2 rounded-md border text-sm font-semibold ${
                             s.grade 
                               ? "border-primary bg-primary/5 text-primary" 
                               : "border-border bg-white text-muted-foreground"
@@ -606,21 +632,37 @@ export default function Recommend() {
               </button>
             </div>
 
-            {/* Curriculum Type */}
-            <div className="mb-5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                A-Level Curriculum <span className="text-destructive">*</span>
-              </p>
-              <select
-                value={curriculum}
-                onChange={(e) => setCurriculum(e.target.value as any)}
-                className="w-full h-9 px-3 rounded-lg border border-border bg-white text-sm"
-              >
-                <option value="">Select curriculum…</option>
-                <option value="uneb">UNEB (Uganda National Examinations Board)</option>
-                <option value="cambridge">Cambridge International A-Level</option>
-                <option value="other">Other / International</option>
-              </select>
+              {/* Curriculum Type */}
+              <div className="mb-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  A-Level Curriculum <span className="text-destructive">*</span>
+                </p>
+                <select
+                  value={curriculum}
+                  onChange={(e) => setCurriculum(e.target.value as any)}
+                  className="w-full h-9 px-3 rounded-lg border border-border bg-white text-sm"
+                >
+                  <option value="">Select curriculum…</option>
+                  <option value="uneb">UNEB (Uganda National Examinations Board)</option>
+                  <option value="cambridge">Cambridge International A-Level</option>
+                  <option value="other">Other / International</option>
+                </select>
+
+                {curriculum === "uneb" && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground">UNEB Curriculum Version</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="flex items-center gap-2 p-3 rounded-lg border border-border cursor-pointer hover:bg-primary/5">
+                        <input type="radio" name="uneb_version" value="old" className="w-4 h-4" defaultChecked />
+                        <span className="text-sm">Old Curriculum</span>
+                      </label>
+                      <label className="flex items-center gap-2 p-3 rounded-lg border border-border cursor-pointer hover:bg-primary/5">
+                        <input type="radio" name="uneb_version" value="new" className="w-4 h-4" />
+                        <span className="text-sm">New Curriculum</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
               {curriculum && (
                 <p className="text-xs text-muted-foreground mt-1">
                   {curriculum === "uneb" && "Grades: A (6pts), B (5pts), C (4pts), D (3pts), E (2pts), O (1pt), F (0pt)"}
