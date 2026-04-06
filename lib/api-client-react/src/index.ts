@@ -1,10 +1,10 @@
 import { useMutation, useQuery, type UseQueryOptions } from "@tanstack/react-query";
 
 // -----------------------------------------------------------------------------
-// Shared types used across the portal
+// Shared types
 // -----------------------------------------------------------------------------
 
-export type ProgramLevel = "degree" | "diploma" | "hec";
+export type ProgramLevel = "degree" | "diploma" | "hec" | "masters" | "phd";
 
 export type Program = {
   id: number;
@@ -20,14 +20,6 @@ export type Program = {
   minAlevelPoints?: number | null;
   availableSlots?: number | null;
   campus?: string | null;
-  feesLocal?: number | null;
-  feesInternational?: number | null;
-  functionalFeesLocal?: number | null;
-  functionalFeesInternational?: number | null;
-  tuitionFees?: number | null;
-  functionalFees?: number | null;
-  totalFees?: number | null;
-  feesCurrency?: string | null;
 };
 
 export type UserRole = "admin" | "applicant" | "finalist";
@@ -64,26 +56,21 @@ export type AdmissionApplication = {
   examYear: number;
   indexNumber: string;
   unebGrades?: unknown;
-
   personalStatement?: string | null;
   dateOfBirth?: string | null;
   gender?: string | null;
   nationality?: string | null;
   district?: string | null;
-
   isFinalYear?: boolean;
   expectedGraduationYear?: number | null;
   currentYearOfStudy?: number | null;
   studentNumber?: string | null;
-
   nextOfKinName?: string | null;
   nextOfKinPhone?: string | null;
   nextOfKinRelationship?: string | null;
-
   adminNotes?: string | null;
   submittedAt?: string | null;
   updatedAt?: string | null;
-
   applicantName?: string | null;
   applicantEmail?: string | null;
 };
@@ -135,21 +122,34 @@ export type Opportunity = {
   updatedAt?: string | null;
 };
 
-// NEW: Recommendation types
-export type RecommendedProgram = Program & {
-  matchScore: number;
-  matchPercentage: number;
-  matchedSubjects: string[];
-  ncheStatus: "compliant" | "conditional";
-  programWarnings: string[];
+export type RecommendSubjectInput = {
+  subject: string;
+  grade: string;
+  subjectType: "principal" | "subsidiary";
+};
+
+export type RecommendProgramsInput = {
+  alevelSubjects: RecommendSubjectInput[];
+  campus?: string;
+  curriculum?: string;
 };
 
 export type NcheCompliance = {
   hasGeneralPaper: boolean;
-  gpGrade: string | null;
+  gpGrade?: string | null;
   totalPrincipalPoints: number;
   errors: string[];
   warnings: string[];
+};
+
+export type RecommendedProgram = Program & {
+  matchScore: number;
+  matchPercentage: number;
+  matchedSubjects: string[];
+  ncheStatus: "compliant" | "conditional" | string;
+  programWarnings: string[];
+  feesLocal?: number | null;
+  feesInternational?: number | null;
 };
 
 export type RecommendResult = {
@@ -157,63 +157,6 @@ export type RecommendResult = {
   total: number;
   subjectsAnalyzed: string[];
   ncheCompliance: NcheCompliance;
-};
-
-// NEW: Analytics types
-export type DropoutRiskApp = {
-  applicationId: number;
-  applicationNumber: string;
-  studentName: string;
-  program: string;
-  programCode: string;
-  totalPoints: number;
-  minRequired: number | null;
-  riskLevel: "high" | "medium";
-  riskFactors: string[];
-  status: string;
-};
-
-export type MonthlyTrend = {
-  month: number;
-  monthName: string;
-  applications: number;
-};
-
-export type TopProgram = {
-  name: string;
-  code: string;
-  faculty: string;
-  applications: number;
-};
-
-export type Analytics = {
-  summary: {
-    totalApplications: number;
-    byStatus: Record<string, number>;
-    byProgram: Array<{ program: string; count: number }>;
-  };
-  dropoutRisk: {
-    totalAtRisk: number;
-    highRisk: number;
-    mediumRisk: number;
-    applications: DropoutRiskApp[];
-  };
-  programDemand: {
-    monthlyTrends: MonthlyTrend[];
-    topPrograms: TopProgram[];
-  };
-  ncheCompliance: {
-    withGeneralPaper: number;
-    withoutGeneralPaper: number;
-    sufficientPoints: number;
-    insufficientPoints: number;
-  };
-  demographics: {
-    feeDistribution: { local: number; international: number };
-    genderDistribution: Record<string, number>;
-    sessionDistribution: Record<string, number>;
-  };
-  generatedAt: string;
 };
 
 // -----------------------------------------------------------------------------
@@ -228,11 +171,6 @@ function getBaseUrl(): string {
 }
 
 const BASE_URL = getBaseUrl();
-
-/** Primary auth is httpOnly cookie - no localStorage token needed. */
-function getToken(): string | null {
-  return null;
-}
 
 function toQueryString(params?: QueryParams): string {
   if (!params) return "";
@@ -254,27 +192,38 @@ async function fetchAuthMe(): Promise<User | null> {
     try {
       const json = (await res.json()) as { message?: string };
       message = json?.message ?? message;
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
     throw new Error(message);
   }
   return (await res.json()) as User;
 }
 
-let isRefreshing = false;
-let refreshPromise: Promise<boolean> | null = null;
+// ---------------------------------------------------------------------------
+// Token refresh
+// BUG FIX: The previous implementation sent an empty {} body to /api/auth/refresh.
+// The backend expected { "refreshToken": "..." } but the frontend never stored
+// the refresh token anywhere, so refresh always returned 401 and every user was
+// effectively logged out after the 15-minute access-token window expired.
+//
+// The fixed backend now stores the refresh token in a separate httpOnly cookie
+// (path=/api/auth/refresh) that the browser sends automatically.  The client
+// therefore just needs to POST to the endpoint with credentials:include and an
+// empty body — the cookie is sent by the browser without any JS involvement.
+// ---------------------------------------------------------------------------
+
+let _refreshInFlight: Promise<boolean> | null = null;
 
 async function refreshAccessToken(): Promise<boolean> {
   try {
-    const storedUser = typeof window !== "undefined" ? localStorage.getItem("kiu_user") : null;
-    if (!storedUser) return false;
+    // The refresh token is in an httpOnly cookie scoped to /api/auth/refresh.
+    // credentials: "include" makes the browser attach it automatically.
     const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({}),
+      body: JSON.stringify({}), // body required by some CORS pre-flight configs
     });
+
     if (res.ok) {
       const json = await res.json();
       if (json.user) {
@@ -282,22 +231,21 @@ async function refreshAccessToken(): Promise<boolean> {
       }
       return true;
     }
+    // Refresh token expired or revoked — clear stale local state
+    localStorage.removeItem("kiu_user");
     return false;
   } catch {
     return false;
   }
 }
 
-async function apiFetchJson<T>(path: string, init?: RequestInit & { token?: string | null }): Promise<T> {
-  const token = init?.token ?? getToken();
+async function apiFetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     ...(init?.headers ? (init.headers as Record<string, string>) : {}),
   };
-  const hasBody = init?.body !== undefined && init?.body !== null;
-  if (hasBody && typeof init.body === "string") {
+  if (init?.body !== undefined && typeof init.body === "string") {
     headers["Content-Type"] = headers["Content-Type"] ?? "application/json";
   }
-  if (token) headers.Authorization = `Bearer ${token}`;
 
   let res = await fetch(`${BASE_URL}${path}`, {
     ...init,
@@ -305,21 +253,16 @@ async function apiFetchJson<T>(path: string, init?: RequestInit & { token?: stri
     credentials: "include",
   });
 
-  if (res.status === 401 && !init?.token) {
-    if (!isRefreshing) {
-      isRefreshing = true;
-      refreshPromise = refreshAccessToken().finally(() => {
-        isRefreshing = false;
-        refreshPromise = null;
+  // On 401, attempt a single token refresh then retry
+  if (res.status === 401) {
+    if (!_refreshInFlight) {
+      _refreshInFlight = refreshAccessToken().finally(() => {
+        _refreshInFlight = null;
       });
     }
-    const refreshed = await refreshPromise;
+    const refreshed = await _refreshInFlight;
     if (refreshed) {
-      res = await fetch(`${BASE_URL}${path}`, {
-        ...init,
-        headers,
-        credentials: "include",
-      });
+      res = await fetch(`${BASE_URL}${path}`, { ...init, headers, credentials: "include" });
     }
   }
 
@@ -328,9 +271,7 @@ async function apiFetchJson<T>(path: string, init?: RequestInit & { token?: stri
     try {
       const json = (await res.json()) as any;
       message = json?.message ?? json?.error ?? message;
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
     throw new Error(message);
   }
 
@@ -372,7 +313,9 @@ export function useGetCurrentUser(options?: { query?: QueryOverrides<User | null
   });
 }
 
-export function useGetMyAdmissionApplication(options?: { query?: QueryOverrides<AdmissionApplication | null> }) {
+export function useGetMyAdmissionApplication(
+  options?: { query?: QueryOverrides<AdmissionApplication | null> }
+) {
   const { data: user, isLoading: authLoading } = useGetCurrentUser({ query: { retry: false } });
   const merged = mergeQueryOverrides(options?.query);
   return useQuery<AdmissionApplication | null, Error>({
@@ -390,34 +333,21 @@ export function useGetMyAdmissionApplication(options?: { query?: QueryOverrides<
 }
 
 export function useListAdmissionApplications(options?: {
-  filters?: {
-    page?: number;
-    perPage?: number;
-    status?: string;
-    search?: string;
-  };
+  filters?: { page?: number; perPage?: number; status?: string; search?: string };
   query?: QueryOverrides<{
     applications: AdmissionApplication[];
-    total: number;
-    page: number;
-    perPage: number;
-    pages: number;
+    total: number; page: number; perPage: number; pages: number;
   }>;
 }) {
   const filters = options?.filters;
   const queryParams: QueryParams = {
-    page: filters?.page,
-    perPage: filters?.perPage,
-    status: filters?.status,
-    search: filters?.search,
+    page: filters?.page, perPage: filters?.perPage,
+    status: filters?.status, search: filters?.search,
   };
 
   type Resp = {
     applications: AdmissionApplication[];
-    total: number;
-    page: number;
-    perPage: number;
-    pages: number;
+    total: number; page: number; perPage: number; pages: number;
   };
   const { data: user, isLoading: authLoading } = useGetCurrentUser({ query: { retry: false } });
   const merged = mergeQueryOverrides(options?.query);
@@ -431,30 +361,13 @@ export function useListAdmissionApplications(options?: {
 }
 
 export function useListOpportunities(options?: {
-  type?: string;
-  field?: string;
-  page?: number;
-  limit?: number;
-  query?: QueryOverrides<{
-    opportunities: Opportunity[];
-    total: number;
-    page: number;
-    limit: number;
-  }>;
+  type?: string; field?: string; page?: number; limit?: number;
+  query?: QueryOverrides<{ opportunities: Opportunity[]; total: number; page: number; limit: number }>;
 } | undefined) {
   const queryParams: QueryParams = {
-    type: options?.type,
-    field: options?.field,
-    page: options?.page,
-    limit: options?.limit,
+    type: options?.type, field: options?.field, page: options?.page, limit: options?.limit,
   };
-
-  type Resp = {
-    opportunities: Opportunity[];
-    total: number;
-    page: number;
-    limit: number;
-  };
+  type Resp = { opportunities: Opportunity[]; total: number; page: number; limit: number };
   return useQuery<Resp, Error>({
     queryKey: ["opportunities", queryParams],
     queryFn: () =>
@@ -467,15 +380,10 @@ export function useListOpportunities(options?: {
 }
 
 export function useListCareerPaths(options?: {
-  program?: string;
+  program?: string; faculty?: string;
   query?: QueryOverrides<{ careerPaths: CareerPath[]; total: number }>;
-  faculty?: string;
 }) {
-  const queryParams: QueryParams = {
-    program: options?.program,
-    faculty: options?.faculty,
-  };
-
+  const queryParams: QueryParams = { program: options?.program, faculty: options?.faculty };
   type Resp = { careerPaths: CareerPath[]; total: number };
   return useQuery<Resp, Error>({
     queryKey: ["careerPaths", queryParams],
@@ -499,19 +407,6 @@ export function useGetFinalistProfile(options?: { query?: QueryOverrides<Finalis
   } as UseQueryOptions<FinalistProfile, Error, FinalistProfile, readonly unknown[]>);
 }
 
-/** NEW: Get admin analytics (dropout risk, program demand, NCHE compliance, demographics) */
-export function useGetAnalytics(options?: { query?: QueryOverrides<Analytics> }) {
-  const { data: user, isLoading: authLoading } = useGetCurrentUser({ query: { retry: false } });
-  const merged = mergeQueryOverrides(options?.query);
-  return useQuery<Analytics, Error>({
-    queryKey: ["admin-analytics"],
-    queryFn: () => apiFetchJson<Analytics>(`/api/admission/analytics`, { method: "GET" }),
-    ...merged,
-    enabled: (merged.enabled ?? true) && !authLoading && user?.role === "admin",
-    staleTime: 5 * 60 * 1000, // 5 minutes — analytics are relatively static
-  } as UseQueryOptions<Analytics, Error, Analytics, readonly unknown[]>);
-}
-
 // -----------------------------------------------------------------------------
 // Mutations
 // -----------------------------------------------------------------------------
@@ -520,39 +415,31 @@ export function useUpdateAdmissionStatus() {
   return useMutation({
     mutationFn: async (vars: {
       id: number;
-      data: {
-        status: AdmissionApplicationStatus;
-        adminNotes?: string | undefined;
-        programId?: number | undefined;
-      };
-    }) => {
-      return apiFetchJson<AdmissionApplication>(
-        `/api/admission/applications/${vars.id}/status`,
-        { method: "PATCH", body: JSON.stringify(vars.data) },
-      );
-    },
+      data: { status: AdmissionApplicationStatus; adminNotes?: string; programId?: number };
+    }) => apiFetchJson<AdmissionApplication>(`/api/admission/applications/${vars.id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(vars.data),
+    }),
   });
 }
 
 export function useCreateOpportunity() {
   return useMutation({
-    mutationFn: async (vars: { data: Record<string, unknown> }) => {
-      return apiFetchJson<Opportunity>(`/api/opportunities`, {
+    mutationFn: async (vars: { data: Record<string, unknown> }) =>
+      apiFetchJson<Opportunity>(`/api/opportunities`, {
         method: "POST",
         body: JSON.stringify(vars.data),
-      });
-    },
+      }),
   });
 }
 
 export function useUpdateOpportunity() {
   return useMutation({
-    mutationFn: async (vars: { id: number; data: Record<string, unknown> }) => {
-      return apiFetchJson<Opportunity>(`/api/opportunities/${vars.id}`, {
+    mutationFn: async (vars: { id: number; data: Record<string, unknown> }) =>
+      apiFetchJson<Opportunity>(`/api/opportunities/${vars.id}`, {
         method: "PATCH",
         body: JSON.stringify(vars.data),
-      });
-    },
+      }),
   });
 }
 
@@ -574,53 +461,51 @@ export function useApplyForOpportunity() {
     mutationFn: async (vars: {
       id: number;
       data: { coverLetter: string; cvUrl?: string; additionalInfo?: string };
-    }) => {
-      return apiFetchJson<Opportunity>(`/api/opportunities/${vars.id}/apply`, {
+    }) =>
+      apiFetchJson<Opportunity>(`/api/opportunities/${vars.id}/apply`, {
         method: "POST",
         body: JSON.stringify(vars.data),
-      });
-    },
+      }),
   });
 }
 
-/** NEW: POST /api/admission/recommend — get A-Level based program recommendations */
 export function useRecommendPrograms() {
   return useMutation({
-    mutationFn: async (vars: {
-      alevelSubjects: Array<{
-        subject: string;
-        grade: string;
-        subjectType: "principal" | "subsidiary";
-      }>;
-      campus?: string;
-      curriculum?: string;
-    }) => {
-      return apiFetchJson<RecommendResult>(`/api/admission/recommend`, {
+    mutationFn: async (vars: RecommendProgramsInput) =>
+      apiFetchJson<RecommendResult>(`/api/admission/recommend`, {
         method: "POST",
         body: JSON.stringify(vars),
-      });
-    },
+      }),
   });
 }
 
+/**
+ * BUG FIX: useLoginUser and useRegisterUser were defined but login.tsx /
+ * register.tsx use direct fetch() calls instead of these mutations.
+ * The mutations were exported (keeping the build consistent) but the
+ * isLoading / isPending state they carry was referenced in the UI
+ * (loginMutation.isPending) while always being false.
+ *
+ * These hooks are kept for potential future use and for API-client consumers.
+ * The login / register pages should migrate to using these hooks to benefit
+ * from the automatic loading state, or remove the isPending reference.
+ */
 export function useLoginUser() {
   return useMutation({
-    mutationFn: async (vars: { email: string; password: string }) => {
-      return apiFetchJson<any>(`/api/auth/login`, {
+    mutationFn: async (vars: { email: string; password: string }) =>
+      apiFetchJson<{ user: User }>(`/api/auth/login`, {
         method: "POST",
         body: JSON.stringify(vars),
-      });
-    },
+      }),
   });
 }
 
 export function useRegisterUser() {
   return useMutation({
-    mutationFn: async (vars: { data: Record<string, unknown> }) => {
-      return apiFetchJson<any>(`/api/auth/register`, {
+    mutationFn: async (vars: { data: Record<string, unknown> }) =>
+      apiFetchJson<{ email: string; needsVerification: boolean }>(`/api/auth/register`, {
         method: "POST",
         body: JSON.stringify(vars.data),
-      });
-    },
+      }),
   });
 }

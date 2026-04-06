@@ -355,11 +355,25 @@ export default function Apply({ target }: { target: ApplyTarget }) {
             ? values.oLevelIndexNumber
             : values.certIndexNumber;
 
+    if (!indexNumber) {
+      toast({
+        title: "Index number required",
+        description: "Please enter your UNEB index number before continuing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (applicationId !== null) {
+      setStep("upload");
+      return;
+    }
+
       const payload = {
         programIds: values.programIds,
         examLevel,
         examYear: examYear || new Date().getFullYear() - 2,
-        indexNumber: indexNumber || "PENDING",
+        indexNumber,
         unebGrades,
         dateOfBirth: values.dateOfBirth ? new Date(values.dateOfBirth).toISOString().split('T')[0] : undefined,
         gender: values.gender || "other",
@@ -494,29 +508,20 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
   // ── Form submit ────────────────────────────────────────────────────────────
   const onSubmit = async (data: ApplyForm) => {
-    // Validate personal info fields before submitting
-    if (!data.dateOfBirth) {
-      toast({ title: "Date of Birth is required", variant: "destructive" });
+    if (
+      !data.dateOfBirth || !data.gender || !data.district ||
+      !data.nextOfKinName || !data.nextOfKinPhone || !data.nextOfKinRelationship
+    ) {
+      toast({
+        title: "Please complete all personal information",
+        description: "All fields are required",
+        variant: "destructive",
+      });
       return;
     }
-    if (!data.gender) {
-      toast({ title: "Gender is required", variant: "destructive" });
-      return;
-    }
-    if (!data.district) {
-      toast({ title: "District of Origin is required", variant: "destructive" });
-      return;
-    }
-    if (!data.nextOfKinName) {
-      toast({ title: "Next of Kin Name is required", variant: "destructive" });
-      return;
-    }
-    if (!data.nextOfKinPhone) {
-      toast({ title: "Next of Kin Phone is required", variant: "destructive" });
-      return;
-    }
-    if (!data.nextOfKinRelationship) {
-      toast({ title: "Next of Kin Relationship is required", variant: "destructive" });
+
+    if (applicationId !== null) {
+      setStep("upload");
       return;
     }
 
