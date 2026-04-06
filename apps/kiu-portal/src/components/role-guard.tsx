@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { useLocation } from "wouter";
 import { useGetCurrentUser } from "@workspace/api-client-react";
+import { apiGet } from "../services/api";
 
 type Role = "admin" | "applicant" | "finalist";
 
@@ -24,19 +25,21 @@ async function getRedirectPath(user: { role: string }): Promise<string> {
   
   try {
     if (user.role === 'applicant') {
-      const res = await fetch(`${BASE}/api/admission/applications/mine`, {
-        credentials: 'include',
-      });
-      if (res.ok) return '/dashboard';
-      return '/apply';
+      try {
+        await apiGet(`${BASE}/api/admission/applications/mine`);
+        return '/dashboard';
+      } catch (e) {
+        return '/apply';
+      }
     }
     
     if (user.role === 'finalist') {
-      const res = await fetch(`${BASE}/api/career/my-profile`, {
-        credentials: 'include',
-      });
-      if (res.ok) return '/career';
-      return '/career/profile';
+      try {
+        await apiGet(`${BASE}/api/career/my-profile`);
+        return '/career';
+      } catch (e) {
+        return '/career/profile';
+      }
     }
   } catch {
     // On error, fall through to default redirects
