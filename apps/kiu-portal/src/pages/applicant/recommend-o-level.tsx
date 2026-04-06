@@ -338,7 +338,18 @@ export default function RecommendOLevel() {
   const subjectsWithoutSubject = subjects.filter(
     (s) => !s.subject && s.grade
   ).length;
-  const isValid = subjectCount >= 5 && curriculum !== "";
+
+  // Calculate actual valid passes according to NCHE rules
+  const passesCount = subjects
+    .filter((s) => s.subject && s.grade)
+    .filter((s) => {
+      const grade = getCurrentGradeList().find((g: any) => g.value === s.grade);
+      const points = grade?.points || 9;
+      // ONLY grades 1 through 8 are considered PASSES. Grade 9 is FAIL.
+      return points >= 1 && points <= 8;
+    }).length;
+
+  const isValid = subjectCount >= 5 && curriculum !== "" && passesCount >= 5;
 
   // ── Submit ───────────────────────────────────────────────────────────────
 
@@ -415,12 +426,14 @@ export default function RecommendOLevel() {
             </p>
 
             {/* NCHE Quick Guide */}
-            <div className="mb-5 p-3 rounded-xl bg-blue-50 border border-blue-200 flex items-start gap-2">
+              <div className="mb-5 p-3 rounded-xl bg-blue-50 border border-blue-200 flex items-start gap-2">
               <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
               <div className="text-xs text-blue-700 space-y-1">
-                <p className="font-semibold">Requirements:</p>
-                <p>• Minimum 5 subjects with grades</p>
-                <p>• Points: D1=1, D2=2, C3=3, C4=4, C5=5, C6=6, P7=7, P8=8, F9=9</p>
+                <p className="font-semibold">NCHE OFFICIAL REQUIREMENTS:</p>
+                <p>• Minimum 5 PASSES required (D1 to P8)</p>
+                <p>• F9 / F grades are considered FAIL</p>
+                <p>• Points: D1=1, D2=2, C3=3, C4=4, C5=5, C6=6, P7=7, P8=8, F9/F=9 (FAIL)</p>
+                <p className="font-semibold mt-1">Failing grades are NOT counted as passes</p>
               </div>
             </div>
 
@@ -625,7 +638,19 @@ export default function RecommendOLevel() {
                 ) : (
                   <AlertCircle className="w-4 h-4" />
                 )}
-                {subjectCount}/5 subjects with grades
+                {subjectCount}/5 subjects completed
+              </div>
+              <div
+                className={`flex items-center gap-2 text-xs ${
+                  passesCount >= 5 ? "text-green-600" : "text-amber-500"
+                }`}
+              >
+                {passesCount >= 5 ? (
+                  <CheckCircle className="w-4 h-4" />
+                ) : (
+                  <AlertCircle className="w-4 h-4" />
+                )}
+                {passesCount}/5 valid PASSES achieved
               </div>
               {subjectsWithoutGrade > 0 && (
                 <div className="flex items-center gap-2 text-xs text-amber-600">
