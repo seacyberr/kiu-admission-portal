@@ -83,11 +83,16 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       response = await _originalFetch(input, nextInit);
     }
 
-    // If still 401 after refresh attempt, clear stale state and redirect
-    if (response.status === 401) {
-      localStorage.removeItem("kiu_user");
-      window.location.href = "/login";
-    }
+     // If still 401 after refresh attempt, clear stale state and redirect
+     if (response.status === 401) {
+       localStorage.removeItem("kiu_user");
+       localStorage.removeItem("react-query-cache");
+       sessionStorage.clear();
+       // Hard reload ensures complete state reset and prevents race conditions
+       window.location.replace("/login");
+       // Prevent further code execution
+       throw new Error("Unauthorized");
+     }
   }
 
   return response;
