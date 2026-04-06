@@ -45,9 +45,12 @@ export default function Login() {
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        if (user.role === "admin") setLocation("/admin");
-        else if (user.role === "finalist") setLocation("/career");
-        else setLocation("/dashboard");
+        // Prevent infinite render loop: only redirect if we are actually on login page
+        if (window.location.pathname === "/login" || window.location.pathname === "/") {
+          if (user.role === "admin") setLocation("/admin");
+          else if (user.role === "finalist") setLocation("/career");
+          else setLocation("/dashboard");
+        }
       } catch {
         localStorage.removeItem("kiu_user");
       }
@@ -150,6 +153,7 @@ export default function Login() {
                 id="email"
                 type="email"
                 placeholder="student@example.com"
+                autoComplete="email"
                 {...register("email")}
                 className={errors.email ? "border-destructive" : ""}
               />
@@ -169,6 +173,7 @@ export default function Login() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 {...register("password")}
                 className={errors.password ? "border-destructive" : ""}
               />

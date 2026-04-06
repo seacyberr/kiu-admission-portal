@@ -54,6 +54,15 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
         ? input.href
         : (input as Request).url;
 
+  // On login attempt: clear all stale state before proceeding
+  if (url.includes("/api/auth/login")) {
+    localStorage.clear();
+    sessionStorage.clear();
+    document.cookie.split(";").forEach(c => {
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+  }
+
   const isApi = url.includes("/api/");
   const isAuthEndpoint =
     url.includes("/api/auth/me") ||
