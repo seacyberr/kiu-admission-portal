@@ -1,0 +1,16 @@
+# Auto handle line endings across platforms
+* text=auto
+
+# Force LF for script files
+*.sh text eol=lf
+*.py text
+*.js text
+*.ts text
+*.tsx text
+*.json text
+*.md text
+
+# Binary files
+*.png binary
+*.jpg binary
+*.ico binary
