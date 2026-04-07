@@ -124,18 +124,14 @@ class UgandaQualificationChecker:
         
         result.requirements_met.append(f"Total Principal Points: {total_principal_points}")
         
-        # NCHE Minimum Requirements Validation - ONLY for BACHELOR programs
+        # NCHE Minimum Requirements Validation - STRICTLY ONLY FOR DIRECT BACHELOR ENTRY
+        # THESE REQUIREMENTS DO NOT APPLY TO HEC / DIPLOMA PATHWAYS
         has_minimum_bachelor_requirements = True
         
         minimum_points_required = 6 if curriculum_version == "old" else 7
         
-        if total_principal_points < minimum_points_required:
-            result.requirements_missing.append(f"Minimum {minimum_points_required} Principal points required for Bachelor programs ({curriculum_version} curriculum). You have {total_principal_points} points")
-            has_minimum_bachelor_requirements = False
-        
-        if not has_general_paper:
-            result.requirements_missing.append("General Paper (GP) Subsidiary is required for Bachelor programs")
-            has_minimum_bachelor_requirements = False
+        # Only check these requirements for Bachelor direct entry eligibility
+        # HEC and Diploma pathways have their own separate requirements
         
         # Check qualification thresholds
         pathways = []
@@ -152,6 +148,15 @@ class UgandaQualificationChecker:
         
         # Direct Bachelor Entry - 2 Principal passes OR 1 Principal + 2 Subsidiaries
         # Must also meet relevant subject requirements, 6+ points AND General Paper
+        # NCHE requirements APPLY ONLY HERE - STRICTLY for Direct Bachelor Entry ONLY
+        if total_principal_points < minimum_points_required:
+            result.requirements_missing.append(f"Minimum {minimum_points_required} Principal points required for Bachelor programs ({curriculum_version} curriculum). You have {total_principal_points} points")
+            has_minimum_bachelor_requirements = False
+        
+        if not has_general_paper:
+            result.requirements_missing.append("General Paper (GP) Subsidiary is required for Bachelor programs")
+            has_minimum_bachelor_requirements = False
+
         meets_bachelor_requirements = (
             meets_subject_requirements 
             and has_minimum_bachelor_requirements
