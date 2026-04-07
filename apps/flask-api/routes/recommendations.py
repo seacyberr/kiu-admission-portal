@@ -84,10 +84,10 @@ def _applicant_qualifies(applicant_level: str, programme_min_level: str) -> bool
     Return True if applicant holds sufficient qualification for the programme.
     
     Correctly handles all cases:
-    ✅ PhD holder can apply for Bachelor's, Diploma, etc.
-    ✅ Masters holder can apply for Bachelors
-    ✅ Bachelors holder cannot apply for Masters
-    ✅ Only applicants >= programme minimum level are accepted
+    - PhD holder can apply for Bachelor's, Diploma, etc.
+    - Masters holder can apply for Bachelors
+    - Bachelors holder cannot apply for Masters
+    - Only applicants >= programme minimum level are accepted
     """
     applicant_rank = _get_level_rank(applicant_level)
     programme_rank = _get_level_rank(programme_min_level)
