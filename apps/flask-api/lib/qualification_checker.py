@@ -41,18 +41,24 @@ class UgandaQualificationChecker:
         
         # Count valid passes (NCHE defines PASS as grades D1 to P8. F9 / F is FAIL)
         passes = 0
+        total_points = 0
+        
         for grade in olevel_grades:
             grade_val = grade.get('points', 9)
+            total_points += grade_val
             # ONLY grades 1 through 8 are considered PASSES. Grade 9 is FAIL.
             if 1 <= grade_val <= 8:
                 passes += 1
         
+        result.requirements_met.append(f"Total subjects: {len(olevel_grades)}")
+        result.requirements_met.append(f"Valid passes: {passes}")
+        
         if passes >= 5:
             result.eligible = True
-            result.requirements_met.append(f"✅ Minimum 5 O-Level passes achieved ({passes} passes)")
+            result.requirements_met.append(f"Minimum 5 O-Level passes achieved ({passes} passes)")
             result.message = "O-Level requirements satisfied"
         else:
-            result.requirements_missing.append(f"❌ Requires minimum 5 O-Level passes, only {passes} passes obtained")
+            result.requirements_missing.append(f"Requires minimum 5 O-Level passes, only {passes} passes obtained")
             result.message = "Insufficient O-Level passes"
         
         return result
