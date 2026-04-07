@@ -129,9 +129,14 @@ export type RecommendSubjectInput = {
 };
 
 export type RecommendProgramsInput = {
-  alevelSubjects: RecommendSubjectInput[];
+  alevelSubjects?: RecommendSubjectInput[];
   campus?: string;
   curriculum?: string;
+  qualificationType?: "a_level" | "o_level" | "diploma" | "hec";
+  qualification?: string;
+  grade?: string;
+  institution?: string;
+  year?: string;
 };
 
 export type NcheCompliance = {

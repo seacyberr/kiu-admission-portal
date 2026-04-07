@@ -289,11 +289,16 @@ export default function Recommend() {
   const [diplomaQualification, setDiplomaQualification] = useState<string>("");
   const [diplomaGrade, setDiplomaGrade] = useState<string>("");
   const [diplomaInstitution, setDiplomaInstitution] = useState<string>("");
+  const [subjects, setSubjects] = useState<SubjectEntry[]>([
+    { subject: "", grade: "", subjectType: "principal" },
+    { subject: "", grade: "", subjectType: "principal" },
+    { subject: "", grade: "", subjectType: "principal" },
+    { subject: "", grade: "", subjectType: "subsidiary" },
+    { subject: "", grade: "", subjectType: "subsidiary" },
+  ]);
   const [campus, setCampus] = useState<"" | "kampala" | "western">("");
   const [result, setResult] = useState<RecommendResult | null>(null);
-  const [campus, setCampus] = useState<"" | "kampala" | "western">("");
   const [curriculum, setCurriculum] = useState<"" | "uneb" | "cambridge" | "other">("");
-  const [result, setResult] = useState<RecommendResult | null>(null);
 
   // ── Subject management ───────────────────────────────────────────────────
 
