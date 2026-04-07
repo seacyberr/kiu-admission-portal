@@ -132,11 +132,13 @@ export type RecommendProgramsInput = {
   alevelSubjects?: RecommendSubjectInput[];
   campus?: string;
   curriculum?: string;
-  qualificationType?: "a_level" | "o_level" | "diploma" | "hec";
+  qualificationType?: "o_level" | "a_level" | "diploma" | "hec" | "degree" | "masters";
   qualification?: string;
+  program?: string;
   grade?: string;
   institution?: string;
   year?: string;
+  gpa?: number;
 };
 
 export type NcheCompliance = {
