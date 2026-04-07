@@ -446,45 +446,31 @@ export default function RecommendOLevel() {
                 {subjects
                   .map((s, i) => ({ s, i }))
                   .map(({ s, i }) => (
-                    <div key={i} className="flex gap-2 items-center">
-                      <select
-                        value={s.subject}
-                        onChange={(e) =>
-                          updateSubject(i, "subject", e.target.value)
-                        }
-                        className="flex-1 h-9 px-2 rounded-lg border border-border bg-white text-sm min-w-0"
-                      >
-                        <option value="">Subject…</option>
-                        {OLEVEL_SUBJECTS.map((sub) => (
-                          <option key={sub} value={sub}>
-                            {sub}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={s.grade}
-                        onChange={(e) =>
-                          updateSubject(i, "grade", e.target.value)
-                        }
-                        className="w-24 h-9 px-2 rounded-lg border border-border bg-white text-sm shrink-0"
-                      >
-                        <option value="">Grade</option>
-                        {getCurrentGradeList().map((g: any) => (
-                          <option key={g.value} value={g.value}>
-                            {g.label}
-                          </option>
-                        ))}
-                      </select>
-                      {subjects.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeSubject(i)}
-                          className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-destructive shrink-0"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
+                     <div key={i} className="flex gap-2 items-center">
+                       <select
+                         value={s.subject}
+                         onChange={(e) =>
+                           updateSubject(i, "subject", e.target.value)
+                         }
+                         className="flex-1 h-9 px-2 rounded-lg border border-border bg-white text-sm min-w-0"
+                       >
+                         <option value="">Subject…</option>
+                         {OLEVEL_SUBJECTS.map((sub) => (
+                           <option key={sub} value={sub}>
+                             {sub}
+                           </option>
+                         ))}
+                       </select>
+                       {subjects.length > 1 && (
+                         <button
+                           type="button"
+                           onClick={() => removeSubject(i)}
+                           className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-destructive shrink-0"
+                         >
+                           <Trash2 className="w-4 h-4" />
+                         </button>
+                       )}
+                     </div>
                   ))}
               </div>
               <button
@@ -533,58 +519,6 @@ export default function RecommendOLevel() {
                   ? "Old Curriculum" 
                   : "New Curriculum"}
               </p>
-            </div>
-
-            {/* Insert Grades for Subjects */}
-            <div className="mb-5 p-4 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20">
-              <div className="flex items-center gap-2 mb-3">
-                <GraduationCap className="w-5 h-5 text-primary" />
-                <p className="text-sm font-semibold text-primary">
-                  Subject Grades Summary
-                </p>
-              </div>
-              <div className="space-y-2">
-                {subjects
-                  .map((s, i) => ({ s, i }))
-                  .filter(({ s }) => s.subject)
-                  .map(({ s, i }) => (
-                    <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white border border-border">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{s.subject}</p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <select
-                          value={s.grade}
-                          onChange={(e) =>
-                            updateSubject(i, "grade", e.target.value)
-                          }
-                          className={`w-16 h-7 px-1 rounded border text-sm font-semibold ${
-                            s.grade 
-                              ? "border-primary bg-primary/5 text-primary" 
-                              : "border-border bg-white text-muted-foreground"
-                          }`}
-                        >
-                          <option value="">—</option>
-                        {getCurrentGradeList().map((g: any) => (
-                          <option key={g.value} value={g.value}>
-                            {g.value}
-                          </option>
-                        ))}
-                        </select>
-                        {s.grade && (
-                          <span className="text-xs font-medium text-primary w-12 text-right">
-                            ({getCurrentGradeList().find((g: any) => g.value === s.grade)?.points || 0} pts)
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                {subjects.filter(s => s.subject).length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-4">
-                    Please select your subjects above
-                  </p>
-                )}
-              </div>
             </div>
 
             {/* Examination Board */}
