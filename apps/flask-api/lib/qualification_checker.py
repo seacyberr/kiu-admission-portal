@@ -232,6 +232,7 @@ class UgandaQualificationChecker:
     def get_recommended_pathways(olevel_grades: List[Dict], alevel_grades: List[Dict] = None, alevel_curriculum: str = "old") -> Dict:
         """
         Get recommended education pathways based on student qualifications
+        Automatically determines highest eligible level and provides direct application links
         """
         olevel_result = UgandaQualificationChecker.validate_olevel(olevel_grades)
         
@@ -239,39 +240,114 @@ class UgandaQualificationChecker:
             "olevel": olevel_result.to_dict(),
             "alevel": None,
             "curriculum": alevel_curriculum,
+            "primaryRecommendation": None,
             "recommendedPathways": [],
+            "availableApplicationLinks": [],
             "nextSteps": []
         }
         
-        if not olevel_result.eligible:
-            result["nextSteps"] = [
-                "Retake O-Level examinations to achieve at least 5 passes",
-                "Consider vocational training options"
-            ]
-            return result
+        # Always provide minimum entry options
+        all_available_paths = []
+        
+        if olevel_result.eligible:
+            all_available_paths.append({
+                "level": "certificate",
+                "name": "Certificate Programs",
+                "eligible": True,
+                "applicationLink": "/apply/certificate"
+            })
+            
+            all_available_paths.append({
+                "level": "diploma",
+                "name": "Diploma Programs",
+                "eligible": True,
+                "applicationLink": "/apply/diploma"
+            })
+            
+            all_available_paths.append({
+                "level": "hec",
+                "name": "Higher Education Certificate (HEC)",
+                "eligible": True,
+                "applicationLink": "/apply/hec"
+            })
         
         if not alevel_grades:
-            result["recommendedPathways"] = ["Proceed to A-Level studies"]
+            # O-Level only applicant
+            result["primaryRecommendation"] = {
+                "level": "alevel",
+                "name": "Proceed to A-Level Studies",
+                "applicationLink": "/new-applicant"
+            }
+            
+            result["recommendedPathways"] = ["A-Level Studies", "HEC Program", "Diploma Programs"]
+            result["availableApplicationLinks"] = [p for p in all_available_paths if p["eligible"]]
+            
             result["nextSteps"] = [
-                "Register hec or A-level",
-                "Select appropriate subject combinations for your career interests"
+                "Select your preferred entry pathway",
+                "Complete application form for selected program"
             ]
+            
             return result
         
         alevel_result = UgandaQualificationChecker.validate_alevel(alevel_grades, curriculum_version=alevel_curriculum)
         result["alevel"] = alevel_result.to_dict()
         
+        # Add A-Level pathways
         if alevel_result.eligible:
-            result["recommendedPathways"] = alevel_result.eligible_programs
+            if 'bachelor_direct' in alevel_result.eligible_programs:
+                all_available_paths.append({
+                    "level": "bachelor",
+                    "name": "Bachelor Degree Programs",
+                    "eligible": True,
+                    "applicationLink": "/apply/bachelor"
+                })
+            
+            if 'hec' in alevel_result.eligible_programs:
+                all_available_paths.append({
+                    "level": "hec",
+                    "name": "Higher Education Certificate (HEC)",
+                    "eligible": True,
+                    "applicationLink": "/apply/hec"
+                })
+            
+            if 'diploma' in alevel_result.eligible_programs:
+                all_available_paths.append({
+                    "level": "diploma",
+                    "name": "Diploma Programs",
+                    "eligible": True,
+                    "applicationLink": "/apply/diploma"
+                })
+        
+        # Sort paths by hierarchy priority (highest first)
+        path_priority = ['bachelor', 'diploma', 'hec', 'certificate']
+        all_available_paths.sort(key=lambda x: path_priority.index(x["level"]))
+        
+        # Set primary recommendation to highest eligible level
+        eligible_paths = [p for p in all_available_paths if p["eligible"]]
+        
+        if eligible_paths:
+            result["primaryRecommendation"] = eligible_paths[0]
+            result["recommendedPathways"] = [p["name"] for p in eligible_paths]
+            result["availableApplicationLinks"] = eligible_paths
+            
             result["nextSteps"] = [
-                "Review available programs",
-                "Check subject requirements for your preferred program",
-                "Submit admission application"
+                f"You qualify for {eligible_paths[0]['name']}",
+                "Click the application link below to proceed directly",
+                "Or select an alternative pathway"
             ]
         else:
+            result["primaryRecommendation"] = {
+                "level": "bridging",
+                "name": "Bridging Program",
+                "applicationLink": "/apply/hec"
+            }
+            
+            result["recommendedPathways"] = ["HEC Bridging Program", "Diploma Foundation Entry"]
+            result["availableApplicationLinks"] = all_available_paths
+            
             result["nextSteps"] = [
-                "Consider Higher Education Certificate (HEC) bridging program",
-                "Explore vocational training options",
+                "You qualify for bridging programs",
+                "Apply for HEC to progress to higher levels later",
                 "Contact admissions office for guidance"
             ]
         
