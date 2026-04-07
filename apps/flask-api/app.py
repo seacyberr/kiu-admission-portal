@@ -152,6 +152,7 @@ def create_app():
     from routes.users import users_bp
     from routes.docs import docs_bp
     from routes.notifications import notifications_bp
+    from routes.recommendations import recommendations_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(admission_bp, url_prefix="/api/admission")
@@ -160,6 +161,7 @@ def create_app():
     app.register_blueprint(users_bp, url_prefix="/api/users")
     app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
     app.register_blueprint(docs_bp, url_prefix="/api/docs")
+    app.register_blueprint(recommendations_bp)
     # Note: v1 routes are registered above; routes/v1/ is deprecated
 
     # Initialize Prometheus metrics

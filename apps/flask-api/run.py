@@ -21,7 +21,8 @@ if __name__ == "__main__":
     print(f"  Running on: {'Windows' if is_windows() else sys.platform}")
     print("=" * 60)
     
-    from app import app
+    from app import create_app
+    app = create_app()
     
     print(f"\n✅ Server starting at: http://localhost:{port}")
     print("✅ Press CTRL+C to stop server\n")

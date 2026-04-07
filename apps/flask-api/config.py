@@ -38,16 +38,19 @@ class Config:
     SQLALCHEMY_DATABASE_URI: str = DATABASE_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # MySQL connection pooling (SQLite uses a lighter config — testing only)
-    if DATABASE_URL.startswith("sqlite"):
-        SQLALCHEMY_ENGINE_OPTIONS: dict = {"pool_pre_ping": True}
-    else:
-        SQLALCHEMY_ENGINE_OPTIONS = {
+    @classmethod
+    def get_engine_options(cls, db_url: str) -> dict:
+        """Resolve engine options dynamically based on actual database URL."""
+        if db_url.startswith("sqlite"):
+            return {"pool_pre_ping": True}
+        return {
             "pool_pre_ping": True,
             "pool_recycle": 300,
             "pool_size": 20,
             "max_overflow": 10,
         }
+
+    SQLALCHEMY_ENGINE_OPTIONS: dict = get_engine_options.__func__(object, DATABASE_URL)
 
     # ------------------------------------------------------------------ #
     # Secrets
@@ -160,6 +163,7 @@ class TestingConfig(Config):
 
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
     # Never seed in tests — use fixtures instead
     SEED_DATABASE = False
     # Allow empty JWT secret in unit tests
