@@ -4,15 +4,15 @@ Based on Uganda Higher Education Qualifications Framework (UHEQF) and National C
 
 ## Qualification Levels & Requirements
 
-| Level | Qualification | UHEQF Level | Admission Requirements |
-|-------|---------------|-------------|------------------------|
-| 2 | Uganda Certificate of Education (UCE / O-Level) | Level 2 | Minimum 5 passes at the same sitting. Prerequisite for A-Level and Diploma programs. |
-| 3 | Uganda Advanced Certificate of Education (UACE / A-Level) | Level 3 | Standard entry for Bachelor's degrees: <br>✅ 2 Principal Passes **OR** <br>✅ 1 Principal Pass + 2 Subsidiary Passes <br>*In relevant subjects for the program* |
-| 4 | Higher Education Certificate (HEC) | Level 4 | 1-year bridging program for students not meeting direct entry requirements. <br>Requirements: 1 Principal Pass **OR** 2 Subsidiary Passes at A-Level |
-| 5 | Diploma | Level 5 | 70-75% practical focus qualification. <br>Requirements: 1 Principal Pass + 2 Subsidiary Passes at A-Level |
-| 7 | Bachelor's Degree | Level 7 | Entry Routes: <br>1. Direct Entry (A-Level qualifications) <br>2. Diploma Holder Entry <br>3. HEC Graduate Entry |
-| 8 | Master's Degree | Level 8 | Program Types: <br>✅ Plan A: Coursework + Dissertation <br>✅ Plan B: Coursework + Project <br>Requirement: Completed Bachelor's Degree |
-| 9 | Doctor of Philosophy (PhD) | Level 9 | Requirement: Completed Master's Degree (Level 8 qualification) |
+| Level | Qualification | UHEQF Level | Admission Requirements | Qualifies For |
+|-------|---------------|-------------|------------------------|---------------|
+| 2 | Uganda Certificate of Education (UCE / O-Level) | Level 2 | Minimum 5 passes at the same sitting | Diploma programs or entry into Higher Education Certificate (HEC) bridging program |
+| 3 | Uganda Advanced Certificate of Education (UACE / A-Level) | Level 3 | **Standard Bachelor's Entry:** <br>✅ 2 Principal Passes **OR** <br>✅ 1 Principal Pass + 2 Subsidiary Passes <br>*In relevant subjects for the program* | Direct entry into Bachelor's Degree programs |
+| 4 | Higher Education Certificate (HEC) | Level 4 | 1 Principal Pass **OR** 2 Subsidiary Passes at A-Level | Entry into Bachelor's Degree programs |
+| 5 | Diploma | Level 5 | 1 Principal Pass + 2 Subsidiary Passes at A-Level | Direct employment OR entry into 2nd year of relevant Bachelor's Degree program |
+| 7 | Bachelor's Degree | Level 7 | Entry Routes: <br>1. Direct A-Level Entry <br>2. Relevant Diploma <br>3. HEC Graduate | Master's Degree programs |
+| 8 | Master's Degree | Level 8 | Completed Bachelor's Degree | PhD programs |
+| 9 | Doctor of Philosophy (PhD) | Level 9 | Completed Master's Degree | Highest academic qualification |
 
 ## Admission Pathways
 
@@ -23,7 +23,7 @@ O-Level (5 Passes)
         ↳ HEC Bridging Program (1 Principal / 2 Subsidiaries)
             ↳ Bachelor Entry via HEC
         ↳ Diploma Program (1 Principal + 2 Subsidiaries)
-            ↳ Bachelor Entry via Diploma
+            ↳ Bachelor Entry via Diploma (2nd Year)
     ↳ Direct Diploma Entry (some programs)
 
 Bachelor's Degree

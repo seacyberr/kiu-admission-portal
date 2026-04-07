@@ -357,7 +357,7 @@ export default function RecommendALevel() {
     }).length;
 
   // NCHE Strict requirements:
-  // Minimum 3 principal subjects with valid passes
+  // Minimum 3 PRINCIPAL SUBJECTS with grades + subsidiaries
   const isValid = principalCount >= 3 && curriculum !== "" && principalPasses >= 2;
 
   // ── Submit ───────────────────────────────────────────────────────────────
@@ -491,46 +491,46 @@ export default function RecommendALevel() {
                   .map((s, i) => ({ s, i }))
                   .filter(({ s }) => s.subjectType === "principal")
                   .map(({ s, i }) => (
-                    <div key={i} className="flex gap-2 items-center">
-                      <select
-                        value={s.subject}
-                        onChange={(e) =>
-                          updateSubject(i, "subject", e.target.value)
-                        }
-                        className="flex-1 h-9 px-2 rounded-lg border border-border bg-white text-sm min-w-0"
-                      >
-                        <option value="">Subject…</option>
-                        {PRINCIPAL_SUBJECTS.map((sub) => (
-                          <option key={sub} value={sub}>
-                            {sub}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={s.grade}
-                        onChange={(e) =>
-                          updateSubject(i, "grade", e.target.value)
-                        }
-                        className="w-24 h-9 px-2 rounded-lg border border-border bg-white text-sm shrink-0"
-                      >
-                        <option value="">Grade</option>
-                        {ALEVEL_GRADES.map((g) => (
-                          <option key={g.value} value={g.value}>
-                            {g.label}
-                          </option>
-                        ))}
-                      </select>
-                      {subjects.filter((x) => x.subjectType === "principal")
-                        .length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeSubject(i)}
-                          className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-destructive shrink-0"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
+                     <div key={i} className="grid grid-cols-12 gap-3 items-center w-full">
+                       <select
+                         value={s.subject}
+                         onChange={(e) =>
+                           updateSubject(i, "subject", e.target.value)
+                         }
+                         className="col-span-8 h-10 px-3 rounded-lg border border-border bg-white text-sm w-full"
+                       >
+                         <option value="">Select Subject…</option>
+                         {PRINCIPAL_SUBJECTS.map((sub) => (
+                           <option key={sub} value={sub}>
+                             {sub}
+                           </option>
+                         ))}
+                       </select>
+                       <select
+                         value={s.grade}
+                         onChange={(e) =>
+                           updateSubject(i, "grade", e.target.value)
+                         }
+                         className="col-span-3 h-10 px-3 rounded-lg border border-border bg-white text-sm w-full"
+                       >
+                         <option value="">Grade</option>
+                         {ALEVEL_GRADES.map((g) => (
+                           <option key={g.value} value={g.value}>
+                             {g.label}
+                           </option>
+                         ))}
+                       </select>
+                       {subjects.filter((x) => x.subjectType === "principal")
+                         .length > 1 && (
+                         <button
+                           type="button"
+                           onClick={() => removeSubject(i)}
+                           className="col-span-1 h-10 flex items-center justify-center text-muted-foreground hover:text-destructive w-full rounded-lg border border-transparent hover:border-destructive/30 hover:bg-destructive/5"
+                         >
+                           <Trash2 className="w-4 h-4" />
+                         </button>
+                       )}
+                     </div>
                   ))}
               </div>
               <button
@@ -607,16 +607,16 @@ export default function RecommendALevel() {
                 {subjects
                   .map((s, i) => ({ s, i }))
                   .filter(({ s }) => s.subjectType === "subsidiary")
-                  .map(({ s, i }) => (
-                    <div key={i} className="flex gap-2 items-center">
+                   .map(({ s, i }) => (
+                    <div key={i} className="grid grid-cols-12 gap-3 items-center w-full">
                       <select
                         value={s.subject}
                         onChange={(e) =>
                           updateSubject(i, "subject", e.target.value)
                         }
-                        className="flex-1 h-9 px-2 rounded-lg border border-border bg-white text-sm min-w-0"
+                        className="col-span-8 h-10 px-3 rounded-lg border border-border bg-white text-sm w-full"
                       >
-                        <option value="">Subject…</option>
+                        <option value="">Select Subject…</option>
                         {SUBSIDIARY_SUBJECTS.map((sub) => (
                           <option key={sub} value={sub}>
                             {sub}
@@ -628,7 +628,7 @@ export default function RecommendALevel() {
                         onChange={(e) =>
                           updateSubject(i, "grade", e.target.value)
                         }
-                        className="w-24 h-9 px-2 rounded-lg border border-border bg-white text-sm shrink-0"
+                        className="col-span-3 h-10 px-3 rounded-lg border border-border bg-white text-sm w-full"
                       >
                         <option value="">Grade</option>
                         {ALEVEL_GRADES.map((g) => (
@@ -640,7 +640,7 @@ export default function RecommendALevel() {
                       <button
                         type="button"
                         onClick={() => removeSubject(i)}
-                        className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-destructive shrink-0"
+                        className="col-span-1 h-10 flex items-center justify-center text-muted-foreground hover:text-destructive w-full rounded-lg border border-transparent hover:border-destructive/30 hover:bg-destructive/5"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

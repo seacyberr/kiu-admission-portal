@@ -58,9 +58,13 @@ class UgandaQualificationChecker:
         return result
     
     @staticmethod
-    def validate_alevel(alevel_grades: List[Dict]) -> QualificationResult:
+    def validate_alevel(alevel_grades: List[Dict], required_subjects: List[str] = None) -> QualificationResult:
         """
         Validate A-Level (UACE) requirements for different pathways
+        
+        Standard Bachelor's Entry Requirements:
+        - 2 Principal Passes OR 1 Principal + 2 Subsidiary Passes
+        - In relevant subjects for the program
         """
         result = QualificationResult(False)
         
@@ -71,37 +75,62 @@ class UgandaQualificationChecker:
         
         principal_passes = 0
         subsidiary_passes = 0
+        relevant_principal = 0
+        relevant_subsidiary = 0
+        passed_subjects = []
         
         for grade in alevel_grades:
             subject_type = grade.get('subjectType', '').lower()
             points = grade.get('points', 0)
+            subject = grade.get('subject', '').lower()
             
             if subject_type == 'principal' and points >= 1:
                 principal_passes += 1
+                passed_subjects.append(subject)
+                if required_subjects and subject in [s.lower() for s in required_subjects]:
+                    relevant_principal += 1
             elif subject_type == 'subsidiary' and points >= 1:
                 subsidiary_passes += 1
+                passed_subjects.append(subject)
+                if required_subjects and subject in [s.lower() for s in required_subjects]:
+                    relevant_subsidiary += 1
         
         result.requirements_met.append(f"📊 A-Level Results: {principal_passes} Principal Passes, {subsidiary_passes} Subsidiary Passes")
+        
+        # Check subject relevance if required subjects are specified
+        meets_subject_requirements = True
+        if required_subjects and len(required_subjects) > 0:
+            if relevant_principal == 0:
+                meets_subject_requirements = False
+                result.requirements_missing.append(f"❌ Requires Principal Pass in at least one relevant subject: {', '.join(required_subjects)}")
+            else:
+                result.requirements_met.append(f"✅ Relevant subject requirements satisfied ({relevant_principal} relevant Principal passes)")
         
         # Check qualification thresholds
         pathways = []
         
-        # Direct Bachelor Entry
-        if principal_passes >= 2:
-            result.requirements_met.append("✅ Eligible for Direct Bachelor Degree Entry (2+ Principal Passes)")
-            pathways.append("bachelor_direct")
-        elif principal_passes >= 1 and subsidiary_passes >= 2:
-            result.requirements_met.append("✅ Eligible for Direct Bachelor Degree Entry (1 Principal + 2 Subsidiaries)")
-            pathways.append("bachelor_direct")
+        # HEC Entry - 1 Principal OR 2 Subsidiary passes
+        if principal_passes >= 1 or subsidiary_passes >= 2:
+            result.requirements_met.append("✅ Eligible for Higher Education Certificate (HEC) Program")
+            pathways.append("hec")
         
-        # HEC Entry - A-Level holders are ALWAYS eligible for HEC
-        result.requirements_met.append("✅ Eligible for Higher Education Certificate (HEC) Program")
-        pathways.append("hec")
-        
-        # Diploma Entry
+        # Diploma Entry - 1 Principal + 2 Subsidiary passes
         if principal_passes >= 1 and subsidiary_passes >= 2:
             result.requirements_met.append("✅ Eligible for Diploma Programs")
             pathways.append("diploma")
+        
+        # Direct Bachelor Entry - 2 Principal passes OR 1 Principal + 2 Subsidiaries
+        # Must also meet relevant subject requirements if specified
+        if meets_subject_requirements and principal_passes >= 2:
+            result.requirements_met.append("✅ Eligible for Direct Bachelor Degree Entry (2+ Principal Passes)")
+            pathways.append("bachelor_direct")
+        elif meets_subject_requirements and principal_passes >= 1 and subsidiary_passes >= 2:
+            result.requirements_met.append("✅ Eligible for Direct Bachelor Degree Entry (1 Principal + 2 Subsidiaries)")
+            pathways.append("bachelor_direct")
+        elif principal_passes < 2 and principal_passes >= 1:
+            result.requirements_missing.append("ℹ️ With 1 Principal Pass you qualify for HEC / Diploma programs")
+        elif principal_passes == 0 and subsidiary_passes >= 2:
+            result.requirements_missing.append("ℹ️ With 2 Subsidiary passes you qualify for HEC program")
         
         if len(pathways) > 0:
             result.eligible = True
