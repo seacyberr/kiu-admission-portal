@@ -23,6 +23,7 @@ import RecommendHec from "@/pages/applicant/recommend-hec";
 import FinalistDashboard from "@/pages/finalist/dashboard";
 import CareerPaths from "@/pages/finalist/career-paths";
 import Opportunities from "@/pages/finalist/opportunities";
+import FinalistProfileEdit from "@/pages/finalist/profile";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminAdmissions from "@/pages/admin/admissions";
 import AdminOpportunities from "@/pages/admin/opportunities";
@@ -147,7 +148,7 @@ function Router() {
         <Route path="/career/profile">
           {() => (
             <RoleGuard roles={["finalist"]}>
-              <FinalistDashboard />
+              <FinalistProfileEdit />
             </RoleGuard>
           )}
         </Route>

@@ -528,3 +528,13 @@ export function useRegisterUser() {
       }),
   });
 }
+
+export function useUpdateFinalistProfile() {
+  return useMutation({
+    mutationFn: async (vars: Partial<FinalistProfile>) =>
+      apiFetchJson<FinalistProfile>(`/api/career/my-profile`, {
+        method: "PUT",
+        body: JSON.stringify(vars),
+      }),
+  });
+}
