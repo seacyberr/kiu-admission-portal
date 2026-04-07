@@ -51,6 +51,11 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    minify: 'esbuild',
+    sourcemap: process.env.NODE_ENV === 'production' ? false : 'hidden',
+    cssMinify: true,
+    reportCompressedSize: true,
+    chunkSizeWarningLimit: 250,
     rollupOptions: {
       output: {
         manualChunks: {
@@ -64,14 +69,21 @@ export default defineConfig({
           ],
           'vendor-query': ['@tanstack/react-query'],
           'vendor-form': ['react-hook-form', '@hookform/resolvers', 'zod'],
-          'vendor-chart': ['recharts'],
-          'vendor-motion': ['framer-motion'],
-          'vendor-icons': ['lucide-react', 'react-icons'],
           'vendor-router': ['wouter'],
           'vendor-utils': ['clsx', 'tailwind-merge', 'class-variance-authority', 'date-fns'],
         },
+        compact: true,
+        hoistTransitiveImports: true,
+      },
+      treeshake: {
+        preset: 'recommended',
+        annotations: true,
+        tryCatchDeoptimization: false,
       },
     },
+  },
+  esbuild: {
+    legalComments: 'none',
   },
   server: {
     port,

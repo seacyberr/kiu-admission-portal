@@ -291,6 +291,11 @@ export default function RecommendOLevel() {
     { subject: "", grade: "" },
     { subject: "", grade: "" },
     { subject: "", grade: "" },
+    { subject: "", grade: "" },
+    { subject: "", grade: "" },
+    { subject: "", grade: "" },
+    { subject: "", grade: "" },
+    { subject: "", grade: "" },
   ]);
   const [campus, setCampus] = useState<"" | "kampala" | "western">("");
   const [curriculum, setCurriculum] = useState<"" | "uneb" | "cambridge" | "other">("");
@@ -349,7 +354,7 @@ export default function RecommendOLevel() {
       return points >= 1 && points <= 8;
     }).length;
 
-  const isValid = subjectCount >= 5 && curriculum !== "" && passesCount >= 5;
+  const isValid = subjectCount >= 8 && curriculum !== "" && passesCount >= 5;
 
   // ── Submit ───────────────────────────────────────────────────────────────
 
@@ -422,7 +427,7 @@ export default function RecommendOLevel() {
           <Card className="p-6">
             <h2 className="font-bold text-lg mb-1">Your O-Level Subjects</h2>
             <p className="text-xs text-muted-foreground mb-5">
-              Add your O-Level subjects and grades. Minimum 5 subjects required.
+              Add your O-Level subjects and grades. Minimum 8 subjects required.
             </p>
 
             {/* NCHE Quick Guide */}
@@ -521,6 +526,58 @@ export default function RecommendOLevel() {
               </p>
             </div>
 
+            {/* Subject Grades Summary */}
+            <div className="mb-5 p-4 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20">
+              <div className="flex items-center gap-2 mb-3">
+                <GraduationCap className="w-5 h-5 text-primary" />
+                <p className="text-sm font-semibold text-primary">
+                  Subject Grades Summary
+                </p>
+              </div>
+              <div className="space-y-2">
+                {subjects
+                  .map((s, i) => ({ s, i }))
+                  .filter(({ s }) => s.subject)
+                  .map(({ s, i }) => (
+                    <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white border border-border">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{s.subject}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <select
+                          value={s.grade}
+                          onChange={(e) =>
+                            updateSubject(i, "grade", e.target.value)
+                          }
+                          className={`w-16 h-7 px-1 rounded border text-sm font-semibold ${
+                            s.grade 
+                              ? "border-primary bg-primary/5 text-primary" 
+                              : "border-border bg-white text-muted-foreground"
+                          }`}
+                        >
+                          <option value="">—</option>
+                        {getCurrentGradeList().map((g: any) => (
+                          <option key={g.value} value={g.value}>
+                            {g.value}
+                          </option>
+                        ))}
+                        </select>
+                        {s.grade && (
+                          <span className="text-xs font-medium text-primary w-12 text-right">
+                            ({getCurrentGradeList().find((g: any) => g.value === s.grade)?.points || 0} pts)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                {subjects.filter(s => s.subject).length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-4">
+                    Please select your subjects above
+                  </p>
+                )}
+              </div>
+            </div>
+
             {/* Examination Board */}
             <div className="mb-5">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
@@ -572,7 +629,7 @@ export default function RecommendOLevel() {
                 ) : (
                   <AlertCircle className="w-4 h-4" />
                 )}
-                {subjectCount}/5 subjects completed
+                {subjectCount}/8 subjects completed
               </div>
               <div
                 className={`flex items-center gap-2 text-xs ${
@@ -691,11 +748,10 @@ export default function RecommendOLevel() {
           {result && (
             <div className="space-y-6">
               {/* Summary bar */}
-              <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
                 <div className="min-w-0">
                   <h2 className="text-xl font-bold">
-                    {result.total} Program
-                    {result.total !== 1 ? "s" : ""} Found
+                    {result.total} Program Pathways Found
                   </h2>
                   <p className="text-sm text-muted-foreground truncate">
                     Based on:{" "}
@@ -704,10 +760,78 @@ export default function RecommendOLevel() {
                     </span>
                   </p>
                 </div>
-                <Badge variant="outline" className="text-xs shrink-0">
-                  Sorted by subject match
-                </Badge>
               </div>
+
+              {/* Qualification Path Sections */}
+              
+              {/* ✅ Degree Programs (Direct Eligible) */}
+              {result.recommendations.filter(p => p.pathType === 'direct-degree').length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Badge variant="success" className="text-sm px-3 py-1">✅ Direct Degree Eligible</Badge>
+                    <span className="text-xs text-muted-foreground">
+                      Your grades meet direct entry requirements for these Degree programs
+                    </span>
+                  </div>
+                  <div className="space-y-4">
+                    {result.recommendations
+                      .filter(p => p.pathType === 'direct-degree')
+                      .map((prog) => (
+                        <ProgramCard
+                          key={prog.id}
+                          program={prog}
+                          onApply={handleApply}
+                        />
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 🟡 Diploma Programs (Recommended Path) */}
+              {result.recommendations.filter(p => p.pathType === 'recommended-diploma').length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Badge variant="info" className="text-sm px-3 py-1">🟡 Recommended Diploma Path</Badge>
+                    <span className="text-xs text-muted-foreground">
+                      These Diplomas match your strongest subjects. Complete this first then progress to Degree with exemptions.
+                    </span>
+                  </div>
+                  <div className="space-y-4">
+                    {result.recommendations
+                      .filter(p => p.pathType === 'recommended-diploma')
+                      .map((prog) => (
+                        <ProgramCard
+                          key={prog.id}
+                          program={prog}
+                          onApply={handleApply}
+                        />
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ⚪ HEC Programs (Alternative) */}
+              {result.recommendations.filter(p => p.pathType === 'hec-option').length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Badge variant="outline" className="text-sm px-3 py-1">⚪ HEC Certificate Option</Badge>
+                    <span className="text-xs text-muted-foreground">
+                      Higher Education Certificate programs that match your subject profile
+                    </span>
+                  </div>
+                  <div className="space-y-4">
+                    {result.recommendations
+                      .filter(p => p.pathType === 'hec-option')
+                      .map((prog) => (
+                        <ProgramCard
+                          key={prog.id}
+                          program={prog}
+                          onApply={handleApply}
+                        />
+                      ))}
+                  </div>
+                </div>
+              )}
 
               {result.total === 0 && (
                 <Card className="p-12 text-center">

@@ -290,8 +290,8 @@ export default function RecommendALevel() {
     { subject: "", grade: "", subjectType: "principal" },
     { subject: "", grade: "", subjectType: "principal" },
     { subject: "", grade: "", subjectType: "principal" },
-    { subject: "", grade: "", subjectType: "subsidiary" }, // GP slot
-    { subject: "", grade: "", subjectType: "subsidiary" }, // 2nd subsidiary
+    { subject: "", grade: "", subjectType: "subsidiary" },
+    { subject: "", grade: "", subjectType: "subsidiary" },
   ]);
   const [campus, setCampus] = useState<"" | "kampala" | "western">("");
   const [curriculum, setCurriculum] = useState<"" | "uneb" | "cambridge" | "other">("");
@@ -431,8 +431,7 @@ export default function RecommendALevel() {
           <Card className="p-6">
             <h2 className="font-bold text-lg mb-1">Your A-Level Subjects</h2>
             <p className="text-xs text-muted-foreground mb-5">
-              Add your principal subjects and at least General Paper (GP) as
-              subsidiary.
+              Enter your 3 Principal subjects and 2 Compulsory subsidiary subjects. Total 5 subjects.
             </p>
 
             {/* Official UHEQF Requirements */}
@@ -700,15 +699,28 @@ export default function RecommendALevel() {
             <div className="mb-5 space-y-2">
               <div
                 className={`flex items-center gap-2 text-xs ${
-                  principalCount >= 3 ? "text-green-600" : "text-muted-foreground"
+                  principalCount === 3 ? "text-green-600" : "text-muted-foreground"
                 }`}
               >
-                {principalCount >= 3 ? (
+                {principalCount === 3 ? (
                   <CheckCircle className="w-4 h-4" />
                 ) : (
                   <AlertCircle className="w-4 h-4" />
                 )}
-                {principalCount}/3 principal subjects with grades
+                {principalCount}/3 Principal subjects completed
+              </div>
+
+              <div
+                className={`flex items-center gap-2 text-xs ${
+                  subsidiaryPasses >= 2 ? "text-green-600" : "text-muted-foreground"
+                }`}
+              >
+                {subsidiaryPasses >= 2 ? (
+                  <CheckCircle className="w-4 h-4" />
+                ) : (
+                  <AlertCircle className="w-4 h-4" />
+                )}
+                {subsidiaryPasses}/2 Subsidiary subjects completed
               </div>
               {principalSubjectsWithoutGrade > 0 && (
                 <div className="flex items-center gap-2 text-xs text-amber-600">
