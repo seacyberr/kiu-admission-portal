@@ -24,8 +24,8 @@ if __name__ == "__main__":
     from app import create_app
     app = create_app()
     
-    print(f"\n✅ Server starting at: http://localhost:{port}")
-    print("✅ Press CTRL+C to stop server\n")
+    print(f"\nServer starting at: http://localhost:{port}")
+    print("Press CTRL+C to stop server\n")
     
     # Use flask dev server which works cross-platform
     app.run(
