@@ -106,38 +106,57 @@ class UgandaQualificationChecker:
             else:
                 result.requirements_met.append(f"✅ Relevant subject requirements satisfied ({relevant_principal} relevant Principal passes)")
         
+        # Calculate total principal points
+        total_principal_points = sum(g.get('points', 0) for g in alevel_grades if g.get('subjectType', '').lower() == 'principal')
+        has_general_paper = any(g.get('subject', '').lower() in ['general paper', 'gp'] for g in alevel_grades if g.get('subjectType', '').lower() == 'subsidiary')
+        
+        result.requirements_met.append(f"Total Principal Points: {total_principal_points}")
+        
+        # NCHE Minimum Requirements Validation
+        if total_principal_points < 6:
+            result.requirements_missing.append(f"Minimum 6 Principal points required. You have {total_principal_points} points")
+        
+        if not has_general_paper:
+            result.requirements_missing.append("General Paper (GP) Subsidiary is required for Bachelor programs")
+        
         # Check qualification thresholds
         pathways = []
         
         # HEC Entry - 1 Principal OR 2 Subsidiary passes
         if principal_passes >= 1 or subsidiary_passes >= 2:
-            result.requirements_met.append("✅ Eligible for Higher Education Certificate (HEC) Program")
+            result.requirements_met.append("Eligible for Higher Education Certificate (HEC) Program")
             pathways.append("hec")
         
         # Diploma Entry - 1 Principal + 2 Subsidiary passes
         if principal_passes >= 1 and subsidiary_passes >= 2:
-            result.requirements_met.append("✅ Eligible for Diploma Programs")
+            result.requirements_met.append("Eligible for Diploma Programs")
             pathways.append("diploma")
         
         # Direct Bachelor Entry - 2 Principal passes OR 1 Principal + 2 Subsidiaries
-        # Must also meet relevant subject requirements if specified
-        if meets_subject_requirements and principal_passes >= 2:
-            result.requirements_met.append("✅ Eligible for Direct Bachelor Degree Entry (2+ Principal Passes)")
+        # Must also meet relevant subject requirements, 6+ points AND General Paper
+        meets_bachelor_requirements = (
+            meets_subject_requirements 
+            and total_principal_points >= 6 
+            and has_general_paper
+        )
+        
+        if meets_bachelor_requirements and principal_passes >= 2:
+            result.requirements_met.append("Eligible for Direct Bachelor Degree Entry (2+ Principal Passes)")
             pathways.append("bachelor_direct")
-        elif meets_subject_requirements and principal_passes >= 1 and subsidiary_passes >= 2:
-            result.requirements_met.append("✅ Eligible for Direct Bachelor Degree Entry (1 Principal + 2 Subsidiaries)")
+        elif meets_bachelor_requirements and principal_passes >= 1 and subsidiary_passes >= 2:
+            result.requirements_met.append("Eligible for Direct Bachelor Degree Entry (1 Principal + 2 Subsidiaries)")
             pathways.append("bachelor_direct")
         elif principal_passes < 2 and principal_passes >= 1:
-            result.requirements_missing.append("ℹ️ With 1 Principal Pass you qualify for HEC / Diploma programs")
+            result.requirements_missing.append("With 1 Principal Pass you qualify for HEC / Diploma programs")
         elif principal_passes == 0 and subsidiary_passes >= 2:
-            result.requirements_missing.append("ℹ️ With 2 Subsidiary passes you qualify for HEC program")
+            result.requirements_missing.append("With 2 Subsidiary passes you qualify for HEC program")
         
         if len(pathways) > 0:
             result.eligible = True
             result.eligible_programs = pathways
             result.message = f"Eligible for {len(pathways)} higher education pathways"
         else:
-            result.requirements_missing.append("❌ Does not meet minimum requirements for any higher education program")
+            result.requirements_missing.append("Does not meet minimum requirements for any higher education program")
             result.message = "A-Level results do not meet minimum entry requirements"
         
         return result
@@ -151,9 +170,10 @@ class UgandaQualificationChecker:
         """
         Check eligibility for a specific program level
         """
-        # O-Level is required for ALL programs
-        if not olevel_result.eligible:
-            return False, "O-Level requirements not met"
+        # O-Level is required for ALL programs at Certificate level and above
+        if program_level not in ['phd', 'doctorate', 'master', 'masters', 'postgraduate']:
+            if not olevel_result.eligible:
+                return False, "O-Level requirements not met"
         
         program_level = program_level.lower().strip()
         
