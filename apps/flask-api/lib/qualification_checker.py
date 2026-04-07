@@ -112,12 +112,16 @@ class UgandaQualificationChecker:
         
         result.requirements_met.append(f"Total Principal Points: {total_principal_points}")
         
-        # NCHE Minimum Requirements Validation
+        # NCHE Minimum Requirements Validation - ONLY for BACHELOR programs
+        has_minimum_bachelor_requirements = True
+        
         if total_principal_points < 6:
-            result.requirements_missing.append(f"Minimum 6 Principal points required. You have {total_principal_points} points")
+            result.requirements_missing.append(f"Minimum 6 Principal points required for Bachelor programs. You have {total_principal_points} points")
+            has_minimum_bachelor_requirements = False
         
         if not has_general_paper:
             result.requirements_missing.append("General Paper (GP) Subsidiary is required for Bachelor programs")
+            has_minimum_bachelor_requirements = False
         
         # Check qualification thresholds
         pathways = []
@@ -136,8 +140,7 @@ class UgandaQualificationChecker:
         # Must also meet relevant subject requirements, 6+ points AND General Paper
         meets_bachelor_requirements = (
             meets_subject_requirements 
-            and total_principal_points >= 6 
-            and has_general_paper
+            and has_minimum_bachelor_requirements
         )
         
         if meets_bachelor_requirements and principal_passes >= 2:
