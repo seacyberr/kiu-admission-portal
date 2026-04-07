@@ -232,6 +232,29 @@ class AdmissionApplication(db.Model):
         }
 
 
+class ApplicationStatusHistory(db.Model):
+    __tablename__ = "application_status_history"
+
+    id = db.Column(db.Integer, primary_key=True)
+    application_id = db.Column(db.Integer, db.ForeignKey("admission_applications.id"), nullable=False)
+    status = db.Column(db.String(30), nullable=False)
+    notes = db.Column(db.Text)
+    changed_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    application = db.relationship("AdmissionApplication", backref="status_history")
+    changed_by = db.relationship("User")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "status": self.status,
+            "notes": self.notes,
+            "changedBy": self.changed_by.to_dict() if self.changed_by else None,
+            "createdAt": self.created_at.isoformat()
+        }
+
+
 class FinalistProfile(db.Model):
     __tablename__ = "finalist_profiles"
 
