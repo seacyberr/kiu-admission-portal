@@ -64,13 +64,17 @@ class UgandaQualificationChecker:
         return result
     
     @staticmethod
-    def validate_alevel(alevel_grades: List[Dict], required_subjects: List[str] = None) -> QualificationResult:
+    def validate_alevel(alevel_grades: List[Dict], required_subjects: List[str] = None, curriculum_version: str = "old") -> QualificationResult:
         """
         Validate A-Level (UACE) requirements for different pathways
         
         Standard Bachelor's Entry Requirements:
         - 2 Principal Passes OR 1 Principal + 2 Subsidiary Passes
         - In relevant subjects for the program
+        
+        Curriculum versions:
+        - old: 2009-2024 (6 point scale: A=6, B=5, C=4, D=3, E=2, O=1, F=0)
+        - new: 2025+ (9 point scale with competency assessment)
         """
         result = QualificationResult(False)
         
@@ -78,6 +82,8 @@ class UgandaQualificationChecker:
             result.requirements_missing.append("A-Level results not provided")
             result.message = "A-Level results are required"
             return result
+            
+        result.requirements_met.append(f"Curriculum: {curriculum_version.title()} Curriculum")
         
         principal_passes = 0
         subsidiary_passes = 0
@@ -121,8 +127,10 @@ class UgandaQualificationChecker:
         # NCHE Minimum Requirements Validation - ONLY for BACHELOR programs
         has_minimum_bachelor_requirements = True
         
-        if total_principal_points < 6:
-            result.requirements_missing.append(f"Minimum 6 Principal points required for Bachelor programs. You have {total_principal_points} points")
+        minimum_points_required = 6 if curriculum_version == "old" else 7
+        
+        if total_principal_points < minimum_points_required:
+            result.requirements_missing.append(f"Minimum {minimum_points_required} Principal points required for Bachelor programs ({curriculum_version} curriculum). You have {total_principal_points} points")
             has_minimum_bachelor_requirements = False
         
         if not has_general_paper:
@@ -219,7 +227,7 @@ class UgandaQualificationChecker:
         return False, "Unknown program level"
     
     @staticmethod
-    def get_recommended_pathways(olevel_grades: List[Dict], alevel_grades: List[Dict] = None) -> Dict:
+    def get_recommended_pathways(olevel_grades: List[Dict], alevel_grades: List[Dict] = None, alevel_curriculum: str = "old") -> Dict:
         """
         Get recommended education pathways based on student qualifications
         """
@@ -228,6 +236,7 @@ class UgandaQualificationChecker:
         result = {
             "olevel": olevel_result.to_dict(),
             "alevel": None,
+            "curriculum": alevel_curriculum,
             "recommendedPathways": [],
             "nextSteps": []
         }
@@ -247,7 +256,7 @@ class UgandaQualificationChecker:
             ]
             return result
         
-        alevel_result = UgandaQualificationChecker.validate_alevel(alevel_grades)
+        alevel_result = UgandaQualificationChecker.validate_alevel(alevel_grades, curriculum_version=alevel_curriculum)
         result["alevel"] = alevel_result.to_dict()
         
         if alevel_result.eligible:
