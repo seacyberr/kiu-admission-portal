@@ -18,20 +18,17 @@ Monorepo for the Kampala International University admissions and careers portal:
 
 ## Install
 
-From the repository root:
+✅ **ONE COMMAND FULL SETUP (WORKS ON WINDOWS / LINUX / MACOS):**
 
 ```bash
-pnpm install
+pnpm setup
 ```
 
-Python dependencies (for the API):
-
-```bash
-cd apps/flask-api
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-```
+This command automatically:
+- Installs all Node.js dependencies
+- Installs all Python packages
+- Automatically installs correct server for your OS (gunicorn/waitress)
+- Works identically on all operating systems
 
 ## Configuration
 
@@ -43,18 +40,34 @@ Further deployment notes: [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
 ## Run locally
 
-**1. API** (default many setups use port `5001`):
+✅ **UNIVERSAL COMMANDS (WORK ON ALL OPERATING SYSTEMS):**
 
+**Terminal 1 - Backend API:**
 ```bash
-cd apps/flask-api
-source .venv/bin/activate
-export FLASK_APP=app.py
-export DATABASE_URL=mysql+pymysql://...
-flask run --port 5001
+pnpm dev:api
 ```
 
-**2. Frontend** (from repo root):
+**Terminal 2 - Frontend:**
+```bash
+pnpm dev:portal
+```
 
+✅ Application will be available at:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:5000
+- API Documentation: http://localhost:5000/docs
+
+---
+
+Manual run commands (not required):
+
+**1. API** (default port 5000):
+```bash
+cd apps/flask-api
+python run.py
+```
+
+**2. Frontend:**
 ```bash
 pnpm --filter @workspace/kiu-portal dev
 ```
