@@ -194,14 +194,16 @@ class UgandaQualificationChecker:
         
         program_level = program_level.lower().strip()
         
-        # Certificate / Diploma
+        # Diploma / Certificate Programs
         if program_level in ['certificate', 'diploma']:
+            # Diplomas have their own independent entry requirements
+            # No A-Level requirements are enforced for Diploma applicants
             if has_hec:
                 return True, "Eligible via HEC entry route"
             if olevel_result.eligible:
                 return True, "Eligible via O-Level entry route"
-            if alevel_result and alevel_result.eligible and 'diploma' in alevel_result.eligible_programs:
-                return True, "Eligible for Diploma program"
+            
+            # Diploma direct entry has separate requirements
             return False, "Does not meet Diploma entry requirements"
         
         # Bachelor Degree
@@ -251,7 +253,7 @@ class UgandaQualificationChecker:
         if not alevel_grades:
             result["recommendedPathways"] = ["Proceed to A-Level studies"]
             result["nextSteps"] = [
-                "Register for A-Level program",
+                "Register hec or A-level",
                 "Select appropriate subject combinations for your career interests"
             ]
             return result
