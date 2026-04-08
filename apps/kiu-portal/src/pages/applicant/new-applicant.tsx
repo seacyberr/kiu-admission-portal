@@ -25,7 +25,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 
-type HighestEducation = 'o_level' | 'a_level' | 'diploma' | 'hec' | 'masters' | 'phd';
+type HighestEducation = 'o_level' | 'a_level' | 'diploma' | 'hec' | 'national_cert' | 'bachelors' | 'masters' | 'phd';
 type YesNo = 'yes' | 'no';
 
 function toDegreeApply(qualification: 'a_level' | 'diploma' | 'hec') {
@@ -107,6 +107,18 @@ export default function NewApplicant() {
                   icon: FileText,
                   label: 'HEC',
                   sub: 'Apply for Degree',
+                },
+                {
+                  key: 'national_cert' as HighestEducation,
+                  icon: Award,
+                  label: 'National Certificate',
+                  sub: 'Technical & Vocational entry',
+                },
+                {
+                  key: 'bachelors' as HighestEducation,
+                  icon: GraduationCap,
+                  label: "Bachelor's Degree",
+                  sub: 'Apply for Masters programmes',
                 },
                 {
                   key: 'masters' as HighestEducation,
@@ -497,6 +509,92 @@ export default function NewApplicant() {
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
+          </Card>
+        )}
+
+        {/* ── National Certificate ─────────────────────────────────────────── */}
+        {highest === 'national_cert' && (
+          <Card className="p-8">
+            <div className="bg-green-50 p-4 rounded-xl text-sm mb-6">
+              <p className="font-semibold text-green-800">✓ Eligible for Diploma / Degree</p>
+              <p className="text-green-700 mt-1">
+                National Certificate holders are eligible to apply for Diploma programs and direct Degree entry.
+              </p>
+            </div>
+
+            {/* ── PRIMARY CTA: Recommendation Tool ── */}
+            <div className="p-5 rounded-2xl border-2 border-accent/40 bg-accent/5 mb-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-5 h-5 text-accent-foreground" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base">
+                    🎯 Get Personalised Program Recommendations
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Enter your National Certificate subjects and grades to find the best matching programs.
+                  </p>
+                </div>
+              </div>
+               <Button
+                 className="w-full gap-2"
+                 variant="accent"
+                 onClick={() => setLocation('/recommend?qualification=national_cert')}
+               >
+                 <Sparkles className="w-4 h-4" />
+                 Use Program Recommendation Tool
+                 <ArrowRight className="w-4 h-4" />
+               </Button>
+            </div>
+
+            <Button className="w-full" variant="accent" onClick={() => setLocation(`/apply/certificate-details?qualification=national_cert`)}>
+              Continue to National Certificate Application
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Card>
+        )}
+
+        {/* ── Bachelors Degree ─────────────────────────────────────────────── */}
+        {highest === 'bachelors' && (
+          <Card className="p-8">
+            <div className="bg-green-50 p-4 rounded-xl text-sm mb-6">
+              <p className="font-semibold text-green-800">✓ Eligible for Master's Programs</p>
+              <p className="text-green-700 mt-1">
+                Bachelor's Degree holders are eligible to apply for all Master's programs at KIU.
+              </p>
+            </div>
+
+            {/* ── PRIMARY CTA: Recommendation Tool ── */}
+            <div className="p-5 rounded-2xl border-2 border-accent/40 bg-accent/5 mb-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-5 h-5 text-accent-foreground" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base">
+                    🎯 Get Personalised Program Recommendations
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Find recommended Master's programs based on your Bachelor's degree field.
+                  </p>
+                </div>
+              </div>
+               <Button
+                 className="w-full gap-2"
+                 variant="accent"
+                 onClick={() => setLocation('/recommend?qualification=bachelors')}
+               >
+                 <Sparkles className="w-4 h-4" />
+                 Use Program Recommendation Tool
+                 <ArrowRight className="w-4 h-4" />
+               </Button>
+            </div>
+
+            <Button className="w-full" variant="accent" onClick={() => setLocation(`/apply/certificate-details?qualification=bachelors`)}>
+              Continue to Master's Application
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
           </Card>
         )}
 
