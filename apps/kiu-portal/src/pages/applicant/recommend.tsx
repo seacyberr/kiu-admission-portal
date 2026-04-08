@@ -14,7 +14,7 @@ import { useLocation } from "wouter";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type EntryRoute = "uace_direct" | "diploma" | "mature_age" | "bachelors";
+type EntryRoute = "uce_direct" | "uace_direct" | "hec" | "national_cert" | "diploma" | "bachelors" | "masters" | "mature_age";
 
 interface Intake {
   name: string;
@@ -68,13 +68,23 @@ const UACE_SUBJECTS = [
   "Technical Drawing", "Subsidiary Mathematics", "General Paper",
 ];
 
+const uceSchema = z.object({
+  entry_route: z.literal("uce_direct"),
+  uce_subjects: z.array(z.object({ name: z.string(), grade: z.enum(["A","B","C","D","E"]) })).min(5),
+  uce_year: z.number().min(1990).max(new Date().getFullYear()),
+  uce_institution: z.string().min(2, "Enter school/institution name"),
+  uce_passes: z.number().min(0).max(10),
+});
+
 const uaceSchema = z.object({
   entry_route: z.literal("uace_direct"),
-  uce_passes: z.number({ invalid_type_error: "Enter your UCE passes" }).min(1).max(10),
-  uace_subjects: z.array(z.string()).min(2, "Select at least 2 UACE subjects"),
-  uace_principal_passes: z.number().min(0).max(5),
-  uace_points: z.number().min(0).max(30).optional(),
-  uace_year: z.number().min(2000).max(new Date().getFullYear()).optional(),
+  uce_passes: z.number({ invalid_type_error: "Enter your UCE passes" }).min(5).max(10),
+  uace_principal_subjects: z.array(z.object({ name: z.string(), grade: z.enum(["A","B","C","D","E","F"]) })).min(2),
+  uace_subsidiary_subjects: z.array(z.object({ name: z.string(), grade: z.enum(["A","B","C","D","E","F"]) })).optional(),
+  uace_principal_passes: z.number().min(0).max(3),
+  uace_points: z.number().min(0).max(20),
+  uace_year: z.number().min(1990).max(new Date().getFullYear()),
+  uace_institution: z.string().min(2, "Enter school/institution name"),
 });
 
 const diplomaSchema = z.object({
@@ -248,12 +258,13 @@ function QualificationsForm({ onSubmit, loading, qualificationType }: {
   useEffect(() => {
     if (qualificationType) {
       switch (qualificationType) {
-        case 'o_level': setRoute("uace_direct"); break;
+        case 'o_level': setRoute("uce_direct"); break;
         case 'a_level': setRoute("uace_direct"); break;
+        case 'hec': setRoute("hec"); break;
+        case 'national_cert': setRoute("national_cert"); break;
         case 'diploma': setRoute("diploma"); break;
-        case 'hec': setRoute("diploma"); break;
-        case 'masters': setRoute("bachelors"); break;
-        case 'phd': setRoute("bachelors"); break;
+        case 'bachelors': setRoute("bachelors"); break;
+        case 'masters': setRoute("masters"); break;
       }
     }
   }, [qualificationType]);
@@ -278,10 +289,12 @@ function QualificationsForm({ onSubmit, loading, qualificationType }: {
       {!qualificationType && (
         <div>
           <label className="text-sm font-medium text-gray-700 block mb-2">Entry Route</label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
             {([
-              ["uace_direct", "UACE Direct", "A-Level graduate"],
-              ["diploma", "Diploma Entry", "Diploma holder"],
+              ["uace_direct", "A-Level", "UACE graduate"],
+              ["uce_direct", "O-Level", "UCE / O-Level"],
+              ["hec", "HEC", "Higher Education Cert"],
+              ["diploma", "Diploma", "Diploma holder"],
               ["mature_age", "Mature Age", "Age 25+, NCHE exam"],
               ["bachelors", "Postgraduate", "Bachelor's degree"],
             ] as const).map(([val, label, sub]) => (
