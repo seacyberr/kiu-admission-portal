@@ -64,7 +64,7 @@ export function RoleGuard({ roles, children }: RoleGuardProps) {
     }
   }, [isLoading, user, roles, setLocation]);
 
-  if (isLoading) {
+  if (isLoading || user === undefined) {
     return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
   }
 
