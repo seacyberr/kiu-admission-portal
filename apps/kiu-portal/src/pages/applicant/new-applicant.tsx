@@ -170,7 +170,16 @@ export default function NewApplicant() {
                  <Button
                    className="w-full gap-2"
                    variant="accent"
-                   onClick={() => setLocation('/recommend')}
+                   onClick={() => setLocation('/recommend?qualification=o_level')}
+                 >
+                   <Sparkles className="w-4 h-4" />
+                   Use Program Recommendation Tool
+                   <ArrowRight className="w-4 h-4" />
+                 </Button>
+                 <Button
+                   className="w-full gap-2"
+                   variant="accent"
+                   onClick={() => setLocation('/recommend?qualification=hec')}
                  >
                    <Sparkles className="w-4 h-4" />
                    Use Program Recommendation Tool
@@ -415,7 +424,7 @@ export default function NewApplicant() {
                  <Button
                    className="w-full gap-2"
                    variant="accent"
-                   onClick={() => setLocation('/recommend')}
+                   onClick={() => setLocation('/recommend?qualification=a_level')}
                  >
                    <Sparkles className="w-4 h-4" />
                    Use Program Recommendation Tool
@@ -472,7 +481,7 @@ export default function NewApplicant() {
                  <Button
                    className="w-full gap-2"
                    variant="accent"
-                   onClick={() => setLocation('/recommend')}
+                   onClick={() => setLocation('/recommend?qualification=diploma')}
                  >
                    <Sparkles className="w-4 h-4" />
                    Use Program Recommendation Tool

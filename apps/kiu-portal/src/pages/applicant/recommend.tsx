@@ -7,9 +7,10 @@
  * KIU admits 3 intakes: Aug/Sep · Dec/Jan · Mar/Apr
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useLocation } from "wouter";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -236,12 +237,26 @@ function Section({ title, icon, count, children, defaultOpen = true }:
 
 // ── Main form ──────────────────────────────────────────────────────────────
 
-function QualificationsForm({ onSubmit, loading }: {
+function QualificationsForm({ onSubmit, loading, qualificationType }: {
   onSubmit: (data: Record<string, unknown>) => void;
   loading: boolean;
+  qualificationType: string | null;
 }) {
   const [route, setRoute] = useState<EntryRoute>("uace_direct");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (qualificationType) {
+      switch (qualificationType) {
+        case 'o_level': setRoute("uace_direct"); break;
+        case 'a_level': setRoute("uace_direct"); break;
+        case 'diploma': setRoute("diploma"); break;
+        case 'hec': setRoute("diploma"); break;
+        case 'masters': setRoute("bachelors"); break;
+        case 'phd': setRoute("bachelors"); break;
+      }
+    }
+  }, [qualificationType]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<Record<string, unknown>>({
     defaultValues: { entry_route: "uace_direct" as EntryRoute },
@@ -484,6 +499,9 @@ export default function RecommendationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<{ message: string; detail?: string } | null>(null);
 
+  const [location] = useLocation();
+  const qualificationType = new URLSearchParams(location.split('?')[1] || '').get('qualification');
+
   const handleSubmit = async (data: Record<string, unknown>) => {
     setLoading(true);
     setError(null);
@@ -549,11 +567,16 @@ export default function RecommendationsPage() {
           </div>
         </div>
 
-        {/* Form */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-gray-900 mb-5">Your Qualifications</h2>
-          <QualificationsForm onSubmit={handleSubmit} loading={loading} />
-        </div>
+         {/* Form */}
+         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+           <h2 className="text-base font-semibold text-gray-900 mb-5">Your Qualifications</h2>
+           {qualificationType && (
+             <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+               ✓ Mode: <span className="font-semibold capitalize">{qualificationType.replace('_', '-')}</span>
+             </div>
+           )}
+           <QualificationsForm onSubmit={handleSubmit} loading={loading} qualificationType={qualificationType} />
+         </div>
 
         {/* API Error (e.g. UCE insufficient) */}
         {apiError && (
