@@ -139,6 +139,7 @@ export type RecommendProgramsInput = {
   institution?: string;
   year?: string;
   gpa?: number;
+  ucePoints?: number;
 };
 
 export type NcheCompliance = {

@@ -295,6 +295,7 @@ export default function RecommendALevel() {
   ]);
   const [campus, setCampus] = useState<"" | "kampala" | "western">("");
   const [curriculum, setCurriculum] = useState<"" | "uneb" | "cambridge" | "other">("");
+  const [ucePoints, setUcePoints] = useState<string>("");
   const [result, setResult] = useState<RecommendResult | null>(null);
 
   // ── Subject management ───────────────────────────────────────────────────
@@ -358,7 +359,7 @@ export default function RecommendALevel() {
 
   // NCHE Strict requirements:
   // Minimum 3 PRINCIPAL SUBJECTS with grades + subsidiaries
-  const isValid = principalCount >= 3 && curriculum !== "" && principalPasses >= 2;
+  const isValid = principalCount >= 3 && curriculum !== "" && principalPasses >= 2 && ucePoints !== "";
 
   // ── Submit ───────────────────────────────────────────────────────────────
 
@@ -366,13 +367,14 @@ export default function RecommendALevel() {
     const filledSubjects = subjects.filter((s) => s.subject && s.grade);
     recommendMutation.mutate(
       {
-        alevelSubjects: filledSubjects.map((s) => ({
-          subject: s.subject.toLowerCase(),
-          grade: s.grade,
-          subjectType: s.subjectType,
-        })),
-        campus: campus || undefined,
-        curriculum: curriculum || undefined,
+      alevelSubjects: filledSubjects.map((s) => ({
+        subject: s.subject.toLowerCase(),
+        grade: s.grade,
+        subjectType: s.subjectType,
+      })),
+      campus: campus || undefined,
+      curriculum: curriculum || undefined,
+      ucePoints: parseInt(ucePoints) || 0,
       },
       {
         onSuccess: (data: RecommendResult) => {
@@ -653,6 +655,25 @@ export default function RecommendALevel() {
               >
                   <Plus className="w-3.5 h-3.5" /> Add Subsidiary Subject
               </button>
+            </div>
+
+            {/* UCE Points */}
+            <div className="mb-5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                UCE Total Points <span className="text-destructive">*</span>
+              </p>
+              <input
+                type="number"
+                min="8"
+                max="62"
+                value={ucePoints}
+                onChange={(e) => setUcePoints(e.target.value)}
+                className="w-full h-9 px-3 rounded-lg border border-border bg-white text-sm"
+                placeholder="Enter total UCE points (8-62)"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                New UNEB Curriculum: Points range from 8 (best) to 62 (worst)
+              </p>
             </div>
 
             {/* Curriculum Type */}
