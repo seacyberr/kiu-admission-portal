@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGetCurrentUser } from '@workspace/api-client-react';
-import { LogOut, Menu, UserCircle, X, ChevronRight, GraduationCap, Building2 } from 'lucide-react';
+import { LogOut, Menu, X } from 'lucide-react';
 import { Button } from './ui/shared';
 import { motion, AnimatePresence } from 'framer-motion';
 

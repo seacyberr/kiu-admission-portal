@@ -20,6 +20,11 @@ import RecommendALevel from "@/pages/applicant/recommend-a-level";
 import RecommendOLevel from "@/pages/applicant/recommend-o-level";
 import RecommendDiploma from "@/pages/applicant/recommend-diploma";
 import RecommendHec from "@/pages/applicant/recommend-hec";
+import RecommendationTool from "@/pages/applicant/RecommendationTool";
+import ApplicationStart from "@/pages/applicant/application-start";
+import CertificateDetails from "@/pages/applicant/certificate-details";
+import PersonalInfo from "@/pages/applicant/personal-info";
+import ReviewSubmit from "@/pages/applicant/review-submit";
 import FinalistDashboard from "@/pages/finalist/dashboard";
 import CareerPaths from "@/pages/finalist/career-paths";
 import Opportunities from "@/pages/finalist/opportunities";
@@ -96,6 +101,13 @@ function Router() {
             </RoleGuard>
           )}
         </Route>
+        <Route path="/recommend/tool">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <RecommendationTool />
+            </RoleGuard>
+          )}
+        </Route>
 
         <Route path="/apply/degree">
           {() => (
@@ -133,6 +145,36 @@ function Router() {
           {() => (
             <RoleGuard roles={["applicant"]}>
               <ApplyForm target="phd" />
+            </RoleGuard>
+          )}
+        </Route>
+
+        {/* New Application Workflow */}
+        <Route path="/apply/start">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <ApplicationStart />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/apply/certificate-details">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <CertificateDetails />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/apply/personal-info">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <PersonalInfo />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/apply/review">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <ReviewSubmit />
             </RoleGuard>
           )}
         </Route>

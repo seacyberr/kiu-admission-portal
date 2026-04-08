@@ -55,18 +55,31 @@ export function RoleGuard({ roles, children }: RoleGuardProps) {
 
   useEffect(() => {
     if (isLoading || hasRedirected.current) return;
+
+    const abortController = new AbortController();
     
-    if (!user) {
-      hasRedirected.current = true;
-      setLocation("/login");
-      return;
+    async function handleRedirect() {
+      if (!user) {
+        hasRedirected.current = true;
+        setLocation("/login");
+        return;
+      }
+      
+      if (!roles.includes(user.role as Role)) {
+        hasRedirected.current = true;
+        // Use conditional redirect based on user's data status
+        const path = await getRedirectPath(user);
+        if (!abortController.signal.aborted) {
+          setLocation(path);
+        }
+      }
     }
-    
-    if (!roles.includes(user.role as Role)) {
-      hasRedirected.current = true;
-      // Use conditional redirect based on user's data status
-      getRedirectPath(user).then(setLocation);
-    }
+
+    handleRedirect();
+
+    return () => {
+      abortController.abort();
+    };
   }, [isLoading, user, roles, setLocation]);
 
   if (isLoading || user === undefined) {
