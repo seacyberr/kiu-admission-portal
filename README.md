@@ -18,7 +18,7 @@ Monorepo for the Kampala International University admissions and careers portal:
 
 ## Install
 
-✅ **ONE COMMAND FULL SETUP (WORKS ON WINDOWS / LINUX / MACOS):**
+ **ONE COMMAND FULL SETUP (WORKS ON WINDOWS / LINUX / MACOS):**
 
 ```bash
 pnpm setup
@@ -40,7 +40,7 @@ Further deployment notes: [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
 ## Run locally
 
-✅ **UNIVERSAL COMMANDS (WORK ON ALL OPERATING SYSTEMS):**
+ **UNIVERSAL COMMANDS (WORK ON ALL OPERATING SYSTEMS):**
 
 **Terminal 1 - Backend API:**
 ```bash
@@ -52,7 +52,7 @@ pnpm dev:api
 pnpm dev:portal
 ```
 
-✅ Application will be available at:
+ Application will be available at:
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:5000
 - API Documentation: http://localhost:5000/docs

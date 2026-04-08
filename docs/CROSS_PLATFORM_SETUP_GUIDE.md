@@ -15,7 +15,7 @@ All commands below work identically on **Windows, Kali Linux, Ubuntu, macOS**. T
 | **All Systems** | Python 3.11+ https://www.python.org/ |
 | **All Systems** | Git https://git-scm.com/ |
 
-✅ **IMPORTANT**: During installation tick **"Add to PATH"** checkbox for both Node.js and Python.
+ **IMPORTANT**: During installation tick **"Add to PATH"** checkbox for both Node.js and Python.
 
 ### Step 2: Install pnpm
 Run this command **once** on any system:
@@ -34,7 +34,7 @@ cd Kiu-Admission-Portal
 ```bash
 pnpm setup
 ```
-✅ This will install:
+ This will install:
 - All Node.js dependencies
 - All Python packages
 - Automatically installs **gunicorn on Linux/macOS**
@@ -61,7 +61,7 @@ pnpm dev:portal
 pnpm dev:api
 ```
 
-✅ The application will now be running at:
+ The application will now be running at:
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:5000
 - API Docs: http://localhost:5000/docs
@@ -118,11 +118,11 @@ python scripts/create_admin.py
 
 ---
 
-## ✅ VERIFIED WORKING ON
-✅ Windows 10 / 11
-✅ Kali Linux 2024.x
-✅ Ubuntu 22.04 / 24.04
-✅ macOS Sonoma / Sequoia
+##  VERIFIED WORKING ON
+ Windows 10 / 11
+ Kali Linux 2024.x
+ Ubuntu 22.04 / 24.04
+ macOS Sonoma / Sequoia
 
 ---
 

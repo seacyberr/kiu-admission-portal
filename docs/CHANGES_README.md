@@ -88,10 +88,10 @@ New types also exported: `RecommendedProgram`, `NcheCompliance`,
 ## No Backend Changes Needed
 
 All backend endpoints were already implemented:
-- `POST /api/admission/recommend` ✅
-- `GET /api/admission/analytics` ✅
-- `POST /api/auth/forgot-password` ✅
-- `POST /api/auth/reset-password` ✅
+- `POST /api/admission/recommend` 
+- `GET /api/admission/analytics` 
+- `POST /api/auth/forgot-password` 
+- `POST /api/auth/reset-password` 
 
 ---
 

@@ -2,17 +2,17 @@
 
 This document explains how to properly transfer and run this application on Windows, including all fixes required for cross-platform compatibility.
 
-## ✅ Identified Issues & Fixes
+##  Identified Issues & Fixes
 
 | Issue | Linux (Kali) | Windows | Fix Required |
 |-------|--------------|---------|--------------|
-| Shell scripts in npm preinstall | Works with sh/bash | No default sh shell | ✅ Cross-platform fix |
-| Environment variables in npm scripts | `PORT=5173 command` syntax | Does not work | ✅ Use cross-env |
-| Python command name | `python3` | Usually `python` | ✅ Fix scripts |
-| Gunicorn WSGI server | Linux only | Not supported on Windows | ✅ Use waitress |
-| File path separators | `/` | `\` | ✅ Already handled correctly in code |
-| Line endings (CRLF vs LF) | LF | CRLF | ✅ Git handles automatically |
-| Case sensitivity | Case sensitive filesystem | Case insensitive | ✅ All imports are correct |
+| Shell scripts in npm preinstall | Works with sh/bash | No default sh shell |  Cross-platform fix |
+| Environment variables in npm scripts | `PORT=5173 command` syntax | Does not work |  Use cross-env |
+| Python command name | `python3` | Usually `python` |  Fix scripts |
+| Gunicorn WSGI server | Linux only | Not supported on Windows |  Use waitress |
+| File path separators | `/` | `\` |  Already handled correctly in code |
+| Line endings (CRLF vs LF) | LF | CRLF |  Git handles automatically |
+| Case sensitivity | Case sensitive filesystem | Case insensitive |  All imports are correct |
 
 ---
 
@@ -133,7 +133,7 @@ waitress-serve --listen=0.0.0.0:5000 wsgi:app
 
 ---
 
-## ✅ Verification Checklist
+##  Verification Checklist
 
 When running on Windows verify these work correctly:
 
@@ -148,7 +148,7 @@ When running on Windows verify these work correctly:
 
 ---
 
-## ⚠️ Known Windows Limitations
+##  Known Windows Limitations
 
 1. **Gunicorn will not work** - use waitress or IIS on Windows
 2. **Redis rate limiting** requires Redis installed on Windows (use WSL or native Redis port)
