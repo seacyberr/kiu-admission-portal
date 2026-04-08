@@ -167,15 +167,15 @@ export default function NewApplicant() {
                     </p>
                   </div>
                 </div>
-                <Button
-                  className="w-full gap-2"
-                  variant="accent"
-                  onClick={() => setLocation('/recommend/o-level')}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Use Program Recommendation Tool
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+                 <Button
+                   className="w-full gap-2"
+                   variant="accent"
+                   onClick={() => setLocation('/recommend')}
+                 >
+                   <Sparkles className="w-4 h-4" />
+                   Use Program Recommendation Tool
+                   <ArrowRight className="w-4 h-4" />
+                 </Button>
               </div>
 
               {/* ── Secondary: Apply directly ── */}
@@ -412,15 +412,15 @@ export default function NewApplicant() {
                     </p>
                   </div>
                 </div>
-                <Button
-                  className="w-full gap-2"
-                  variant="accent"
-                  onClick={() => setLocation('/recommend/diploma')}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Use Program Recommendation Tool
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+                 <Button
+                   className="w-full gap-2"
+                   variant="accent"
+                   onClick={() => setLocation('/recommend')}
+                 >
+                   <Sparkles className="w-4 h-4" />
+                   Use Program Recommendation Tool
+                   <ArrowRight className="w-4 h-4" />
+                 </Button>
               </div>
 
               {/* ── Secondary: Apply directly ── */}
@@ -469,15 +469,15 @@ export default function NewApplicant() {
                     </p>
                   </div>
                 </div>
-                <Button
-                  className="w-full gap-2"
-                  variant="accent"
-                  onClick={() => setLocation('/recommend/hec')}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Use Program Recommendation Tool
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+                 <Button
+                   className="w-full gap-2"
+                   variant="accent"
+                   onClick={() => setLocation('/recommend')}
+                 >
+                   <Sparkles className="w-4 h-4" />
+                   Use Program Recommendation Tool
+                   <ArrowRight className="w-4 h-4" />
+                 </Button>
               </div>
 
               {/* ── Secondary: Apply directly ── */}
