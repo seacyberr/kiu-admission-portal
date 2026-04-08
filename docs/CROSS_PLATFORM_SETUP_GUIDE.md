@@ -4,7 +4,7 @@ This document contains complete instructions for running this project on **Windo
 
 ---
 
-## 🚀 QUICK START (ALL OPERATING SYSTEMS)
+##  QUICK START (ALL OPERATING SYSTEMS)
 
 All commands below work identically on **Windows, Kali Linux, Ubuntu, macOS**. There are no differences.
 
@@ -68,7 +68,7 @@ pnpm dev:api
 
 ---
 
-## 💾 MySQL Database Setup
+##  MySQL Database Setup
 
 ### Database Configuration
 Edit `.env` file and set your database connection:
@@ -126,7 +126,7 @@ python scripts/create_admin.py
 
 ---
 
-## ⚙️ Production Deployment
+## ️ Production Deployment
 
 | OS | Server | Command |
 |----|--------|---------|
@@ -135,7 +135,7 @@ python scripts/create_admin.py
 
 ---
 
-## 📋 TROUBLESHOOTING
+##  TROUBLESHOOTING
 
 ### Common Windows Issues:
 1. **"python not found"**: Make sure you ticked "Add Python to PATH" during installation

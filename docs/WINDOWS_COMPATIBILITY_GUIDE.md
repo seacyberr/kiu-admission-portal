@@ -16,7 +16,7 @@ This document explains how to properly transfer and run this application on Wind
 
 ---
 
-## 🚀 Step 1: Fix Root Package.json Scripts
+##  Step 1: Fix Root Package.json Scripts
 
 First update the root `package.json` to remove platform specific shell script:
 
@@ -33,7 +33,7 @@ First update the root `package.json` to remove platform specific shell script:
 
 ---
 
-## 🚀 Step 2: Fix Frontend Package.json
+##  Step 2: Fix Frontend Package.json
 
 Update `apps/kiu-portal/package.json` scripts for Windows compatibility:
 
@@ -58,7 +58,7 @@ pnpm add -D cross-env
 
 ---
 
-## 🚀 Step 3: Flask API Windows Setup
+##  Step 3: Flask API Windows Setup
 
 ### Windows Development Server
 
@@ -89,7 +89,7 @@ waitress-serve --listen=0.0.0.0:5000 wsgi:app
 
 ---
 
-## 🚀 Step 4: Complete Windows Installation Steps
+##  Step 4: Complete Windows Installation Steps
 
 1. **Install required software on Windows:**
    - Node.js 20+ LTS https://nodejs.org/
@@ -157,7 +157,7 @@ When running on Windows verify these work correctly:
 
 ---
 
-## 🎯 Fastest Way To Run On Windows
+##  Fastest Way To Run On Windows
 
 The absolute simplest method that requires zero changes:
 1. Enable WSL 2 on Windows
