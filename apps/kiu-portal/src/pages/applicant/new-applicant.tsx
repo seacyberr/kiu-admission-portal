@@ -176,15 +176,6 @@ export default function NewApplicant() {
                    Use Program Recommendation Tool
                    <ArrowRight className="w-4 h-4" />
                  </Button>
-                 <Button
-                   className="w-full gap-2"
-                   variant="accent"
-                   onClick={() => setLocation('/recommend?qualification=hec')}
-                 >
-                   <Sparkles className="w-4 h-4" />
-                   Use Program Recommendation Tool
-                   <ArrowRight className="w-4 h-4" />
-                 </Button>
               </div>
 
               {/* ── Secondary: Apply directly ── */}

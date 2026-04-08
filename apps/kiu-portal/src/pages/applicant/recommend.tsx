@@ -274,32 +274,34 @@ function QualificationsForm({ onSubmit, loading, qualificationType }: {
 
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-5">
-      {/* Entry Route */}
-      <div>
-        <label className="text-sm font-medium text-gray-700 block mb-2">Entry Route</label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {([
-            ["uace_direct", "UACE Direct", "A-Level graduate"],
-            ["diploma", "Diploma Entry", "Diploma holder"],
-            ["mature_age", "Mature Age", "Age 25+, NCHE exam"],
-            ["bachelors", "Postgraduate", "Bachelor's degree"],
-          ] as const).map(([val, label, sub]) => (
-            <button
-              key={val}
-              type="button"
-              onClick={() => setRoute(val)}
-              className={`p-3 rounded-lg border-2 text-left transition-all ${
-                route === val
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 hover:border-gray-300"
-              }`}
-            >
-              <div className="text-sm font-semibold text-gray-800">{label}</div>
-              <div className="text-xs text-gray-500 mt-0.5">{sub}</div>
-            </button>
-          ))}
+      {/* Entry Route (only shown when no qualification type specified) */}
+      {!qualificationType && (
+        <div>
+          <label className="text-sm font-medium text-gray-700 block mb-2">Entry Route</label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {([
+              ["uace_direct", "UACE Direct", "A-Level graduate"],
+              ["diploma", "Diploma Entry", "Diploma holder"],
+              ["mature_age", "Mature Age", "Age 25+, NCHE exam"],
+              ["bachelors", "Postgraduate", "Bachelor's degree"],
+            ] as const).map(([val, label, sub]) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setRoute(val)}
+                className={`p-3 rounded-lg border-2 text-left transition-all ${
+                  route === val
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="text-sm font-semibold text-gray-800">{label}</div>
+                <div className="text-xs text-gray-500 mt-0.5">{sub}</div>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* UACE Direct fields */}
       {route === "uace_direct" && (
