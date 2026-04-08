@@ -269,9 +269,24 @@ function QualificationsForm({ onSubmit, loading, qualificationType }: {
     }
   }, [qualificationType]);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<Record<string, unknown>>({
-    defaultValues: { entry_route: "uace_direct" as EntryRoute },
-  });
+const { register, handleSubmit, formState: { errors } } = useForm<Record<string, unknown>>({
+  defaultValues: { entry_route: route },
+  values: { entry_route: route },
+});
+
+useEffect(() => {
+  if (qualificationType) {
+    switch (qualificationType) {
+      case 'o_level': setRoute("uce_direct"); break;
+      case 'a_level': setRoute("uace_direct"); break;
+      case 'hec': setRoute("hec"); break;
+      case 'national_cert': setRoute("national_cert"); break;
+      case 'diploma': setRoute("diploma"); break;
+      case 'bachelors': setRoute("bachelors"); break;
+      case 'masters': setRoute("masters"); break;
+    }
+  }
+}, [qualificationType]);
 
   const toggleSubject = (subj: string) => {
     setSelectedSubjects((prev) =>
