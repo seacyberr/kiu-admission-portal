@@ -14,7 +14,7 @@ import { useLocation } from "wouter";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type EntryRoute = "uce_direct" | "uace_direct" | "hec" | "national_cert" | "diploma" | "bachelors" | "masters" | "mature_age";
+type EntryRoute = "uce_direct" | "uace_direct" | "hec" | "national_cert" | "diploma" | "bachelors" | "masters";
 
 interface Intake {
   name: string;
@@ -94,11 +94,6 @@ const diplomaSchema = z.object({
   diploma_institution: z.string().min(2, "Enter your institution"),
 });
 
-const matureSchema = z.object({
-  entry_route: z.literal("mature_age"),
-  age: z.number().min(25, "Must be at least 25 years old for Mature Age Entry").max(99),
-  mature_age_score: z.number().min(0).max(100).optional(),
-});
 
 const bachelorsSchema = z.object({
   entry_route: z.literal("bachelors"),
@@ -310,7 +305,6 @@ useEffect(() => {
               ["uce_direct", "O-Level", "UCE / O-Level"],
               ["hec", "HEC", "Higher Education Cert"],
               ["diploma", "Diploma", "Diploma holder"],
-              ["mature_age", "Mature Age", "Age 25+, NCHE exam"],
               ["bachelors", "Postgraduate", "Bachelor's degree"],
             ] as const).map(([val, label, sub]) => (
               <button
@@ -445,34 +439,6 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Mature Age fields */}
-      {route === "mature_age" && (
-        <div className="space-y-4">
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
-            <strong>NCHE Mature Age Entry Requirements:</strong> Must be ≥25 years old and have passed the
-            NCHE-approved Mature Age Entry Examination with 50% or above. Contact KIU Admissions for exam dates.
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Your Age <span className="text-red-500">*</span></label>
-            <input
-              type="number" min={25} max={99}
-              {...register("age", { valueAsNumber: true, required: true, min: 25 })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Must be 25 or older"
-            />
-            {errors.age && <p className="text-xs text-red-500 mt-1">Must be at least 25 years old</p>}
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Mature Age Exam Score % (if taken)</label>
-            <input
-              type="number" min={0} max={100}
-              {...register("mature_age_score", { valueAsNumber: true })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g. 65 (minimum 50% required)"
-            />
-          </div>
-        </div>
-      )}
 
       {/* Bachelors/Postgraduate fields */}
       {route === "bachelors" && (
@@ -588,7 +554,6 @@ export default function RecommendationsPage() {
             <ul className="text-xs space-y-0.5 list-disc list-inside">
               <li><strong>UACE Direct:</strong> UCE ≥5 passes + UACE ≥2 principal passes (same sitting)</li>
               <li><strong>Diploma Entry:</strong> Credit/Pass Diploma from NCHE-recognised institution</li>
-              <li><strong>Mature Age:</strong> Age ≥25 + NCHE Mature Age Exam ≥50%</li>
               <li><strong>Postgraduate:</strong> Bachelor's degree (2nd Class Lower or above)</li>
             </ul>
             <p className="text-xs mt-2 text-blue-600">

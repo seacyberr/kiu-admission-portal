@@ -750,3 +750,5 @@ zope.event==6.0
 zope.interface==8.2
 zopfli==0.4.1
 zstandard==0.25.0
+SQLAlchemy>=2.0
+flask-sqlalchemy>=3.0

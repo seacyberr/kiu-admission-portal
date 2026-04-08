@@ -167,6 +167,9 @@ class AdmissionApplication(db.Model):
     alevel_certificate_path = db.Column(db.Text)
     diploma_certificate_path = db.Column(db.Text)
     hec_certificate_path = db.Column(db.Text)
+    national_certificate_path = db.Column(db.Text)
+    bachelors_degree_path = db.Column(db.Text)
+    masters_degree_path = db.Column(db.Text)
 
     # Personal info
     personal_statement = db.Column(db.Text)

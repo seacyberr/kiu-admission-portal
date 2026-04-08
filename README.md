@@ -10,6 +10,22 @@ Monorepo for the Kampala International University admissions and careers portal:
 | [`apps/flask-api`](apps/flask-api) | Flask REST API |
 | [`lib/api-client-react`](lib/api-client-react) | Shared React Query hooks and types (`@workspace/api-client-react`) |
 
+## Supported Qualification Entry Routes
+
+✅ **NCHE Uganda Approved Admission Pathways:**
+
+| Qualification Level | Description |
+|---------------------|-------------|
+| **O-Level / UCE** | Direct entry for bridging programmes |
+| **A-Level / UACE** | Standard undergraduate entry |
+| **Higher Education Certificate (HEC)** | Bridging programme |
+| **National Certificate** | Technical & vocational entry |
+| **Diploma** | Diploma holders direct entry |
+| **Bachelor's Degree** | Postgraduate entry |
+| **Master's Degree** | PhD & advanced programmes |
+
+> Mature Age Entry has been **removed** per requirements.
+
 ## Prerequisites
 
 - **Node.js** 18+ and **pnpm**
