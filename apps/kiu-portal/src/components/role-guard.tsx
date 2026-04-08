@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode, useRef } from "react";
+import { useEffect, type ReactNode, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useGetCurrentUser } from "@workspace/api-client-react";
 import { apiGet } from "../services/api";
@@ -53,6 +53,10 @@ export function RoleGuard({ roles, children }: RoleGuardProps) {
   const { data: user, isLoading } = useGetCurrentUser({ query: { retry: false } });
   const hasRedirected = useRef(false);
 
+  const stableSetLocation = useCallback((path: string) => {
+    setLocation(path);
+  }, [setLocation]);
+
   useEffect(() => {
     if (isLoading || hasRedirected.current) return;
 
@@ -61,7 +65,7 @@ export function RoleGuard({ roles, children }: RoleGuardProps) {
     async function handleRedirect() {
       if (!user) {
         hasRedirected.current = true;
-        setLocation("/login");
+        stableSetLocation("/login");
         return;
       }
       
@@ -70,7 +74,7 @@ export function RoleGuard({ roles, children }: RoleGuardProps) {
         // Use conditional redirect based on user's data status
         const path = await getRedirectPath(user);
         if (!abortController.signal.aborted) {
-          setLocation(path);
+          stableSetLocation(path);
         }
       }
     }
@@ -80,7 +84,7 @@ export function RoleGuard({ roles, children }: RoleGuardProps) {
     return () => {
       abortController.abort();
     };
-  }, [isLoading, user, roles, setLocation]);
+  }, [isLoading, user, roles, stableSetLocation]);
 
   if (isLoading || user === undefined) {
     return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
