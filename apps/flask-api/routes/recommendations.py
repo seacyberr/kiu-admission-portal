@@ -743,7 +743,7 @@ def _recommend(applicant: dict) -> dict:
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
-@recommendations_bp.route("/api/v1/recommendations", methods=["POST"])
+@recommendations_bp.route("/v1/recommendations", methods=["POST"])
 @login_required
 def get_recommendations(user):
     """
@@ -820,7 +820,7 @@ def get_recommendations(user):
     return jsonify(result), 200
 
 
-@recommendations_bp.route("/api/v1/recommendations/programmes", methods=["GET"])
+@recommendations_bp.route("/v1/recommendations/programmes", methods=["GET"])
 def list_programmes():
     """Public endpoint — list all KIU programmes with entry requirements."""
     faculty_filter = request.args.get("faculty", "").lower()
@@ -843,7 +843,7 @@ def list_programmes():
     }), 200
 
 
-@recommendations_bp.route("/api/v1/recommendations/check-eligibility", methods=["POST"])
+@recommendations_bp.route("/v1/recommendations/check-eligibility", methods=["POST"])
 def check_eligibility():
     """
     Quick NCHE eligibility check — no auth required.
