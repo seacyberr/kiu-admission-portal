@@ -8,8 +8,7 @@
  */
 
 import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -162,7 +161,7 @@ function ProgrammeCard({ programme, rank }: { programme: Programme; rank?: numbe
       {programme.next_intakes.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {programme.next_intakes.map((intake) => (
-            <div key={`${intake.month}-${intake.year}`} className="text-xs bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
+            <div key={`${intake.name}-${intake.year}`} className="text-xs bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
               <span className="font-medium text-gray-800">{intake.name}</span>
               <span className="text-gray-400 ml-1">· apply by {intake.application_deadline}</span>
             </div>
@@ -244,7 +243,7 @@ function QualificationsForm({ onSubmit, loading }: {
   const [route, setRoute] = useState<EntryRoute>("uace_direct");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
 
-  const { register, handleSubmit, control, formState: { errors } } = useForm({
+  const { register, handleSubmit, formState: { errors } } = useForm<Record<string, unknown>>({
     defaultValues: { entry_route: "uace_direct" as EntryRoute },
   });
 
