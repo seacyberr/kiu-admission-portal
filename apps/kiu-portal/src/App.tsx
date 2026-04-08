@@ -15,12 +15,7 @@ import ResetPassword from "@/pages/auth/reset-password";
 import ApplicantDashboard from "@/pages/applicant/dashboard";
 import ApplyForm from "@/pages/applicant/apply";
 import NewApplicant from "@/pages/applicant/new-applicant";
-import Recommend from "@/pages/applicant/recommend";          // ← NEW
-import RecommendALevel from "@/pages/applicant/recommend-a-level";
-import RecommendOLevel from "@/pages/applicant/recommend-o-level";
-import RecommendDiploma from "@/pages/applicant/recommend-diploma";
-import RecommendHec from "@/pages/applicant/recommend-hec";
-import RecommendationTool from "@/pages/applicant/RecommendationTool";
+import Recommend from "@/pages/applicant/recommend";
 import ApplicationStart from "@/pages/applicant/application-start";
 import CertificateDetails from "@/pages/applicant/certificate-details";
 import PersonalInfo from "@/pages/applicant/personal-info";
@@ -65,8 +60,15 @@ function Router() {
           )}
         </Route>
 
-        {/* ── NEW: A-Level Program Recommendation Tool ── */}
+        {/* ── UNIFIED RECOMMENDATION TOOL (ALL LEVELS) ── */}
         <Route path="/recommend">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <Recommend />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/recommend/o-level">
           {() => (
             <RoleGuard roles={["applicant"]}>
               <Recommend />
@@ -76,35 +78,28 @@ function Router() {
         <Route path="/recommend/a-level">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <RecommendALevel />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/recommend/o-level">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <RecommendOLevel />
+              <Recommend />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/diploma">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <RecommendDiploma />
+              <Recommend />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/hec">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <RecommendHec />
+              <Recommend />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/tool">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <RecommendationTool />
+              <Recommend />
             </RoleGuard>
           )}
         </Route>
