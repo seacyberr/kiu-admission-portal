@@ -14,7 +14,7 @@ import { useLocation } from "wouter";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type EntryRoute = "uce_direct" | "uace_direct" | "hec" | "national_cert" | "diploma" | "bachelors" | "masters";
+type EntryRoute = "uce_direct" | "uace_direct" | "hec" | "national_cert" | "diploma" | "bachelors" | "masters" | "phd";
 
 interface Intake {
   name: string;
@@ -94,12 +94,32 @@ const diplomaSchema = z.object({
   diploma_institution: z.string().min(2, "Enter your institution"),
 });
 
+const nationalCertSchema = z.object({
+  entry_route: z.literal("national_cert"),
+  national_cert_class: z.enum(["Pass", "Credit", "Distinction"]),
+  national_cert_field: z.string().min(2, "Enter your certificate field"),
+  national_cert_institution: z.string().min(2, "Enter your institution"),
+});
 
 const bachelorsSchema = z.object({
   entry_route: z.literal("bachelors"),
   bachelors_class: z.enum(["Third Class", "Second Class Lower", "Second Class Upper", "First Class"]),
   bachelors_field: z.string().min(2, "Enter your degree field"),
   work_experience_years: z.number().min(0).max(50).optional(),
+});
+
+const mastersSchema = z.object({
+  entry_route: z.literal("masters"),
+  masters_class: z.enum(["Pass", "Merit", "Distinction"]),
+  masters_field: z.string().min(2, "Enter your master's field"),
+  work_experience_years: z.number().min(0).max(50).optional(),
+});
+
+const phdSchema = z.object({
+  entry_route: z.literal("phd"),
+  phd_field: z.string().min(2, "Enter your PhD field"),
+  research_experience_years: z.number().min(0).max(50).optional(),
+  publications_count: z.number().min(0).optional(),
 });
 
 // ── Helper components ──────────────────────────────────────────────────────
@@ -253,13 +273,14 @@ function QualificationsForm({ onSubmit, loading, qualificationType }: {
   useEffect(() => {
     if (qualificationType) {
       switch (qualificationType) {
-        case 'o_level': setRoute("uce_direct"); break;
-        case 'a_level': setRoute("uace_direct"); break;
+        case 'o-level': setRoute("uce_direct"); break;
+        case 'a-level': setRoute("uace_direct"); break;
         case 'hec': setRoute("hec"); break;
-        case 'national_cert': setRoute("national_cert"); break;
+        case 'national-cert': setRoute("national_cert"); break;
         case 'diploma': setRoute("diploma"); break;
         case 'bachelors': setRoute("bachelors"); break;
         case 'masters': setRoute("masters"); break;
+        case 'phd': setRoute("phd"); break;
       }
     }
   }, [qualificationType]);
@@ -272,13 +293,14 @@ const { register, handleSubmit, formState: { errors } } = useForm<Record<string,
 useEffect(() => {
   if (qualificationType) {
     switch (qualificationType) {
-      case 'o_level': setRoute("uce_direct"); break;
-      case 'a_level': setRoute("uace_direct"); break;
+      case 'o-level': setRoute("uce_direct"); break;
+      case 'a-level': setRoute("uace_direct"); break;
       case 'hec': setRoute("hec"); break;
-      case 'national_cert': setRoute("national_cert"); break;
+      case 'national-cert': setRoute("national_cert"); break;
       case 'diploma': setRoute("diploma"); break;
       case 'bachelors': setRoute("bachelors"); break;
       case 'masters': setRoute("masters"); break;
+      case 'phd': setRoute("phd"); break;
     }
   }
 }, [qualificationType]);
@@ -290,6 +312,7 @@ useEffect(() => {
   };
 
   const submit = (data: Record<string, unknown>) => {
+    // Basic validation - let backend handle detailed validation
     onSubmit({ ...data, entry_route: route, uace_subjects: selectedSubjects });
   };
 
@@ -301,11 +324,13 @@ useEffect(() => {
           <label className="text-sm font-medium text-gray-700 block mb-2">Entry Route</label>
           <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
             {([
-              ["uace_direct", "A-Level", "UACE graduate"],
-              ["uce_direct", "O-Level", "UCE / O-Level"],
-              ["hec", "HEC", "Higher Education Cert"],
-              ["diploma", "Diploma", "Diploma holder"],
-              ["bachelors", "Postgraduate", "Bachelor's degree"],
+              ["uce_direct", "O-Level (UCE)", "Apply for HEC or Diploma"],
+              ["uace_direct", "A-Level (UACE)", "Answer 2 quick questions"],
+              ["diploma", "Diploma", "Apply for Degree"],
+              ["hec", "HEC", "Apply for Degree"],
+              ["bachelors", "Bachelor's Degree", "Bachelor's degree holder"],
+              ["masters", "Master's Degree", "Master's degree holder"],
+              ["phd", "PhD", "Master's degree holder"],
             ] as const).map(([val, label, sub]) => (
               <button
                 key={val}
@@ -439,6 +464,39 @@ useEffect(() => {
         </div>
       )}
 
+      {/* National Certificate fields */}
+      {route === "national_cert" && (
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Certificate Class <span className="text-red-500">*</span></label>
+            <select
+              {...register("national_cert_class", { required: true })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select class...</option>
+              <option value="Pass">Pass</option>
+              <option value="Credit">Credit</option>
+              <option value="Distinction">Distinction</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Certificate Field/Course <span className="text-red-500">*</span></label>
+            <input
+              {...register("national_cert_field", { required: true })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g. Electrical Installation, Plumbing, Catering"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Institution</label>
+            <input
+              {...register("national_cert_institution")}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g. Uganda Technical College"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Bachelors/Postgraduate fields */}
       {route === "bachelors" && (
@@ -476,6 +534,73 @@ useEffect(() => {
         </div>
       )}
 
+      {/* Masters fields */}
+      {route === "masters" && (
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Master's Degree Class <span className="text-red-500">*</span></label>
+            <select
+              {...register("masters_class", { required: true })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select class...</option>
+              <option value="Distinction">Distinction</option>
+              <option value="Merit">Merit</option>
+              <option value="Pass">Pass</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Master's Field <span className="text-red-500">*</span></label>
+            <input
+              {...register("masters_field", { required: true })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g. Business Administration, Computer Science"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Years of Work Experience</label>
+            <input
+              type="number" min={0} max={50}
+              {...register("work_experience_years", { valueAsNumber: true })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g. 5"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* PhD fields */}
+      {route === "phd" && (
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">PhD Field <span className="text-red-500">*</span></label>
+            <input
+              {...register("phd_field", { required: true })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g. Computer Science, Business Administration"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Research Experience (years)</label>
+            <input
+              type="number" min={0} max={50}
+              {...register("research_experience_years", { valueAsNumber: true })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g. 3"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Publications (optional)</label>
+            <input
+              type="number" min={0}
+              {...register("publications_count", { valueAsNumber: true })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g. 5"
+            />
+          </div>
+        </div>
+      )}
+
       <button
         type="submit"
         disabled={loading}
@@ -496,7 +621,9 @@ export default function RecommendationsPage() {
   const [apiError, setApiError] = useState<{ message: string; detail?: string } | null>(null);
 
   const [location] = useLocation();
-  const qualificationType = new URLSearchParams(location.split('?')[1] || '').get('qualification');
+  // Extract qualification type from URL path (e.g., /recommend/o-level -> o-level)
+  const pathParts = location.split('/');
+  const qualificationType = pathParts.length > 2 ? pathParts[2] : null;
 
   const handleSubmit = async (data: Record<string, unknown>) => {
     setLoading(true);
@@ -567,7 +694,7 @@ export default function RecommendationsPage() {
            <h2 className="text-base font-semibold text-gray-900 mb-5">Your Qualifications</h2>
            {qualificationType && (
              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
-               ✓ Mode: <span className="font-semibold capitalize">{qualificationType.replace('_', '-')}</span>
+               Mode: <span className="font-semibold capitalize">{qualificationType}</span>
              </div>
            )}
            <QualificationsForm onSubmit={handleSubmit} loading={loading} qualificationType={qualificationType} />
@@ -651,7 +778,7 @@ export default function RecommendationsPage() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <a
-                    href="/applicant/apply"
+                    href="/apply"
                     className="bg-white text-blue-700 font-semibold px-6 py-2.5 rounded-xl text-sm hover:bg-blue-50 transition-colors"
                   >
                     Start Application

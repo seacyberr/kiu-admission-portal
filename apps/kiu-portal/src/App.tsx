@@ -96,6 +96,27 @@ function Router() {
             </RoleGuard>
           )}
         </Route>
+        <Route path="/recommend/bachelors">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <Recommend />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/recommend/masters">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <Recommend />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/recommend/phd">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <Recommend />
+            </RoleGuard>
+          )}
+        </Route>
         <Route path="/recommend/tool">
           {() => (
             <RoleGuard roles={["applicant"]}>

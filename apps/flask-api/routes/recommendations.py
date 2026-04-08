@@ -606,6 +606,90 @@ def _score_diploma_programme(programme: dict, applicant: dict) -> dict:
     }
 
 
+def _score_masters_programme(programme: dict, applicant: dict) -> dict:
+    """Evaluate postgraduate entry (masters required)."""
+    pg_entry = programme["nche_entry"]
+    if not pg_entry.get("masters_required"):
+        return {"eligible": False, "route": "masters", "reasons_fail": ["Not a postgraduate programme"]}
+
+    reasons_fail = []
+    reasons_pass = []
+    reasons_warn = []
+
+    applicant_degree_class = applicant.get("masters_class", "")
+    class_hierarchy = ["Pass", "Merit", "Distinction"]
+    required_class = pg_entry.get("min_class", "Pass")
+
+    if applicant_degree_class:
+        try:
+            applicant_level = class_hierarchy.index(applicant_degree_class)
+            required_level = class_hierarchy.index(required_class)
+            if applicant_level < required_level:
+                reasons_fail.append(f"Minimum {required_class} degree required; you have {applicant_degree_class}")
+            else:
+                reasons_pass.append(f"Degree class: {applicant_degree_class} ✓")
+        except ValueError:
+            reasons_pass.append(f"Degree class submitted ({applicant_degree_class})")
+
+    work_exp = pg_entry.get("work_experience_years", 0)
+    applicant_work_years = int(applicant.get("work_experience_years", 0))
+    if work_exp > 0:
+        if applicant_work_years < work_exp:
+            reasons_warn.append(f"Recommended {work_exp}+ years work experience; you have {applicant_work_years}")
+        else:
+            reasons_pass.append(f"Work experience: {applicant_work_years} years ✓")
+
+    return {
+        "eligible": len(reasons_fail) == 0,
+        "route": "masters",
+        "strong_match": len(reasons_fail) == 0 and len(reasons_warn) == 0,
+        "reasons_pass": reasons_pass,
+        "reasons_fail": reasons_fail,
+        "reasons_warn": reasons_warn,
+    }
+
+
+def _score_phd_programme(programme: dict, applicant: dict) -> dict:
+    """Evaluate PhD entry (masters required)."""
+    pg_entry = programme["nche_entry"]
+    if not pg_entry.get("phd_required"):
+        return {"eligible": False, "route": "phd", "reasons_fail": ["Not a PhD programme"]}
+
+    reasons_fail = []
+    reasons_pass = []
+    reasons_warn = []
+
+    # Check if applicant has masters degree (basic requirement)
+    masters_field = applicant.get("masters_field", "")
+    if not masters_field:
+        reasons_fail.append("Master's degree required for PhD admission")
+    else:
+        reasons_pass.append(f"Master's field: {masters_field} ✓")
+
+    # Check research experience
+    research_exp = pg_entry.get("research_experience_years", 0)
+    applicant_research_years = int(applicant.get("research_experience_years", 0))
+    if research_exp > 0:
+        if applicant_research_years < research_exp:
+            reasons_warn.append(f"Recommended {research_exp}+ years research experience; you have {applicant_research_years}")
+        else:
+            reasons_pass.append(f"Research experience: {applicant_research_years} years ✓")
+
+    # Check publications (optional but beneficial)
+    publications = int(applicant.get("publications_count", 0))
+    if publications > 0:
+        reasons_pass.append(f"Publications: {publications} ✓")
+
+    return {
+        "eligible": len(reasons_fail) == 0,
+        "route": "phd",
+        "strong_match": len(reasons_fail) == 0 and len(reasons_warn) == 0,
+        "reasons_pass": reasons_pass,
+        "reasons_fail": reasons_fail,
+        "reasons_warn": reasons_warn,
+    }
+
+
 def _score_bachelors_programme(programme: dict, applicant: dict) -> dict:
     """Evaluate postgraduate entry (bachelors required)."""
     pg_entry = programme["nche_entry"]
@@ -863,6 +947,10 @@ def check_eligibility():
         result = _score_diploma_programme(programme, data)
     elif entry_route == "bachelors":
         result = _score_bachelors_programme(programme, data)
+    elif entry_route == "masters":
+        result = _score_masters_programme(programme, data)
+    elif entry_route == "phd":
+        result = _score_phd_programme(programme, data)
     else:
         return jsonify({"error": "Invalid entry_route"}), 400
 
