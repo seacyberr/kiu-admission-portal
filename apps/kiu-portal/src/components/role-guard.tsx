@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, type ReactNode, useRef } from "react";
 import { useLocation } from "wouter";
 import { useGetCurrentUser } from "@workspace/api-client-react";
 import { apiGet } from "../services/api";
@@ -51,14 +51,19 @@ async function getRedirectPath(user: { role: string }): Promise<string> {
 export function RoleGuard({ roles, children }: RoleGuardProps) {
   const [, setLocation] = useLocation();
   const { data: user, isLoading } = useGetCurrentUser({ query: { retry: false } });
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || hasRedirected.current) return;
+    
     if (!user) {
+      hasRedirected.current = true;
       setLocation("/login");
       return;
     }
+    
     if (!roles.includes(user.role as Role)) {
+      hasRedirected.current = true;
       // Use conditional redirect based on user's data status
       getRedirectPath(user).then(setLocation);
     }
