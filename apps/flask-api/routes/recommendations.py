@@ -540,6 +540,47 @@ KIU_PROGRAMMES = [
         "career_prospects": ["Researcher", "Academic", "Policy Analyst"],
         "accreditation": "NCHE",
     },
+    # PhD PROGRAMMES
+    {
+        "id": "phd_business",
+        "code": "PhD Bus",
+        "name": "Doctor of Philosophy in Business Administration",
+        "faculty": "Faculty of Business and Management",
+        "level": "postgraduate",
+        "duration_years": 4,
+        "intake_months": [8, 1],
+        "campus": ["Main Campus (Kansanga)"],
+        "tuition_ugx_per_semester": 5000000,
+        "tuition_usd_per_semester": 1500,
+        "nche_entry": {
+            "masters_required": True,
+            "min_class": "Merit",
+            "research_experience_years": 2,
+            "relevant_fields": ["Business", "Management", "Economics", "Finance"],
+        },
+        "career_prospects": ["Professor", "Research Director", "Senior Consultant", "Policy Maker"],
+        "accreditation": "NCHE",
+    },
+    {
+        "id": "phd_computer_science",
+        "code": "PhD CS",
+        "name": "Doctor of Philosophy in Computer Science",
+        "faculty": "Faculty of Information and Communication Technology",
+        "level": "postgraduate",
+        "duration_years": 4,
+        "intake_months": [8, 1],
+        "campus": ["Main Campus (Kansanga)"],
+        "tuition_ugx_per_semester": 4500000,
+        "tuition_usd_per_semester": 1300,
+        "nche_entry": {
+            "masters_required": True,
+            "min_class": "Merit",
+            "research_experience_years": 2,
+            "relevant_fields": ["Computer Science", "Information Technology", "Software Engineering"],
+        },
+        "career_prospects": ["Professor", "Research Scientist", "Chief Technology Officer", "Innovation Director"],
+        "accreditation": "NCHE",
+    },
 ]
 
 INTAKE_SCHEDULE = {
@@ -834,18 +875,19 @@ def _score_diploma_programme(programme: dict, applicant: dict) -> dict:
 
 
 def _score_masters_programme(programme: dict, applicant: dict) -> dict:
-    """Evaluate masters entry (bachelors required)."""
-    pg_entry = programme["nche_entry"]
-    if programme["level"] != "masters":
+    """Evaluate master's degree holder applying for PhD programs."""
+    # This route is for people with master's degrees applying for PhD programs
+    if programme["level"] != "postgraduate":
         return {
             "eligible": False, 
             "route": "masters", 
             "strong_match": False,
             "reasons_pass": [],
-            "reasons_fail": ["Not a masters programme"],
+            "reasons_fail": ["This route is for PhD programmes only"],
             "reasons_warn": []
         }
 
+    pg_entry = programme["nche_entry"]
     reasons_fail = []
     reasons_pass = []
     reasons_warn = []
@@ -888,28 +930,29 @@ def _score_masters_programme(programme: dict, applicant: dict) -> dict:
 
 
 def _score_phd_programme(programme: dict, applicant: dict) -> dict:
-    """Evaluate PhD entry (masters required)."""
-    pg_entry = programme["nche_entry"]
-    if not pg_entry.get("phd_required"):
+    """Evaluate PhD holder applying for post-doctoral or advanced positions."""
+    # This route is for people with PhDs applying for post-doctoral or advanced positions
+    if programme["level"] != "postgraduate":
         return {
             "eligible": False, 
             "route": "phd", 
             "strong_match": False,
             "reasons_pass": [],
-            "reasons_fail": ["Not a PhD programme"],
+            "reasons_fail": ["This route is for post-doctoral positions only"],
             "reasons_warn": []
         }
 
+    pg_entry = programme["nche_entry"]
     reasons_fail = []
     reasons_pass = []
     reasons_warn = []
 
-    # Check if applicant has masters degree (basic requirement)
-    masters_field = applicant.get("masters_field", "")
-    if not masters_field:
-        reasons_fail.append("Master's degree required for PhD admission")
+    # Check if applicant has PhD degree (basic requirement for post-doctoral)
+    phd_field = applicant.get("phd_field", "")
+    if not phd_field:
+        reasons_fail.append("PhD required for post-doctoral positions")
     else:
-        reasons_pass.append(f"Master's field: {masters_field} ✓")
+        reasons_pass.append(f"PhD field: {phd_field}")
 
     # Check research experience
     research_exp = pg_entry.get("research_experience_years", 0)
@@ -936,18 +979,19 @@ def _score_phd_programme(programme: dict, applicant: dict) -> dict:
 
 
 def _score_bachelors_programme(programme: dict, applicant: dict) -> dict:
-    """Evaluate postgraduate entry (bachelors required for masters/phd)."""
-    pg_entry = programme["nche_entry"]
-    if not pg_entry.get("bachelors_required"):
+    """Evaluate bachelor's degree holder applying for master's programs."""
+    # This route is for people with bachelor's degrees applying for master's programs
+    if programme["level"] != "masters":
         return {
             "eligible": False, 
             "route": "bachelors", 
             "strong_match": False,
             "reasons_pass": [],
-            "reasons_fail": ["Programme does not accept bachelor's degree entry"],
+            "reasons_fail": ["This route is for master's programmes only"],
             "reasons_warn": []
         }
 
+    pg_entry = programme["nche_entry"]
     reasons_fail = []
     reasons_pass = []
     reasons_warn = []
@@ -1017,14 +1061,14 @@ def _recommend(applicant: dict) -> dict:
     not_eligible = []
 
     for prog in _get_programmes():
-        # Skip masters if not using appropriate routes
-        if prog["level"] == "masters" and entry_route not in ["bachelors", "masters"]:
+        # Skip masters if not using bachelors route (bachelor's degree holders applying for master's)
+        if prog["level"] == "masters" and entry_route != "bachelors":
             continue
-        # Skip postgraduate if not using postgraduate routes (phd)
-        if prog["level"] == "postgraduate" and entry_route not in ["phd"]:
+        # Skip postgraduate if not using masters route (master's degree holders applying for PhD)
+        if prog["level"] == "postgraduate" and entry_route != "masters":
             continue
-        # Skip undergraduate if using postgraduate routes
-        if prog["level"] == "undergraduate" and entry_route in ["masters", "phd"]:
+        # Skip undergraduate if using academic progression routes
+        if prog["level"] == "undergraduate" and entry_route in ["bachelors", "masters", "phd"]:
             continue
 
         if entry_route == "uce_direct":

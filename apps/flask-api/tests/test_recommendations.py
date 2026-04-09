@@ -43,27 +43,9 @@ SAMPLE_PROGRAMME = {
     "accreditation": "Test Council",
 }
 
-# Sample programme data for bachelors tests
+# Sample programme data for bachelors tests (bachelor's degree holder applying for master's)
 SAMPLE_BACHELORS = {
-    "id": "test_bachelors",
-    "code": "BTEST",
-    "name": "Test Bachelors Programme",
-    "faculty": "Test Faculty",
-    "level": "postgraduate",
-    "duration_years": 2,
-    "intake_months": [8, 1],
-    "campus": ["Test Campus"],
-    "tuition_ugx_per_semester": 3000000,
-    "tuition_usd_per_semester": 800,
-    "nche_entry": {
-        "bachelors_required": True,
-        "min_class": "Second Class Lower",
-    }
-}
-
-# Sample programme data for masters tests
-SAMPLE_MASTERS = {
-    "id": "test_masters",
+    "id": "test_masters_program",
     "code": "MTEST",
     "name": "Test Masters Programme",
     "faculty": "Test Faculty",
@@ -75,7 +57,44 @@ SAMPLE_MASTERS = {
     "tuition_usd_per_semester": 1000,
     "nche_entry": {
         "bachelors_required": True,
-        "min_class": "Pass",
+        "min_class": "Second Class Lower",
+    }
+}
+
+# Sample programme data for masters tests (master's degree holder applying for PhD)
+SAMPLE_MASTERS = {
+    "id": "test_phd_program",
+    "code": "PHDTEST",
+    "name": "Test PhD Programme",
+    "faculty": "Test Faculty",
+    "level": "postgraduate",
+    "duration_years": 4,
+    "intake_months": [8, 1],
+    "campus": ["Test Campus"],
+    "tuition_ugx_per_semester": 4500000,
+    "tuition_usd_per_semester": 1300,
+    "nche_entry": {
+        "masters_required": True,
+        "min_class": "Merit",
+        "research_experience_years": 2,
+    }
+}
+
+# Sample programme data for PhD tests (PhD holder applying for post-doctoral)
+SAMPLE_PHD = {
+    "id": "test_postdoc_program",
+    "code": "POSTDOC",
+    "name": "Test Post-Doctoral Programme",
+    "faculty": "Test Faculty",
+    "level": "postgraduate",
+    "duration_years": 2,
+    "intake_months": [8, 1],
+    "campus": ["Test Campus"],
+    "tuition_ugx_per_semester": 4000000,
+    "tuition_usd_per_semester": 1200,
+    "nche_entry": {
+        "phd_required": True,
+        "research_experience_years": 3,
     }
 }
 
@@ -147,7 +166,7 @@ class TestRecommendationsValidation:
         assert "Invalid diploma class: Fail" in result["reasons_fail"][0]
     
     def test_bachelors_scoring_valid_second_class_upper(self):
-        """Test bachelors scoring with valid class"""
+        """Test bachelor's degree holder applying for master's program"""
         applicant = {
             "bachelors_class": "Second Class Upper",
             "bachelors_field": "Business Administration",
@@ -159,16 +178,28 @@ class TestRecommendationsValidation:
         assert result["route"] == "bachelors"
     
     def test_masters_scoring_valid_merit(self):
-        """Test masters scoring with valid Merit class"""
+        """Test master's degree holder applying for PhD program"""
         applicant = {
             "masters_class": "Merit",
             "masters_field": "Business Administration",
-            "work_experience_years": 3
+            "research_experience_years": 3
         }
         result = _score_masters_programme(SAMPLE_MASTERS, applicant)
         
         assert result["eligible"] is True
         assert result["route"] == "masters"
+    
+    def test_phd_scoring_valid_phd_holder(self):
+        """Test PhD holder applying for post-doctoral position"""
+        applicant = {
+            "phd_field": "Computer Science",
+            "research_experience_years": 5,
+            "publications_count": 10
+        }
+        result = _score_phd_programme(SAMPLE_PHD, applicant)
+        
+        assert result["eligible"] is True
+        assert result["route"] == "phd"
     
     def test_input_validation_invalid_integer(self):
         """Test input validation with invalid integer data"""
