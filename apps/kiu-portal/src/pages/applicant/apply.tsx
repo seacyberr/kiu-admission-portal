@@ -721,7 +721,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                         degree: { level: "degree", label: "Undergraduate Degrees" },
                         diploma: { level: "diploma", label: "Diploma Programmes" },
                         hec: { level: "hec", label: "HEC Programmes" },
-                        masters: { level: "masters", label: "Master's Programmes" },
+                        masters: { level: "postgraduate", label: "Master's Programmes" },
                         phd: { level: "phd", label: "PhD Programmes" },
                       };
                       

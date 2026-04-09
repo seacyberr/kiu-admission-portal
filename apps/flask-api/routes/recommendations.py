@@ -31,9 +31,13 @@ def _get_user_from_cookie():
     if not token:
         return None
     try:
-        secret = os.environ.get("JWT_SECRET") or os.environ.get("SECRET_KEY", "")
+        secret = os.environ.get("JWT_SECRET") or os.environ.get("SECRET_KEY")
+        if not secret:
+            raise ValueError("JWT secret not configured")
         return jwt.decode(token, secret, algorithms=["HS256"])
-    except jwt.PyJWTError:
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, jwt.InvalidSignatureError):
+        return None
+    except (jwt.DecodeError, ValueError):
         return None
 
 
@@ -553,6 +557,59 @@ def _score_national_cert_programme(programme: dict, applicant: dict) -> dict:
     }
 
 
+def _score_hec_programme(programme: dict, applicant: dict) -> dict:
+    """Evaluate Higher Education Certificate (HEC) entry route."""
+    uce_passes = applicant.get("uce_passes", 0)
+    uce_subjects = applicant.get("uce_subjects", [])
+    hec_institution = applicant.get("hec_institution", "")
+    
+    reasons_fail = []
+    reasons_pass = []
+    reasons_warn = []
+    
+    # Check minimum UCE passes for HEC entry
+    if uce_passes < 5:
+        reasons_fail.append("HEC requires minimum 5 UCE passes")
+    else:
+        reasons_pass.append(f"UCE passes: {uce_passes} ✓")
+    
+    # Check HEC eligibility in programme
+    hec_entry = programme["nche_entry"].get("hec_entry", {})
+    if hec_entry.get("eligible"):
+        reasons_pass.append("Programme accepts HEC entry ✓")
+        
+        # Check subject requirements if specified
+        required_subjects = hec_entry.get("required_subjects", [])
+        if required_subjects:
+            uce_subjects_set = {s.strip() for s in uce_subjects}
+            missing = [s for s in required_subjects if s not in uce_subjects_set]
+            if missing:
+                reasons_warn.append(f"Recommended subjects: {', '.join(required_subjects)}")
+            else:
+                reasons_pass.append(f"Subject requirements met ✓")
+    else:
+        # Check if programme accepts diploma entry (HEC can lead to diploma)
+        diploma_entry = programme["nche_entry"].get("diploma_entry", {})
+        if diploma_entry.get("eligible"):
+            reasons_pass.append("HEC pathway to Diploma entry available ✓")
+            reasons_warn.append("May need to complete diploma requirements")
+        else:
+            reasons_fail.append("Programme does not accept HEC entry")
+    
+    # Check HEC institution if provided
+    if hec_institution:
+        reasons_pass.append(f"HEC from: {hec_institution}")
+    
+    return {
+        "eligible": len(reasons_fail) == 0,
+        "route": "hec",
+        "strong_match": len(reasons_fail) == 0 and len(reasons_warn) == 0,
+        "reasons_pass": reasons_pass,
+        "reasons_fail": reasons_fail,
+        "reasons_warn": reasons_warn,
+    }
+
+
 def _score_uace_programme(programme: dict, applicant: dict) -> dict:
     """
     Returns eligibility dict for a single programme based on applicant UACE data.
@@ -563,7 +620,14 @@ def _score_uace_programme(programme: dict, applicant: dict) -> dict:
     """
     uace = programme["nche_entry"].get("uace_direct", {})
     if not uace:
-        return {"eligible": False, "route": "uace_direct", "reasons": ["Programme does not accept UACE direct entry"]}
+        return {
+            "eligible": False, 
+            "route": "uace_direct", 
+            "strong_match": False,
+            "reasons_pass": [],
+            "reasons_fail": ["Programme does not accept UACE direct entry"],
+            "reasons_warn": []
+        }
 
     applicant_subjects = {s.strip() for s in applicant.get("uace_subjects", [])}
     applicant_principal_count = int(applicant.get("uace_principal_passes", 0))
@@ -623,7 +687,14 @@ def _score_diploma_programme(programme: dict, applicant: dict) -> dict:
     """Evaluate diploma entry route."""
     diploma_entry = programme["nche_entry"].get("diploma_entry", {})
     if not diploma_entry or not diploma_entry.get("eligible"):
-        return {"eligible": False, "route": "diploma", "reasons_fail": ["Programme does not accept diploma entry"]}
+        return {
+            "eligible": False, 
+            "route": "diploma", 
+            "strong_match": False,
+            "reasons_pass": [],
+            "reasons_fail": ["Programme does not accept diploma entry"],
+            "reasons_warn": []
+        }
 
     applicant_diploma_class = applicant.get("diploma_class", "")
     applicant_diploma_field = applicant.get("diploma_field", "")
@@ -678,7 +749,14 @@ def _score_masters_programme(programme: dict, applicant: dict) -> dict:
     """Evaluate postgraduate entry (masters required)."""
     pg_entry = programme["nche_entry"]
     if not pg_entry.get("masters_required"):
-        return {"eligible": False, "route": "masters", "reasons_fail": ["Not a postgraduate programme"]}
+        return {
+            "eligible": False, 
+            "route": "masters", 
+            "strong_match": False,
+            "reasons_pass": [],
+            "reasons_fail": ["Not a postgraduate programme"],
+            "reasons_warn": []
+        }
 
     reasons_fail = []
     reasons_pass = []
@@ -721,7 +799,14 @@ def _score_phd_programme(programme: dict, applicant: dict) -> dict:
     """Evaluate PhD entry (masters required)."""
     pg_entry = programme["nche_entry"]
     if not pg_entry.get("phd_required"):
-        return {"eligible": False, "route": "phd", "reasons_fail": ["Not a PhD programme"]}
+        return {
+            "eligible": False, 
+            "route": "phd", 
+            "strong_match": False,
+            "reasons_pass": [],
+            "reasons_fail": ["Not a PhD programme"],
+            "reasons_warn": []
+        }
 
     reasons_fail = []
     reasons_pass = []
@@ -762,7 +847,14 @@ def _score_bachelors_programme(programme: dict, applicant: dict) -> dict:
     """Evaluate postgraduate entry (bachelors required)."""
     pg_entry = programme["nche_entry"]
     if not pg_entry.get("bachelors_required"):
-        return {"eligible": False, "route": "bachelors", "reasons_fail": ["Not a postgraduate programme"]}
+        return {
+            "eligible": False, 
+            "route": "bachelors", 
+            "strong_match": False,
+            "reasons_pass": [],
+            "reasons_fail": ["Not a postgraduate programme"],
+            "reasons_warn": []
+        }
 
     reasons_fail = []
     reasons_pass = []
@@ -831,7 +923,7 @@ def _recommend(applicant: dict) -> dict:
             continue
 
         if entry_route == "uce_direct":
-            result = _score_uace_programme(prog, applicant)
+            result = _score_uce_programme(prog, applicant)
         elif entry_route == "national_cert":
             result = _score_national_cert_programme(prog, applicant)
         elif entry_route == "uace_direct":
@@ -930,7 +1022,11 @@ def get_recommendations(user):
 
     # Validate UACE route basics
     if entry_route == "uace_direct":
-        uce_passes = int(data.get("uce_passes", 0))
+        try:
+            uce_passes = int(data.get("uce_passes", 0))
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid uce_passes value - must be an integer"}), 400
+        
         if uce_passes < 5:
             return jsonify({
                 "error": "NCHE minimum requirement: UCE with at least 5 passes at the same sitting.",
@@ -940,7 +1036,11 @@ def get_recommendations(user):
                 "alternative": "Consider Diploma Entry or upgrade your qualifications.",
             }), 422
 
-        principal_passes = int(data.get("uace_principal_passes", 0))
+        try:
+            principal_passes = int(data.get("uace_principal_passes", 0))
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid uace_principal_passes value - must be an integer"}), 400
+        
         if principal_passes < 2:
             return jsonify({
                 "error": "NCHE minimum: at least 2 principal passes at UACE for undergraduate degree entry.",

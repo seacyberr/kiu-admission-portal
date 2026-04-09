@@ -9,12 +9,26 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { useLocation } from "wouter";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 type EntryRoute = "uce_direct" | "uace_direct" | "hec" | "national_cert" | "diploma" | "bachelors" | "masters" | "phd";
+
+// Map recommendation entry routes to application form qualification types
+const mapEntryRouteToQualification = (route: EntryRoute): string => {
+  switch (route) {
+    case "uce_direct": return "o-level";
+    case "uace_direct": return "a-level";
+    case "hec": return "hec";
+    case "national_cert": return "diploma";
+    case "diploma": return "diploma";
+    case "bachelors": return "degree";
+    case "masters": return "masters";
+    case "phd": return "phd";
+    default: return "a-level";
+  }
+};
 
 interface Intake {
   name: string;
@@ -39,8 +53,8 @@ interface Programme {
   level: string;
   duration_years: number;
   campus: string[];
-  tuition_ugx_per_year: number;
-  tuition_usd_per_year: number;
+  tuition_ugx_per_semester: number;
+  tuition_usd_per_semester: number;
   career_prospects: string[];
   accreditation: string;
   next_intakes: Intake[];
@@ -68,59 +82,6 @@ const UACE_SUBJECTS = [
   "Technical Drawing", "Subsidiary Mathematics", "General Paper",
 ];
 
-const uceSchema = z.object({
-  entry_route: z.literal("uce_direct"),
-  uce_subjects: z.array(z.object({ name: z.string(), grade: z.enum(["A","B","C","D","E"]) })).min(5),
-  uce_year: z.number().min(1990).max(new Date().getFullYear()),
-  uce_institution: z.string().min(2, "Enter school/institution name"),
-  uce_passes: z.number().min(0).max(10),
-});
-
-const uaceSchema = z.object({
-  entry_route: z.literal("uace_direct"),
-  uce_passes: z.number({ invalid_type_error: "Enter your UCE passes" }).min(5).max(10),
-  uace_principal_subjects: z.array(z.object({ name: z.string(), grade: z.enum(["A","B","C","D","E","F"]) })).min(2),
-  uace_subsidiary_subjects: z.array(z.object({ name: z.string(), grade: z.enum(["A","B","C","D","E","F"]) })).optional(),
-  uace_principal_passes: z.number().min(0).max(3),
-  uace_points: z.number().min(0).max(20),
-  uace_year: z.number().min(1990).max(new Date().getFullYear()),
-  uace_institution: z.string().min(2, "Enter school/institution name"),
-});
-
-const diplomaSchema = z.object({
-  entry_route: z.literal("diploma"),
-  diploma_class: z.enum(["Pass", "Credit", "Distinction"]),
-  diploma_field: z.string().min(2, "Enter your diploma field"),
-  diploma_institution: z.string().min(2, "Enter your institution"),
-});
-
-const nationalCertSchema = z.object({
-  entry_route: z.literal("national_cert"),
-  national_cert_class: z.enum(["Pass", "Credit", "Distinction"]),
-  national_cert_field: z.string().min(2, "Enter your certificate field"),
-  national_cert_institution: z.string().min(2, "Enter your institution"),
-});
-
-const bachelorsSchema = z.object({
-  entry_route: z.literal("bachelors"),
-  bachelors_class: z.enum(["Third Class", "Second Class Lower", "Second Class Upper", "First Class"]),
-  bachelors_field: z.string().min(2, "Enter your degree field"),
-  work_experience_years: z.number().min(0).max(50).optional(),
-});
-
-const mastersSchema = z.object({
-  entry_route: z.literal("masters"),
-  masters_class: z.enum(["Pass", "Merit", "Distinction"]),
-  masters_field: z.string().min(2, "Enter your master's field"),
-  work_experience_years: z.number().min(0).max(50).optional(),
-});
-
-const phdSchema = z.object({
-  entry_route: z.literal("phd"),
-  phd_field: z.string().min(2, "Enter your PhD field"),
-  research_experience_years: z.number().min(0).max(50).optional(),
-  publications_count: z.number().min(0).optional(),
-});
 
 // ── Helper components ──────────────────────────────────────────────────────
 
@@ -179,7 +140,7 @@ function ProgrammeCard({ programme, rank }: { programme: Programme; rank?: numbe
       {/* Quick info row */}
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
         <span>📍 {programme.campus.join(" · ")}</span>
-        <span>💰 {fmtUGX(programme.tuition_ugx_per_year)}/yr (USD {programme.tuition_usd_per_year.toLocaleString()})</span>
+        <span>💰 {fmtUGX(programme.tuition_ugx_per_semester)}/semester (USD {programme.tuition_usd_per_semester.toLocaleString()})</span>
         <span>🎓 {programme.accreditation}</span>
       </div>
 
@@ -778,7 +739,7 @@ export default function RecommendationsPage() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <a
-                    href="/apply"
+                    href={`/apply/${mapEntryRouteToQualification((result?.entry_route as EntryRoute) || "uace_direct")}`}
                     className="bg-white text-blue-700 font-semibold px-6 py-2.5 rounded-xl text-sm hover:bg-blue-50 transition-colors"
                   >
                     Start Application
