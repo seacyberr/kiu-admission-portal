@@ -114,18 +114,22 @@ def create_app():
     # Initialize Flask-Caching
     cache = Cache(app)
 
-    # Configure rate limiting
-    raw_limits = config.RATE_LIMIT_DEFAULT
-    if raw_limits:
-        default_limits = [x.strip() for x in raw_limits.split(",") if x.strip()]
-    else:
-        default_limits = ["200 per day", "50 per hour"]
-    Limiter(
-        key_func=get_remote_address,
-        app=app,
-        default_limits=default_limits,
-        storage_uri=config.RATE_LIMIT_STORAGE_URI,
-    )
+    # Configure advanced rate limiting
+    from utils.rate_limiting import apply_rate_limits
+    apply_rate_limits(app)
+    
+    # Configure caching
+    from utils.caching import CacheManager, CacheMiddleware, warm_cache
+    cache_manager = CacheManager()
+    cache_middleware = CacheMiddleware(app)
+    cache_middleware.init_app(app)
+    
+    # Warm up cache on startup
+    try:
+        warm_cache()
+        logger.info("Cache warm-up completed successfully")
+    except Exception as e:
+        logger.warning(f"Cache warm-up failed: {e}")
 
     # Request middleware
     @app.before_request
@@ -153,8 +157,7 @@ def create_app():
     from routes.docs import docs_bp
     from routes.notifications import notifications_bp
     from routes.nche_recommendations import recommendations_bp
-    from routes.simple_recommendations import simple_recommendations_bp
-    from routes.realistic_recommendations import realistic_recommendations_bp
+    from routes.certificate_verification import certificate_verification_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(admission_bp, url_prefix="/api/admission")
@@ -163,12 +166,10 @@ def create_app():
     app.register_blueprint(users_bp, url_prefix="/api/users")
     app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
     app.register_blueprint(docs_bp, url_prefix="/api/docs")
+    app.register_blueprint(certificate_verification_bp, url_prefix="/api/certificate-verification")
     
     # Primary NCHE-based recommendations
     app.register_blueprint(recommendations_bp, url_prefix="/api")
-    # Alternative recommendation systems
-    app.register_blueprint(simple_recommendations_bp, url_prefix="/api/simple")
-    app.register_blueprint(realistic_recommendations_bp, url_prefix="/api/realistic")
 
     # Initialize Prometheus metrics
     from metrics import init_metrics

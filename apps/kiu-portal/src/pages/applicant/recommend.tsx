@@ -1,14 +1,13 @@
 /**
  * apps/kiu-portal/src/pages/applicant/RecommendationsPage.tsx
  *
- * NCHE-compliant programme recommendation engine UI.
- * Entry routes: UACE Direct | Diploma | Postgraduate (Bachelors)
- *
- * KIU admits 3 intakes: Aug/Sep · Dec/Jan · Mar/Apr
+ * Legacy recommendation page - redirects to new NCHE-based system
+ * 
+ * This page redirects to the new NCHE Uganda compliant recommendation system
+ * which provides official standards-based assessments with direct applications.
  */
 
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 
 // ── Types ──────────────────────────────────────────────────────────────────

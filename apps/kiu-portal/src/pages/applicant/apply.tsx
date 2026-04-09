@@ -214,6 +214,8 @@ export default function Apply({ target }: { target: ApplyTarget }) {
   const [step, setStep] = useState<Step>("program");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [applicationId, setApplicationId] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [olevelFile, setOlevelFile] = useState<File | null>(null);
   const [alevelFile, setAlevelFile] = useState<File | null>(null);
   const [diplomaFile, setDiplomaFile] = useState<File | null>(null);
@@ -319,13 +321,17 @@ export default function Apply({ target }: { target: ApplyTarget }) {
   const saveAndContinueToCertificates = async () => {
     const values = getValues();
     
+    // Clear previous validation errors
+    setValidationErrors({});
+    
     // Validate that at least program is selected
     if (!values.programIds || values.programIds.length < 1) {
-      toast({ title: "Please select at least one program first", variant: "destructive" });
+      setValidationErrors({ programIds: "Please select at least one program" });
+      toast({ title: "Please select at least one program", variant: "destructive" });
       return;
     }
 
-    setIsSubmitting(true);
+    setIsSaving(true);
     try {
       const unebGrades: any = {};
       if (examLevel === "o_level" || examLevel === "a_level") {
@@ -610,40 +616,115 @@ export default function Apply({ target }: { target: ApplyTarget }) {
       setApplicationId(json.id);
       setStep("upload");
     } catch (err: any) {
-      toast({ title: "Submission failed", description: err.message, variant: "destructive" });
+      console.error("Application save failed:", err);
+      toast({ title: "Application failed", description: err.message || "Unknown error", variant: "destructive" });
+      setValidationErrors({ submit: err.message || "Failed to save application" });
     } finally {
       setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
 
   // ── Certificate upload ─────────────────────────────────────────────────────
   const uploadCertificates = async () => {
-    if (!applicationId) return;
-    setUploadingCerts(true);
-    let allOk = true;
 
-    const upload = async (file: File, type: "olevel" | "alevel" | "diploma" | "hec") => {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("type", type);
-      const res = await fetch(`${BASE}/api/admission/applications/${applicationId}/certificate`, {
-        method: "POST",
-        credentials: "include",
-        body: fd,
-      });
-      if (!res.ok) allOk = false;
+    const indexNumber =
+      examLevel === "a_level"
+        ? data.aLevelIndexNumber || data.oLevelIndexNumber
+        : examLevel === "o_level"
+          ? data.oLevelIndexNumber
+          : data.certIndexNumber;
+
+    const payload = {
+      programIds: data.programIds,
+      examLevel,
+      examYear,
+      indexNumber,
+      unebGrades,
+      dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString().split('T')[0] : undefined,
+      gender: data.gender,
+      nationality: data.nationality,
+      district: data.district,
+      sessionOfStudy: data.sessionOfStudy,
+      nextOfKinName: data.nextOfKinName,
+      nextOfKinPhone: data.nextOfKinPhone,
+      nextOfKinRelationship: data.nextOfKinRelationship,
     };
 
-    try {
-      if (olevelFile) await upload(olevelFile, "olevel");
-      if (examLevel === "a_level" && alevelFile) await upload(alevelFile, "alevel");
-      if (examLevel === "diploma" && diplomaFile) await upload(diplomaFile, "diploma");
-      if (examLevel === "hec" && hecFile) await upload(hecFile, "hec");
-    } catch {
-      allOk = false;
+    const res = await fetch(`${BASE}/api/admission/applications`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+    
+    // Check if response is HTML (error page) instead of JSON
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await res.text();
+      console.error("Server returned non-JSON response:", {
+        status: res.status,
+        statusText: res.statusText,
+        contentType,
+        responseText: text.substring(0, 500)
+      });
+      if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
+        throw new Error(`Server error (${res.status}): The server encountered an error. Please check your form data and try again.`);
+      }
+      throw new Error(`Unexpected response format (${res.status}): ${text.substring(0, 100)}...`);
+    }
+    
+    const json = await res.json();
+    console.log("Server response:", { status: res.status, data: json });
+    if (!res.ok) {
+      console.error("Server error response:", json);
+      throw new Error(json.message || `Submission failed (${res.status})`);
     }
 
-    setUploadingCerts(false);
+    setApplicationId(json.id);
+    setStep("upload");
+  } catch (err: any) {
+    console.error("Application save failed:", err);
+    toast({ title: "Application failed", description: err.message || "Unknown error", variant: "destructive" });
+    setValidationErrors({ submit: err.message || "Failed to save application" });
+  } finally {
+    setIsSubmitting(false);
+    setIsSaving(false);
+  }
+};
+
+// ── Certificate upload ─────────────────────────────────────────────────────
+const uploadCertificates = async () => {
+  if (!applicationId) return;
+  setUploadingCerts(true);
+  let allOk = true;
+
+  const upload = async (file: File, type: "olevel" | "alevel" | "diploma" | "hec") => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("type", type);
+    const res = await fetch(`${BASE}/api/admission/applications/${applicationId}/certificate`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      allOk = false;
+      if (json.error) {
+        setValidationErrors({ submit: json.message });
+      }
+    }
+  };
+
+  try {
+    await Promise.all([
+      olevelFile && upload(olevelFile, "olevel"),
+      alevelFile && upload(alevelFile, "alevel"),
+      diplomaFile && upload(diplomaFile, "diploma"),
+      hecFile && upload(hecFile, "hec"),
+    ]);
+    
     if (allOk) {
       toast({ title: "Application Submitted!", description: "Track your status in the dashboard." });
       setLocation("/dashboard");
@@ -651,16 +732,30 @@ export default function Apply({ target }: { target: ApplyTarget }) {
       toast({ title: "Upload issue", description: "Application saved but some certificates failed to upload.", variant: "destructive" });
       setLocation("/dashboard");
     }
-  };
+  } catch (err) {
+    console.error("Certificate upload failed:", err);
+    toast({ title: "Upload failed", description: "Failed to upload certificates", variant: "destructive" });
+    setValidationErrors({ submit: "Failed to upload certificates. Please try again." });
+  } finally {
+    setUploadingCerts(false);
+  }
+};
 
-  // ── Progress bar ───────────────────────────────────────────────────────────
-  const visibleSteps = STEPS.filter((s) => stepOrder.includes(s.key));
-  const stepProgress = ((currentIdx + 1) / stepOrder.length) * 100;
+// ── Progress bar ───────────────────────────────────────────────────────────
+const visibleSteps = STEPS.filter((s) => stepOrder.includes(s.key));
+const stepProgress = ((currentIdx + 1) / stepOrder.length) * 100;
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-  return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      {/* Header */}
+// ── Render ─────────────────────────────────────────────────────────────────
+return (
+  <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    {/* Header */}
+    <div className="mb-8">
+      <button onClick={() => (currentIdx === 0 ? setLocation("/apply") : goBack())} className="inline-flex items-center text-sm font-semibold text-muted-foreground hover:text-primary mb-4 transition-colors">
+        <ArrowLeft className="w-4 h-4 mr-2" /> {currentIdx === 0 ? "Back to Program Selection" : "Previous Step"}
+      </button>
+      <h1 className="text-3xl font-display font-bold text-primary">Admission Application</h1>
+      <p className="text-muted-foreground mt-1">KIU Online Admissions — {new Date().getFullYear()}/{new Date().getFullYear() + 1} Academic Year</p>
+    </div>
       <div className="mb-8">
         <button onClick={() => (currentIdx === 0 ? setLocation("/apply") : goBack())} className="inline-flex items-center text-sm font-semibold text-muted-foreground hover:text-primary mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-2" /> {currentIdx === 0 ? "Back to Program Selection" : "Previous Step"}

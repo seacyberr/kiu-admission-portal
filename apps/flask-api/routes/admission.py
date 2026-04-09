@@ -10,6 +10,15 @@ from werkzeug.utils import secure_filename
 from models import db, AdmissionApplication, Program, User
 from routes.auth import get_current_user
 from lib.qualification_checker import UgandaQualificationChecker
+from utils.error_handlers import (
+    handle_kiu_error, validate_json_payload, ValidationError, 
+    NotFoundError, ConflictError, sanitize_input, validate_phone,
+    log_application_action
+)
+from utils.caching import (
+    cache_manager, cache_program_list, cache_user_data, 
+    cache_application_status, invalidate_user_cache, invalidate_program_cache
+)
 
 
 def sanitize_text(text):
@@ -180,117 +189,104 @@ def get_program(program_id):
 # ---------------------------------------------------------------------------
 
 @admission_bp.route("/applications", methods=["POST"])
+@handle_kiu_error
+@validate_json_payload(required_fields=["programIds", "examLevel", "examYear", "indexNumber", "unebGrades", "dateOfBirth", "gender"])
 def create_application():
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        raise ValidationError(error)
     if user.role not in ("applicant",):
-        return jsonify({"error": "Forbidden", "message": "Only applicants can submit admission applications"}), 403
+        raise ValidationError("Only applicants can submit admission applications")
 
     data = request.get_json()
-    if not data:
-        return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
-
-    required = ["programIds", "examLevel", "examYear", "indexNumber", "unebGrades", "dateOfBirth", "gender"]
-    for field in required:
-        if field not in data:
-            return jsonify({"error": "Validation error", "message": f"{field} is required"}), 400
 
     program_ids = data.get("programIds", [])
     if not isinstance(program_ids, list) or len(program_ids) == 0:
-        return jsonify({"error": "Validation error", "message": "At least one program must be selected"}), 400
+        raise ValidationError("At least one program must be selected")
     if len(program_ids) > 3:
-        return jsonify({"error": "Validation error", "message": "Maximum 3 program choices allowed"}), 400
+        raise ValidationError("Maximum 3 program choices allowed")
 
     programs = []
     for pid in program_ids:
         prog = db.session.get(Program, pid)
         if not prog:
-            return jsonify({"error": "Not found", "message": f"Program ID {pid} not found"}), 404
+            raise NotFoundError(f"Program ID {pid} not found")
         programs.append(prog)
 
     program = programs[0]
 
     existing = AdmissionApplication.query.filter_by(user_id=user.id).first()
     if existing:
-        return jsonify({"error": "Conflict", "message": "You have already submitted an application"}), 409
+        raise ConflictError("You have already submitted an application")
 
     exam_level = data["examLevel"]
     valid_exam_levels = ("o_level", "a_level", "diploma", "hec", "masters", "phd")
     if exam_level not in valid_exam_levels:
-        return jsonify({
-            "error": "Validation error",
-            "message": f"examLevel must be one of: {', '.join(valid_exam_levels)}"
-        }), 400
+        raise ValidationError(f"examLevel must be one of: {', '.join(valid_exam_levels)}", "examLevel", exam_level)
 
     if program.level == "degree" and exam_level == "o_level":
-        return jsonify({
-            "error": "Validation error",
-            "message": "Degree programs require A-Level, Diploma, or HEC qualifications.",
-        }), 422
+        raise ValidationError("Degree programs require A-Level, Diploma, or HEC qualifications.")
     if program.level == "masters" and exam_level not in ("a_level", "diploma", "hec", "masters"):
-        return jsonify({
-            "error": "Validation error",
-            "message": "Masters programs require a bachelor's degree qualification.",
-        }), 422
+        raise ValidationError("Masters programs require a bachelor's degree qualification.")
     if program.level == "phd" and exam_level not in ("masters", "phd"):
-        return jsonify({
-            "error": "Validation error",
-            "message": "PhD programs require a master's degree qualification.",
-        }), 422
+        raise ValidationError("PhD programs require a master's degree qualification.")
 
     try:
         dob = date.fromisoformat(data["dateOfBirth"])
     except (ValueError, TypeError):
-        return jsonify({"error": "Validation error", "message": "Invalid dateOfBirth format (use YYYY-MM-DD)"}), 400
+        raise ValidationError("Invalid dateOfBirth format (use YYYY-MM-DD)", "dateOfBirth", data.get("dateOfBirth"))
 
     uneb_grades = data.get("unebGrades", {})
     if not isinstance(uneb_grades, dict):
-        return jsonify({"error": "Validation error", "message": "unebGrades must be an object"}), 400
+        raise ValidationError("unebGrades must be an object", "unebGrades")
 
     grade_errors = validate_uneb_grades(uneb_grades, exam_level)
     if grade_errors:
-        return jsonify({"error": "Validation error", "message": "; ".join(grade_errors)}), 422
+        raise ValidationError("; ".join(grade_errors))
 
     olevel_grades = uneb_grades.get("olevel", [])
     alevel_grades = uneb_grades.get("alevel", [])
 
     if exam_level == "o_level" and len(olevel_grades) < 5:
-        return jsonify({"error": "Validation error", "message": "O-Level (UCE) requires at least 5 subjects"}), 422
+        raise ValidationError("O-Level (UCE) requires at least 5 subjects")
     if exam_level == "a_level":
         if len(olevel_grades) < 5:
-            return jsonify({"error": "Validation error", "message": "Please provide your O-Level (UCE) results as well"}), 422
+            raise ValidationError("Please provide your O-Level (UCE) results as well")
         principals = [s for s in alevel_grades if s.get("subjectType", "").lower() == "principal"]
         if len(principals) < 2:
-            return jsonify({"error": "Validation error", "message": "A-Level (UACE) requires at least 2 principal subjects"}), 422
+            raise ValidationError("A-Level (UACE) requires at least 2 principal subjects")
 
     olevel_points = calculate_olevel_points(olevel_grades)
     alevel_points = calculate_alevel_points(alevel_grades) if exam_level == "a_level" else None
 
     if exam_level in ("o_level", "a_level") and program.min_olevel_points is not None:
         if olevel_points > program.min_olevel_points:
-            return jsonify({
-                "error": "Validation error",
-                "message": (
-                    f"Your O-Level aggregate ({olevel_points}) does not meet the minimum "
-                    f"requirement for {program.code} (aggregate ≤ {program.min_olevel_points})."
-                ),
-            }), 422
+            raise ValidationError(
+                f"Your O-Level aggregate ({olevel_points}) does not meet the minimum "
+                f"requirement for {program.code} (aggregate ≤ {program.min_olevel_points})."
+            )
     if exam_level == "a_level" and program.min_alevel_points is not None:
         if (alevel_points or 0) < program.min_alevel_points:
-            return jsonify({
-                "error": "Validation error",
-                "message": (
-                    f"Your A-Level points ({alevel_points or 0}) do not meet the minimum "
-                    f"requirement for {program.code} ({program.min_alevel_points}+ points)."
-                ),
-            }), 422
+            raise ValidationError(
+                f"Your A-Level points ({alevel_points or 0}) do not meet the minimum "
+                f"requirement for {program.code} ({program.min_alevel_points}+ points)."
+            )
 
     app_number = generate_application_number()
     while AdmissionApplication.query.filter_by(application_number=app_number).first():
         app_number = generate_application_number()
 
-    nationality = data.get("nationality", "Ugandan")
+    nationality = sanitize_input(data.get("nationality", "Ugandan"))
+    district = sanitize_input(data.get("district", ""))
+    next_of_kin_name = sanitize_input(data.get("nextOfKinName", ""))
+    next_of_kin_phone = sanitize_input(data.get("nextOfKinPhone", ""))
+    next_of_kin_relationship = sanitize_input(data.get("nextOfKinRelationship", ""))
+    student_number = sanitize_input(data.get("studentNumber", ""))
+    personal_statement = sanitize_input(data.get("personalStatement", ""), max_length=2000)
+
+    # Validate phone number if provided
+    if next_of_kin_phone and not validate_phone(next_of_kin_phone):
+        raise ValidationError("Invalid next of kin phone number format", "nextOfKinPhone", next_of_kin_phone)
 
     application = AdmissionApplication(
         application_number=app_number,
@@ -299,101 +295,141 @@ def create_application():
         program_choices=program_ids,
         exam_level=exam_level,
         exam_year=int(data["examYear"]),
-        index_number=sanitize_text(data["indexNumber"]),
+        index_number=sanitize_input(data["indexNumber"]),
         uneb_grades=uneb_grades,
-        personal_statement=sanitize_text(data.get("personalStatement", "")),
+        personal_statement=personal_statement,
         date_of_birth=dob,
         gender=data["gender"],
-        nationality=sanitize_text(nationality),
-        district=sanitize_text(data.get("district", "")),
+        nationality=nationality,
+        district=district,
         session_of_study=data.get("sessionOfStudy"),
         is_final_year=data.get("isFinalYear", False),
         expected_graduation_year=data.get("expectedGraduationYear"),
         current_year_of_study=data.get("currentYearOfStudy"),
-        student_number=sanitize_text(data.get("studentNumber", "")),
-        next_of_kin_name=sanitize_text(data.get("nextOfKinName", "")),
-        next_of_kin_phone=sanitize_text(data.get("nextOfKinPhone", "")),
-        next_of_kin_relationship=sanitize_text(data.get("nextOfKinRelationship", "")),
+        student_number=student_number,
+        next_of_kin_name=next_of_kin_name,
+        next_of_kin_phone=next_of_kin_phone,
+        next_of_kin_relationship=next_of_kin_relationship,
         status="pending",
     )
-    db.session.add(application)
-    db.session.commit()
-
-    return jsonify(application.to_dict()), 201
+    try:
+        db.session.add(application)
+        db.session.commit()
+        
+        # Log successful application creation
+        log_application_action(
+            action="created",
+            application_id=application.id,
+            user_id=user.id,
+            details={
+                "program_ids": program_ids,
+                "exam_level": exam_level,
+                "application_number": app_number
+            }
+        )
+        
+        return jsonify(application.to_dict()), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to create application: {str(e)}", exc_info=True)
+        raise ValidationError(f"Failed to save application: {str(e)}")
 
 
 @admission_bp.route("/applications/<int:app_id>/certificate", methods=["POST"])
+@handle_kiu_error
 def upload_certificate(app_id):
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        raise ValidationError(error)
 
     application = db.session.get(AdmissionApplication, app_id)
     if not application:
-        return jsonify({"error": "Not found", "message": "Application not found"}), 404
+        raise NotFoundError("Application not found")
     if application.user_id != user.id and user.role != "admin":
-        return jsonify({"error": "Forbidden", "message": "Access denied"}), 403
+        raise ValidationError("Access denied")
 
     cert_type = request.form.get("type", "olevel")
     if cert_type not in ("olevel", "alevel", "diploma", "hec"):
-        return jsonify({"error": "Validation error", "message": "type must be 'olevel', 'alevel', 'diploma', or 'hec'"}), 400
+        raise ValidationError("type must be 'olevel', 'alevel', 'diploma', or 'hec'", "type", cert_type)
 
     if "file" not in request.files:
-        return jsonify({"error": "Bad request", "message": "No file provided"}), 400
+        raise ValidationError("No file provided")
 
     file = request.files["file"]
     if not file or file.filename == "":
-        return jsonify({"error": "Bad request", "message": "Empty file"}), 400
+        raise ValidationError("Empty file")
     if not allowed_file(file.filename):
-        return jsonify({"error": "Unsupported file type", "message": "Only PDF, JPG, JPEG, PNG allowed"}), 415
+        raise ValidationError("Only PDF, JPG, JPEG, PNG allowed")
 
-    ext = file.filename.rsplit(".", 1)[1].lower()
-    unique_name = f"{app_id}_{cert_type}_{uuid.uuid4().hex[:8]}.{ext}"
-    cert_dir = os.path.join(current_app.config["UPLOAD_FOLDER"], "certificates")
-    os.makedirs(cert_dir, exist_ok=True)
-    save_path = os.path.join(cert_dir, secure_filename(unique_name))
-    file.save(save_path)
+    try:
+        ext = file.filename.rsplit(".", 1)[1].lower()
+        unique_name = f"{app_id}_{cert_type}_{uuid.uuid4().hex[:8]}.{ext}"
+        cert_dir = os.path.join(current_app.config["UPLOAD_FOLDER"], "certificates")
+        os.makedirs(cert_dir, exist_ok=True)
+        save_path = os.path.join(cert_dir, secure_filename(unique_name))
+        file.save(save_path)
 
-    url_path = f"/api/uploads/certificates/{secure_filename(unique_name)}"
-    setattr(application, f"{cert_type}_certificate_path", url_path)
-    db.session.commit()
-
-    return jsonify({
-        "message": f"{cert_type.upper()} certificate uploaded successfully",
-        "path": url_path,
-        "application": application.to_dict(),
-    }), 200
+        url_path = f"/api/uploads/certificates/{secure_filename(unique_name)}"
+        setattr(application, f"{cert_type}_certificate_path", url_path)
+        db.session.commit()
+        
+        # Log successful certificate upload
+        log_application_action(
+            action="certificate_uploaded",
+            application_id=app_id,
+            user_id=user.id,
+            details={
+                "certificate_type": cert_type,
+                "file_name": file.filename,
+                "file_size": os.path.getsize(save_path)
+            }
+        )
+        
+        return jsonify({
+            "message": f"{cert_type.upper()} certificate uploaded successfully",
+            "path": url_path,
+            "application": application.to_dict(),
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to upload certificate: {str(e)}", exc_info=True)
+        raise ValidationError(f"Failed to upload certificate: {str(e)}")
 
 
 @admission_bp.route("/applications/mine", methods=["GET"])
+@handle_kiu_error
 def get_my_application():
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        raise ValidationError(error)
     application = AdmissionApplication.query.filter_by(user_id=user.id).first()
     return jsonify({"application": application.to_dict() if application else None}), 200
 
 
 @admission_bp.route("/applications/<int:app_id>", methods=["GET"])
+@handle_kiu_error
 def get_application(app_id):
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        raise ValidationError(error)
     application = db.session.get(AdmissionApplication, app_id)
     if not application:
-        return jsonify({"error": "Not found", "message": "Application not found"}), 404
+        raise NotFoundError("Application not found")
     if application.user_id != user.id and user.role != "admin":
-        return jsonify({"error": "Forbidden"}), 403
+        raise ValidationError("Access denied")
     return jsonify(application.to_dict()), 200
 
 
 @admission_bp.route("/applications", methods=["GET"])
+@handle_kiu_error
 def list_applications():
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        raise ValidationError(error)
     if user.role != "admin":
-        return jsonify({"error": "Forbidden"}), 403
+        raise ValidationError("Access denied")
 
     page = request.args.get("page", 1, type=int)
     per_page = min(request.args.get("perPage", 20, type=int), 100)
@@ -425,22 +461,23 @@ def list_applications():
 
 
 @admission_bp.route("/applications/<int:app_id>/status", methods=["PATCH"])
+@handle_kiu_error
 def update_application_status(app_id):
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        raise ValidationError(error)
     if user.role != "admin":
-        return jsonify({"error": "Forbidden"}), 403
+        raise ValidationError("Access denied")
 
     application = db.session.get(AdmissionApplication, app_id)
     if not application:
-        return jsonify({"error": "Not found", "message": "Application not found"}), 404
+        raise NotFoundError("Application not found")
 
     data = request.get_json() or {}
     new_status = data.get("status")
     valid_statuses = ["pending", "under_review", "accepted", "rejected", "waitlisted"]
     if new_status not in valid_statuses:
-        return jsonify({"error": "Validation error", "message": f"status must be one of: {', '.join(valid_statuses)}"}), 400
+        raise ValidationError(f"status must be one of: {', '.join(valid_statuses)}", "status", new_status)
 
     application.status = new_status
     if "adminNotes" in data:
@@ -450,16 +487,37 @@ def update_application_status(app_id):
         new_program_id = data["programId"]
         prog = db.session.get(Program, new_program_id)
         if not prog:
-            return jsonify({"error": "Not found", "message": "Program not found"}), 404
+            raise NotFoundError("Program not found")
         if application.program_choices and new_program_id not in application.program_choices:
-            return jsonify({"error": "Validation error", "message": "Selected program must be one of the applicant's choices"}), 400
+            raise ValidationError("Selected program must be one of the applicant's choices")
         application.program_id = new_program_id
 
-    db.session.commit()
-    return jsonify(application.to_dict()), 200
+    try:
+        db.session.commit()
+        
+        # Log status update
+        log_application_action(
+            action="status_updated",
+            application_id=app_id,
+            user_id=user.id,
+            details={
+                "new_status": new_status,
+                "admin_notes": data.get("adminNotes", ""),
+                "program_changed": "programId" in data
+            }
+        )
+        
+        return jsonify(application.to_dict()), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to update application status: {str(e)}", exc_info=True)
+        raise ValidationError(f"Failed to update application: {str(e)}")
 
 
 @admission_bp.route("/recommend", methods=["POST"])
+@handle_kiu_error
+@validate_json_payload(required_fields=["alevelSubjects"])
 def recommend_programs():
     """
     Recommend programs based on A-Level subject combination with NCHE compliance.
@@ -467,17 +525,14 @@ def recommend_programs():
     """
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        raise ValidationError(error)
 
     data = request.get_json()
-    if not data:
-        return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
-
     alevel_subjects = data.get("alevelSubjects", [])
     campus_filter = data.get("campus")
 
     if not alevel_subjects:
-        return jsonify({"error": "Validation error", "message": "alevelSubjects is required"}), 400
+        raise ValidationError("alevelSubjects is required")
 
     principal_subjects = []
     subsidiary_subjects = []

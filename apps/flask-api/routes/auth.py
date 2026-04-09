@@ -11,6 +11,7 @@ from functools import wraps
 import jwt
 from flask import Blueprint, request, jsonify, current_app, g
 from models import db, User, OtpCode, RefreshToken
+from utils.rate_limiting import auth_rate_limit, application_rate_limit
 
 log = logging.getLogger(__name__)
 
@@ -266,6 +267,7 @@ def _create_and_dispatch_otp(user):
 # ---------------------------------------------------------------------------
 
 @auth_bp.route("/register", methods=["POST"])
+@auth_rate_limit
 def register():
     data = request.get_json()
     if not data:
@@ -414,6 +416,7 @@ def resend_otp():
 
 
 @auth_bp.route("/login", methods=["POST"])
+@auth_rate_limit
 def login():
     data = request.get_json()
     if not data:
