@@ -62,8 +62,8 @@ KIU_PROGRAMMES = [
         "duration_years": 5,
         "intake_months": [8, 1],  # Aug and Jan
         "campus": ["Main Campus (Kansanga)", "Western Campus (Ishaka)"],
-        "tuition_ugx_per_year": 6500000,
-        "tuition_usd_per_year": 1800,
+        "tuition_ugx_per_semester": 6500000,
+        "tuition_usd_per_semester": 1800,
         "nche_entry": {
             "uace_direct": {
                 "min_principal_passes": 2,
@@ -91,8 +91,8 @@ KIU_PROGRAMMES = [
         "duration_years": 4,
         "intake_months": [8, 1, 3],
         "campus": ["Main Campus (Kansanga)", "Western Campus (Ishaka)"],
-        "tuition_ugx_per_year": 3800000,
-        "tuition_usd_per_year": 1100,
+        "tuition_ugx_per_semester": 3800000,
+        "tuition_usd_per_semester": 1100,
         "nche_entry": {
             "uace_direct": {
                 "min_principal_passes": 2,
@@ -119,8 +119,8 @@ KIU_PROGRAMMES = [
         "duration_years": 4,
         "intake_months": [8, 1],
         "campus": ["Main Campus (Kansanga)"],
-        "tuition_ugx_per_year": 4200000,
-        "tuition_usd_per_year": 1200,
+        "tuition_ugx_per_semester": 4200000,
+        "tuition_usd_per_semester": 1200,
         "nche_entry": {
             "uace_direct": {
                 "min_principal_passes": 2,
@@ -147,8 +147,8 @@ KIU_PROGRAMMES = [
         "duration_years": 4,
         "intake_months": [8, 1, 3],
         "campus": ["Main Campus (Kansanga)", "Western Campus (Ishaka)"],
-        "tuition_ugx_per_year": 2800000,
-        "tuition_usd_per_year": 900,
+        "tuition_ugx_per_semester": 2800000,
+        "tuition_usd_per_semester": 900,
         "nche_entry": {
             "uace_direct": {
                 "min_principal_passes": 2,
@@ -176,8 +176,8 @@ KIU_PROGRAMMES = [
         "duration_years": 4,
         "intake_months": [8, 1],
         "campus": ["Main Campus (Kansanga)"],
-        "tuition_ugx_per_year": 3500000,
-        "tuition_usd_per_year": 1050,
+        "tuition_ugx_per_semester": 3500000,
+        "tuition_usd_per_semester": 1050,
         "nche_entry": {
             "uace_direct": {
                 "min_principal_passes": 2,
@@ -203,8 +203,8 @@ KIU_PROGRAMMES = [
         "duration_years": 4,
         "intake_months": [8, 1],
         "campus": ["Main Campus (Kansanga)"],
-        "tuition_ugx_per_year": 3500000,
-        "tuition_usd_per_year": 1050,
+        "tuition_ugx_per_semester": 3500000,
+        "tuition_usd_per_semester": 1050,
         "nche_entry": {
             "uace_direct": {
                 "min_principal_passes": 2,
@@ -231,8 +231,8 @@ KIU_PROGRAMMES = [
         "duration_years": 3,
         "intake_months": [8, 1, 3],
         "campus": ["Main Campus (Kansanga)", "Western Campus (Ishaka)"],
-        "tuition_ugx_per_year": 2600000,
-        "tuition_usd_per_year": 800,
+        "tuition_ugx_per_semester": 2600000,
+        "tuition_usd_per_semester": 800,
         "nche_entry": {
             "uace_direct": {
                 "min_principal_passes": 2,
@@ -258,8 +258,8 @@ KIU_PROGRAMMES = [
         "duration_years": 3,
         "intake_months": [8, 1, 3],
         "campus": ["Main Campus (Kansanga)", "Western Campus (Ishaka)"],
-        "tuition_ugx_per_year": 2400000,
-        "tuition_usd_per_year": 750,
+        "tuition_ugx_per_semester": 2400000,
+        "tuition_usd_per_semester": 750,
         "nche_entry": {
             "uace_direct": {
                 "min_principal_passes": 2,
@@ -286,8 +286,8 @@ KIU_PROGRAMMES = [
         "duration_years": 3,
         "intake_months": [8, 1, 3],
         "campus": ["Main Campus (Kansanga)", "Western Campus (Ishaka)"],
-        "tuition_ugx_per_year": 2200000,
-        "tuition_usd_per_year": 700,
+        "tuition_ugx_per_semester": 2200000,
+        "tuition_usd_per_semester": 700,
         "nche_entry": {
             "uace_direct": {
                 "min_principal_passes": 2,
@@ -313,8 +313,8 @@ KIU_PROGRAMMES = [
         "duration_years": 3,
         "intake_months": [8, 1, 3],
         "campus": ["Main Campus (Kansanga)", "Western Campus (Ishaka)"],
-        "tuition_ugx_per_year": 2200000,
-        "tuition_usd_per_year": 700,
+        "tuition_ugx_per_semester": 2200000,
+        "tuition_usd_per_semester": 700,
         "nche_entry": {
             "uace_direct": {
                 "min_principal_passes": 2,
@@ -341,8 +341,8 @@ KIU_PROGRAMMES = [
         "duration_years": 3,
         "intake_months": [8, 1, 3],
         "campus": ["Main Campus (Kansanga)", "Western Campus (Ishaka)"],
-        "tuition_ugx_per_year": 2000000,
-        "tuition_usd_per_year": 650,
+        "tuition_ugx_per_semester": 2000000,
+        "tuition_usd_per_semester": 650,
         "nche_entry": {
             "uace_direct": {
                 "min_principal_passes": 2,
@@ -369,8 +369,8 @@ KIU_PROGRAMMES = [
         "duration_years": 3,
         "intake_months": [8, 1, 3],
         "campus": ["Main Campus (Kansanga)", "Western Campus (Ishaka)"],
-        "tuition_ugx_per_year": 2200000,
-        "tuition_usd_per_year": 680,
+        "tuition_ugx_per_semester": 2200000,
+        "tuition_usd_per_semester": 680,
         "nche_entry": {
             "uace_direct": {
                 "min_principal_passes": 2,
@@ -397,8 +397,8 @@ KIU_PROGRAMMES = [
         "duration_years": 3,
         "intake_months": [8, 1, 3],
         "campus": ["Main Campus (Kansanga)", "Western Campus (Ishaka)"],
-        "tuition_ugx_per_year": 2000000,
-        "tuition_usd_per_year": 650,
+        "tuition_ugx_per_semester": 2000000,
+        "tuition_usd_per_semester": 650,
         "nche_entry": {
             "uace_direct": {
                 "min_principal_passes": 2,
@@ -426,8 +426,8 @@ KIU_PROGRAMMES = [
         "duration_years": 2,
         "intake_months": [8, 1],
         "campus": ["Main Campus (Kansanga)", "Western Campus (Ishaka)"],
-        "tuition_ugx_per_year": 3500000,
-        "tuition_usd_per_year": 1100,
+        "tuition_ugx_per_semester": 3500000,
+        "tuition_usd_per_semester": 1100,
         "nche_entry": {
             "bachelors_required": True,
             "min_class": "Second Class Lower",
@@ -446,8 +446,8 @@ KIU_PROGRAMMES = [
         "duration_years": 2,
         "intake_months": [8, 1],
         "campus": ["Main Campus (Kansanga)"],
-        "tuition_ugx_per_year": 3500000,
-        "tuition_usd_per_year": 1100,
+        "tuition_ugx_per_semester": 3500000,
+        "tuition_usd_per_semester": 1100,
         "nche_entry": {
             "bachelors_required": True,
             "min_class": "Second Class Lower",
@@ -847,7 +847,7 @@ def _recommend(applicant: dict) -> dict:
 
         entry = {
             **{k: prog[k] for k in ["id", "code", "name", "faculty", "level", "duration_years",
-                                     "campus", "tuition_ugx_per_year", "tuition_usd_per_year",
+                                     "campus", "tuition_ugx_per_semester", "tuition_usd_per_semester",
                                      "career_prospects", "accreditation"]},
             "next_intakes": _next_intakes(prog["intake_months"]),
             "eligibility": result,
