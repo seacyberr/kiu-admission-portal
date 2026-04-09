@@ -95,7 +95,6 @@ New types also exported: `RecommendedProgram`, `NcheCompliance`,
 - ✅ Diploma
 - ✅ Bachelors Degree
 - ✅ Masters Degree
-- ✅ Mature Age Entry
 
 ✅ **UPDATED FILES:**
 | File | Change |

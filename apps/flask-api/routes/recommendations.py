@@ -5,9 +5,13 @@ NCHE-compliant programme recommendation engine for KIU Uganda.
 
 Entry routes supported (per NCHE Uganda / KIU Senate regulations):
   1. UACE Direct Entry  – UCE ≥5 passes + UACE ≥2 principal passes (same sitting)
-  2. Diploma Entry      – Credit/Second-Class Diploma from NCHE-recognised institution
-  3. Mature Age Entry   – Age ≥25, Mature Age Entry Exam ≥50%, approved by NCHE
-  4. International      – Foreign qualifications equated by UNEB/NCHE
+  2. UCE Direct Entry   – UCE ≥5 passes for HEC/Diploma programmes
+  3. Diploma Entry      – Credit/Second-Class Diploma from NCHE-recognised institution
+  4. National Certificate – National Certificate for Diploma/Degree programmes
+  5. Bachelor's Entry   – Bachelor's degree for postgraduate programmes
+  6. Master's Entry     – Master's degree for PhD programmes
+  7. PhD Entry          – PhD applications
+  8. International      – Foreign qualifications equated by UNEB/NCHE
 
 KIU admits 3 intakes per year: August/September · December/January · March/April
 """
@@ -73,7 +77,6 @@ KIU_PROGRAMMES = [
                 "relevant_fields": ["Clinical Medicine", "Nursing", "Medical Laboratory", "Pharmacy Technology", "Radiography"],
                 "extra": "Must be registered with relevant professional council",
             },
-            "mature_age": False,  # Not eligible for MBChB
             "uace_subjects_note": "Biology and Chemistry are mandatory. Physics or Mathematics as third subject.",
         },
         "career_prospects": ["Medical Officer", "Surgeon", "Specialist Physician", "Public Health Officer"],
@@ -103,7 +106,6 @@ KIU_PROGRAMMES = [
                 "relevant_fields": ["Nursing", "Midwifery", "Clinical Medicine"],
                 "extra": "Must have ≥2 years post-registration work experience",
             },
-            "mature_age": True,
         },
         "career_prospects": ["Registered Nurse", "Nurse Manager", "Community Health Nurse", "Nurse Educator"],
         "accreditation": "NCHE, Uganda Nurses and Midwives Council",
@@ -131,7 +133,6 @@ KIU_PROGRAMMES = [
                 "min_class": "Credit",
                 "relevant_fields": ["Pharmacy Technology", "Laboratory"],
             },
-            "mature_age": True,
         },
         "career_prospects": ["Pharmacist", "Drug Inspector", "Pharmaceutical Sales", "Clinical Pharmacist"],
         "accreditation": "NCHE, Pharmacy Council of Uganda",
@@ -161,7 +162,6 @@ KIU_PROGRAMMES = [
                 "min_class": "Credit",
                 "relevant_fields": ["Law", "Business Administration", "Public Administration", "Social Sciences"],
             },
-            "mature_age": True,
         },
         "career_prospects": ["Advocate", "State Attorney", "Legal Counsel", "Magistrate", "Corporate Lawyer"],
         "accreditation": "NCHE, Law Council of Uganda",
@@ -190,7 +190,6 @@ KIU_PROGRAMMES = [
                 "min_class": "Credit",
                 "relevant_fields": ["Civil Engineering", "Construction", "Building Technology"],
             },
-            "mature_age": True,
         },
         "career_prospects": ["Civil Engineer", "Structural Engineer", "Project Manager", "Site Engineer"],
         "accreditation": "NCHE, Uganda Institution of Professional Engineers",
@@ -218,7 +217,6 @@ KIU_PROGRAMMES = [
                 "min_class": "Credit",
                 "relevant_fields": ["Electrical Engineering", "Electronics", "Telecommunications"],
             },
-            "mature_age": True,
         },
         "career_prospects": ["Electrical Engineer", "Power Systems Engineer", "Telecommunications Engineer"],
         "accreditation": "NCHE, Uganda Institution of Professional Engineers",
@@ -247,7 +245,6 @@ KIU_PROGRAMMES = [
                 "min_class": "Pass",
                 "relevant_fields": ["Computer Science", "ICT", "Information Technology", "Engineering"],
             },
-            "mature_age": True,
         },
         "career_prospects": ["Software Developer", "Systems Analyst", "Database Administrator", "Network Engineer"],
         "accreditation": "NCHE",
@@ -275,7 +272,6 @@ KIU_PROGRAMMES = [
                 "min_class": "Pass",
                 "relevant_fields": ["ICT", "Computer Science", "Business", "Engineering"],
             },
-            "mature_age": True,
         },
         "career_prospects": ["IT Manager", "Web Developer", "IT Support Specialist", "Systems Administrator"],
         "accreditation": "NCHE",
@@ -304,7 +300,6 @@ KIU_PROGRAMMES = [
                 "min_class": "Pass",
                 "relevant_fields": ["Business", "Commerce", "Accounting", "Finance", "Management"],
             },
-            "mature_age": True,
         },
         "career_prospects": ["Business Manager", "Entrepreneur", "Marketing Manager", "HR Manager"],
         "accreditation": "NCHE",
@@ -332,7 +327,6 @@ KIU_PROGRAMMES = [
                 "min_class": "Pass",
                 "relevant_fields": ["Commerce", "Business", "Accounting", "Finance"],
             },
-            "mature_age": True,
         },
         "career_prospects": ["Accountant", "Banker", "Financial Analyst", "Auditor", "Tax Consultant"],
         "accreditation": "NCHE",
@@ -362,7 +356,6 @@ KIU_PROGRAMMES = [
                 "min_class": "Pass",
                 "relevant_fields": ["Education", "Teaching", "Social Sciences"],
             },
-            "mature_age": True,
         },
         "career_prospects": ["Secondary School Teacher", "Education Officer", "Curriculum Developer"],
         "accreditation": "NCHE, National Curriculum Development Centre",
@@ -390,7 +383,6 @@ KIU_PROGRAMMES = [
                 "min_class": "Pass",
                 "relevant_fields": ["Education", "Science", "Teaching"],
             },
-            "mature_age": True,
         },
         "career_prospects": ["Science Teacher", "Education Officer", "Curriculum Specialist"],
         "accreditation": "NCHE",
@@ -420,7 +412,6 @@ KIU_PROGRAMMES = [
                 "min_class": "Pass",
                 "relevant_fields": ["Social Sciences", "Public Administration", "Sociology"],
             },
-            "mature_age": True,
         },
         "career_prospects": ["Social Worker", "Community Development Officer", "NGO Manager", "Civil Servant"],
         "accreditation": "NCHE",
@@ -485,6 +476,83 @@ UACE_SUBJECT_CATEGORIES = {
 # ---------------------------------------------------------------------------
 # Recommendation engine
 # ---------------------------------------------------------------------------
+def _score_uce_programme(programme: dict, applicant: dict) -> dict:
+    """Evaluate O-Level/HEC/National Certificate entry route."""
+    uce_passes = applicant.get("uce_passes", 0)
+    uce_subjects = applicant.get("uce_subjects", [])
+    
+    # Check minimum UCE passes
+    if uce_passes < 5:
+        return {
+            "eligible": False,
+            "route": "uce_direct",
+            "strong_match": False,
+            "reasons_fail": ["Need at least 5 UCE passes"],
+            "reasons_pass": [],
+            "reasons_warn": []
+        }
+    
+    # Check HEC eligibility
+    hec_entry = programme["nche_entry"].get("hec_entry", {})
+    if hec_entry.get("eligible"):
+        return {
+            "eligible": True,
+            "route": "uce_direct",
+            "strong_match": True,
+            "reasons_pass": ["UCE passes meet HEC requirements ✓"],
+            "reasons_fail": [],
+            "reasons_warn": []
+        }
+    
+    # Check diploma eligibility
+    diploma_entry = programme["nche_entry"].get("diploma_entry", {})
+    if diploma_entry.get("eligible"):
+        return {
+            "eligible": True,
+            "route": "uce_direct",
+            "strong_match": True,
+            "reasons_pass": ["UCE passes meet Diploma entry requirements ✓"],
+            "reasons_fail": [],
+            "reasons_warn": []
+        }
+    
+    return {
+        "eligible": False,
+        "route": "uce_direct",
+        "strong_match": False,
+        "reasons_fail": ["Programme does not accept UCE entry"],
+        "reasons_pass": [],
+        "reasons_warn": []
+    }
+
+
+def _score_national_cert_programme(programme: dict, applicant: dict) -> dict:
+    """Evaluate National Certificate entry route."""
+    cert_class = applicant.get("national_cert_class", "")
+    cert_field = applicant.get("national_cert_field", "")
+    
+    # Check diploma eligibility (National Cert usually leads to Diploma)
+    diploma_entry = programme["nche_entry"].get("diploma_entry", {})
+    if diploma_entry.get("eligible"):
+        return {
+            "eligible": True,
+            "route": "national_cert",
+            "strong_match": True,
+            "reasons_pass": ["National Certificate meets entry requirements ✓"],
+            "reasons_fail": [],
+            "reasons_warn": []
+        }
+    
+    return {
+        "eligible": False,
+        "route": "national_cert",
+        "strong_match": False,
+        "reasons_fail": ["Programme does not accept National Certificate entry"],
+        "reasons_pass": [],
+        "reasons_warn": []
+    }
+
+
 def _score_uace_programme(programme: dict, applicant: dict) -> dict:
     """
     Returns eligibility dict for a single programme based on applicant UACE data.
@@ -764,22 +832,18 @@ def _recommend(applicant: dict) -> dict:
 
         if entry_route == "uace_direct":
             result = _score_uace_programme(prog, applicant)
+        elif entry_route == "uce_direct":
+            result = _score_uce_programme(prog, applicant)
         elif entry_route == "diploma":
             result = _score_diploma_programme(prog, applicant)
+        elif entry_route == "national_cert":
+            result = _score_national_cert_programme(prog, applicant)
         elif entry_route == "bachelors":
             result = _score_bachelors_programme(prog, applicant)
-        elif entry_route == "mature_age":
-            mature_eligible = prog["nche_entry"].get("mature_age", False)
-            result = {
-                "eligible": mature_eligible,
-                "route": "mature_age",
-                "strong_match": mature_eligible,
-                "reasons_pass": ["Mature age entry accepted ✓"] if mature_eligible else [],
-                "reasons_fail": [] if mature_eligible else ["Programme does not accept mature age entry"],
-                "reasons_warn": ["Must have passed NCHE Mature Age Entry Exam with ≥50%"] if mature_eligible else [],
-            }
-        else:
-            continue
+        elif entry_route == "masters":
+            result = _score_masters_programme(prog, applicant)
+        elif entry_route == "phd":
+            result = _score_phd_programme(prog, applicant)
 
         entry = {
             **{k: prog[k] for k in ["id", "code", "name", "faculty", "level", "duration_years",
@@ -834,7 +898,7 @@ def get_recommendations(user):
     Get programme recommendations for the authenticated applicant.
 
     Body (JSON):
-      entry_route: "uace_direct" | "diploma" | "mature_age" | "bachelors"
+      entry_route: "uace_direct" | "diploma" | "bachelors"
 
       For uace_direct:
         uace_subjects: ["Mathematics", "Physics", "Chemistry"]
@@ -853,14 +917,11 @@ def get_recommendations(user):
         bachelors_field: "Business Administration"
         work_experience_years: 3
 
-      For mature_age:
-        age: 27
-        mature_age_score: 65  # percentage in NCHE exam
     """
     data = request.get_json(silent=True) or {}
 
     # Validate entry route
-    valid_routes = ["uace_direct", "diploma", "mature_age", "bachelors", "international"]
+    valid_routes = ["uace_direct", "uce_direct", "diploma", "national_cert", "bachelors", "masters", "phd", "international"]
     entry_route = data.get("entry_route", "uace_direct")
     if entry_route not in valid_routes:
         return jsonify({"error": f"Invalid entry_route. Must be one of: {', '.join(valid_routes)}"}), 400
@@ -874,7 +935,7 @@ def get_recommendations(user):
                 "code": "UCE_INSUFFICIENT",
                 "uce_passes_provided": uce_passes,
                 "uce_passes_required": 5,
-                "alternative": "Consider Mature Age Entry, Diploma Entry, or upgrade your qualifications.",
+                "alternative": "Consider Diploma Entry or upgrade your qualifications.",
             }), 422
 
         principal_passes = int(data.get("uace_principal_passes", 0))
@@ -884,20 +945,11 @@ def get_recommendations(user):
                 "code": "UACE_INSUFFICIENT",
                 "principal_passes_provided": principal_passes,
                 "principal_passes_required": 2,
-                "alternative": "Consider Diploma Entry or Mature Age Entry if you have 1 principal pass.",
+                "alternative": "Consider Diploma Entry if you have 1 principal pass.",
                 "available_programmes": [
                     "Diploma programmes (1 principal pass + 2 subsidiaries)",
                     "Higher Education Certificate (HEC) bridging programme",
                 ],
-            }), 422
-
-    # Mature age validation
-    if entry_route == "mature_age":
-        age = int(data.get("age", 0))
-        if age < 25:
-            return jsonify({
-                "error": "Mature Age Entry requires applicants to be at least 25 years old (NCHE regulation).",
-                "code": "AGE_INSUFFICIENT",
             }), 422
 
     result = _recommend(data)

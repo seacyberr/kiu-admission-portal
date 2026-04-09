@@ -34,5 +34,4 @@ Bachelor's Degree
 ## NCHE Compliance Notes
 1. All qualifications must be verified by Uganda National Examinations Board (UNEB)
 2. Subject relevance requirements vary per academic program
-3. Mature age entry is available for candidates above 25 years with appropriate assessment
 4. Equivalent foreign qualifications must be verified by NCHE

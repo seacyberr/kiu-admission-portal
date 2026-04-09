@@ -24,7 +24,6 @@ Monorepo for the Kampala International University admissions and careers portal:
 | **Bachelor's Degree** | Postgraduate entry |
 | **Master's Degree** | PhD & advanced programmes |
 
-> Mature Age Entry has been **removed** per requirements.
 
 ## Prerequisites
 

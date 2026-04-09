@@ -2,7 +2,7 @@
  * apps/kiu-portal/src/pages/applicant/RecommendationsPage.tsx
  *
  * NCHE-compliant programme recommendation engine UI.
- * Entry routes: UACE Direct | Diploma | Mature Age | Postgraduate (Bachelors)
+ * Entry routes: UACE Direct | Diploma | Postgraduate (Bachelors)
  *
  * KIU admits 3 intakes: Aug/Sep · Dec/Jan · Mar/Apr
  */
