@@ -12,7 +12,7 @@ Direct application flow:
 from flask import Blueprint, request, jsonify
 import logging
 
-recommendations_bp = Blueprint("simple_recommendations", __name__)
+simple_recommendations_bp = Blueprint("simple_recommendations", __name__)
 log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------

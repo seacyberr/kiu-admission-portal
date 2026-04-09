@@ -15,7 +15,10 @@ import ResetPassword from "@/pages/auth/reset-password";
 import ApplicantDashboard from "@/pages/applicant/dashboard";
 import ApplyForm from "@/pages/applicant/apply";
 import NewApplicant from "@/pages/applicant/new-applicant";
-import Recommend from "@/pages/applicant/recommend";
+import RecommendRedirect from "@/pages/applicant/recommend-redirect";
+import NCHERecommend from "@/pages/applicant/nche-recommend";
+import SimpleRecommend from "@/pages/applicant/recommend-simple";
+import RealisticRecommend from "@/pages/applicant/realistic-recommend";
 import ApplicationStart from "@/pages/applicant/application-start";
 import CertificateDetails from "@/pages/applicant/certificate-details";
 import PersonalInfo from "@/pages/applicant/personal-info";
@@ -60,74 +63,74 @@ function Router() {
           )}
         </Route>
 
-        {/* ── UNIFIED RECOMMENDATION TOOL (ALL LEVELS) ── */}
+        {/* LEGACY RECOMMENDATION ROUTES - Redirect to NCHE System */}
         <Route path="/recommend">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <Recommend />
+              <RecommendRedirect />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/o-level">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <Recommend />
+              <RecommendRedirect />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/a-level">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <Recommend />
+              <RecommendRedirect />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/diploma">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <Recommend />
+              <RecommendRedirect />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/hec">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <Recommend />
+              <RecommendRedirect />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/national-cert">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <Recommend />
+              <RecommendRedirect />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/bachelors">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <Recommend />
+              <RecommendRedirect />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/masters">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <Recommend />
+              <RecommendRedirect />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/phd">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <Recommend />
+              <RecommendRedirect />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/tool">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <Recommend />
+              <RecommendRedirect />
             </RoleGuard>
           )}
         </Route>
@@ -168,6 +171,31 @@ function Router() {
           {() => (
             <RoleGuard roles={["applicant"]}>
               <ApplyForm target="phd" />
+            </RoleGuard>
+          )}
+        </Route>
+
+        {/* NCHE-Based Recommendation System (Primary) */}
+        <Route path="/nche-recommend">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <NCHERecommend />
+            </RoleGuard>
+          )}
+        </Route>
+        
+        {/* Alternative Recommendation Systems */}
+        <Route path="/recommend-simple">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <SimpleRecommend />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/realistic-recommend">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <RealisticRecommend />
             </RoleGuard>
           )}
         </Route>

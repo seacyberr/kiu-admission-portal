@@ -79,29 +79,72 @@ Results: Admission chances, competition levels, Apply Now
 
 #### 2.3 NCHE Recommendation Flow (Primary)
 ```
-NCHE Assessment (/nche-recommend)
+NCHE Assessment (/nche-recommend) - PRIMARY PATH
     |
     v
 Step 1: Qualification Selection
+    |   - UACE (A-Level) - Direct university admission
+    |   - Diploma/Certificate - NCHE recognized diploma
+    |   - Bachelor's Degree - Postgraduate programmes
     |
     v
-Step 2: UACE Entry (if selected)
-    |   - Select Subjects (max 5)
-    |   - Enter Grades (A-F scale)
-    |   - Calculate NCHE Points
+Step 2: UACE Entry (if UACE selected)
+    |   - Select Subjects (max 5 from NCHE UACE subjects)
+    |   - Enter Grades (A=6, B=5, C=4, D=3, E=2, O=1, F=0)
+    |   - Calculate NCHE Points automatically
+    |   - Count Principal Passes (grades A-E)
     |
     v
 Step 3: UCE Entry (if UACE selected)
-    |   - Select Division (1-8)
-    |   - Select Credits (optional)
+    |   - Select Division (Division 1-8)
+    |   - Select Credits (Mathematics, English, Sciences, etc.)
     |
     v
 Step 4: Diploma/Bachelor's Entry (if selected)
-    |   - Diploma Type & Classification
-    |   - OR Bachelor's GPA & Experience
+    |   - Diploma Type & Classification (NCHE recognized)
+    |   - OR Bachelor's GPA & Work Experience
     |
     v
-Results: NCHE compliance, eligibility, direct applications
+Results: NCHE compliance, eligibility, direct applications (/apply/{programme_id})
+```
+
+#### 2.4 Alternative Recommendation Flows
+```
+Simple Recommendations (/recommend-simple)
+    |
+    v
+Step 1: Select Interests (Health, Engineering, Business, etc.)
+    |
+    v
+Step 2: Select Subjects (Mathematics, Physics, Biology, etc.)
+    |
+    v
+Step 3: Education Level (O-Level, A-Level, Diploma, Bachelor's)
+    |
+    v
+Results: Match scores with Apply Now buttons
+
+Realistic Recommendations (/realistic-recommend)
+    |
+    v
+Step 1: Qualification Type (UACE/Diploma/Bachelor's)
+    |
+    v
+Step 2: UACE Results (Subjects, Grades, Points Calculation)
+    |
+    v
+Step 3: UCE Results (Division, Credits)
+    |
+    v
+Results: Admission chances, competition levels, Apply Now
+```
+
+#### 2.5 Legacy Route Redirects
+```
+All /recommend/* routes -> Redirect to /nche-recommend
+|
+v
+Automatic redirect to NCHE Assessment System
 ```
 
 ### 3. Application Phase

@@ -15,7 +15,7 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Tuple
 
-recommendations_bp = Blueprint("nche_recommendations", __name__)
+recommendations_bp = Blueprint("recommendations", __name__)
 log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
