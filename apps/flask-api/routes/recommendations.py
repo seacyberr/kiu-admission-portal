@@ -446,8 +446,8 @@ KIU_PROGRAMMES = [
         "duration_years": 2,
         "intake_months": [8, 1],
         "campus": ["Main Campus (Kansanga)"],
-        "tuition_ugx_per_year": 3000000,
-        "tuition_usd_per_year": 950,
+        "tuition_ugx_per_year": 3500000,
+        "tuition_usd_per_year": 1100,
         "nche_entry": {
             "bachelors_required": True,
             "min_class": "Second Class Lower",

@@ -96,8 +96,8 @@ class Program(db.Model):
     min_alevel_points = db.Column(db.Integer)
     available_slots = db.Column(db.Integer, default=100)
     campus = db.Column(db.String(50), nullable=False, default="kampala")  # 'kampala' or 'western'
-    fees_local = db.Column(db.Integer)  # Tuition fees for local/East African students (UGX)
-    fees_international = db.Column(db.Integer)  # Tuition fees for international students (USD)
+    fees_local_per_semester = db.Column(db.Integer)  # Tuition fees per semester for local/East African students (UGX)
+    fees_international_per_semester = db.Column(db.Integer)  # Tuition fees per semester for international students (USD)
     functional_fees_local = db.Column(db.Integer)  # Functional fees for local students (UGX)
     functional_fees_international = db.Column(db.Integer)  # Functional fees for international students (USD)
 
@@ -112,9 +112,9 @@ class Program(db.Model):
             is_local = nationality.lower().strip() in ea_countries
         
         # Calculate fees based on nationality
-        tuition_fees = self.fees_local if is_local else self.fees_international
+        tuition_fees_per_semester = self.fees_local_per_semester if is_local else self.fees_international_per_semester
         functional_fees = self.functional_fees_local if is_local else self.functional_fees_international
-        total_fees = (tuition_fees or 0) + (functional_fees or 0)
+        total_fees_per_semester = (tuition_fees_per_semester or 0) + (functional_fees or 0)
         
         return {
             "id": self.id,
@@ -130,13 +130,13 @@ class Program(db.Model):
             "minAlevelPoints": self.min_alevel_points,
             "availableSlots": self.available_slots,
             "campus": self.campus,
-            "feesLocal": self.fees_local,
-            "feesInternational": self.fees_international,
+            "feesLocalPerSemester": self.fees_local_per_semester,
+            "feesInternationalPerSemester": self.fees_international_per_semester,
             "functionalFeesLocal": self.functional_fees_local,
             "functionalFeesInternational": self.functional_fees_international,
-            "tuitionFees": tuition_fees,
+            "tuitionFeesPerSemester": tuition_fees_per_semester,
             "functionalFees": functional_fees,
-            "totalFees": total_fees,
+            "totalFeesPerSemester": total_fees_per_semester,
             "feesCurrency": "UGX" if is_local else "USD",
         }
 
