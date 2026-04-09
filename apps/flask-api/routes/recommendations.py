@@ -830,14 +830,16 @@ def _recommend(applicant: dict) -> dict:
         if prog["level"] == "undergraduate" and entry_route == "bachelors":
             continue
 
-        if entry_route == "uace_direct":
+        if entry_route == "uce_direct":
             result = _score_uace_programme(prog, applicant)
-        elif entry_route == "uce_direct":
-            result = _score_uce_programme(prog, applicant)
-        elif entry_route == "diploma":
-            result = _score_diploma_programme(prog, applicant)
         elif entry_route == "national_cert":
             result = _score_national_cert_programme(prog, applicant)
+        elif entry_route == "uace_direct":
+            result = _score_uace_programme(prog, applicant)
+        elif entry_route == "hec":
+            result = _score_hec_programme(prog, applicant)
+        elif entry_route == "diploma":
+            result = _score_diploma_programme(prog, applicant)
         elif entry_route == "bachelors":
             result = _score_bachelors_programme(prog, applicant)
         elif entry_route == "masters":
@@ -921,7 +923,7 @@ def get_recommendations(user):
     data = request.get_json(silent=True) or {}
 
     # Validate entry route
-    valid_routes = ["uace_direct", "uce_direct", "diploma", "national_cert", "bachelors", "masters", "phd", "international"]
+    valid_routes = ["uce_direct", "national_cert", "uace_direct", "hec", "diploma", "bachelors", "masters", "phd", "international"]
     entry_route = data.get("entry_route", "uace_direct")
     if entry_route not in valid_routes:
         return jsonify({"error": f"Invalid entry_route. Must be one of: {', '.join(valid_routes)}"}), 400
