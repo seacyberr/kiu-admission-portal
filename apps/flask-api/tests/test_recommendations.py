@@ -67,14 +67,14 @@ SAMPLE_MASTERS = {
     "code": "MTEST",
     "name": "Test Masters Programme",
     "faculty": "Test Faculty",
-    "level": "postgraduate",
+    "level": "masters",
     "duration_years": 2,
     "intake_months": [8, 1],
     "campus": ["Test Campus"],
     "tuition_ugx_per_semester": 3500000,
     "tuition_usd_per_semester": 1000,
     "nche_entry": {
-        "masters_required": True,
+        "bachelors_required": True,
         "min_class": "Pass",
     }
 }

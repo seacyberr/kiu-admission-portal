@@ -505,7 +505,7 @@ KIU_PROGRAMMES = [
         "code": "MBA",
         "name": "Master of Business Administration",
         "faculty": "Faculty of Business and Management",
-        "level": "postgraduate",
+        "level": "masters",
         "duration_years": 2,
         "intake_months": [8, 1],
         "campus": ["Main Campus (Kansanga)", "Western Campus (Ishaka)"],
@@ -525,7 +525,7 @@ KIU_PROGRAMMES = [
         "code": "MPhil",
         "name": "Master of Philosophy (Research)",
         "faculty": "School of Postgraduate Studies",
-        "level": "postgraduate",
+        "level": "masters",
         "duration_years": 2,
         "intake_months": [8, 1],
         "campus": ["Main Campus (Kansanga)"],
@@ -834,15 +834,15 @@ def _score_diploma_programme(programme: dict, applicant: dict) -> dict:
 
 
 def _score_masters_programme(programme: dict, applicant: dict) -> dict:
-    """Evaluate postgraduate entry (masters required)."""
+    """Evaluate masters entry (bachelors required)."""
     pg_entry = programme["nche_entry"]
-    if not pg_entry.get("masters_required"):
+    if programme["level"] != "masters":
         return {
             "eligible": False, 
             "route": "masters", 
             "strong_match": False,
             "reasons_pass": [],
-            "reasons_fail": ["Not a postgraduate programme"],
+            "reasons_fail": ["Not a masters programme"],
             "reasons_warn": []
         }
 
@@ -936,7 +936,7 @@ def _score_phd_programme(programme: dict, applicant: dict) -> dict:
 
 
 def _score_bachelors_programme(programme: dict, applicant: dict) -> dict:
-    """Evaluate postgraduate entry (bachelors required)."""
+    """Evaluate postgraduate entry (bachelors required for masters/phd)."""
     pg_entry = programme["nche_entry"]
     if not pg_entry.get("bachelors_required"):
         return {
@@ -944,7 +944,7 @@ def _score_bachelors_programme(programme: dict, applicant: dict) -> dict:
             "route": "bachelors", 
             "strong_match": False,
             "reasons_pass": [],
-            "reasons_fail": ["Not a postgraduate programme"],
+            "reasons_fail": ["Programme does not accept bachelor's degree entry"],
             "reasons_warn": []
         }
 
@@ -1017,10 +1017,14 @@ def _recommend(applicant: dict) -> dict:
     not_eligible = []
 
     for prog in _get_programmes():
-        # Skip postgraduate if not using bachelors route
-        if prog["level"] == "postgraduate" and entry_route != "bachelors":
+        # Skip masters if not using appropriate routes
+        if prog["level"] == "masters" and entry_route not in ["bachelors", "masters"]:
             continue
-        if prog["level"] == "undergraduate" and entry_route == "bachelors":
+        # Skip postgraduate if not using postgraduate routes (phd)
+        if prog["level"] == "postgraduate" and entry_route not in ["phd"]:
+            continue
+        # Skip undergraduate if using postgraduate routes
+        if prog["level"] == "undergraduate" and entry_route in ["masters", "phd"]:
             continue
 
         if entry_route == "uce_direct":
