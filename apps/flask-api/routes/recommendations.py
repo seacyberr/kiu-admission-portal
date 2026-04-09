@@ -17,11 +17,88 @@ KIU admits 3 intakes per year: August/September · December/January · March/Apr
 """
 
 from flask import Blueprint, request, jsonify
-from functools import wraps
-import jwt, os
-from datetime import datetime
+from functools import wraps, lru_cache
+import jwt, os, sys, re
+import logging
+from datetime import datetime, timedelta
+from collections import defaultdict
+import time
 
 recommendations_bp = Blueprint("recommendations", __name__)
+log = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Monitoring and alerting configuration
+# ---------------------------------------------------------------------------
+def _setup_monitoring():
+    """Configure monitoring and alerting"""
+    # Set up log levels for different environments
+    if os.environ.get("FLASK_ENV", "development") == "production":
+        try:
+            logging.basicConfig(
+                level=logging.INFO,
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                handlers=[
+                    logging.StreamHandler(),
+                    logging.FileHandler('/var/log/kiu-recommendations.log')
+                ]
+            )
+        except (OSError, IOError) as e:
+            # Fallback to console logging if file logging fails
+            logging.basicConfig(
+                level=logging.INFO,
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            )
+            log.warning(f"File logging failed, using console: {e}")
+    else:
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+
+# Initialize monitoring
+_setup_monitoring()
+
+# ---------------------------------------------------------------------------
+# Rate limiting for API protection
+# ---------------------------------------------------------------------------
+_rate_limit_store = defaultdict(list)
+
+def _get_client_ip():
+    """Get client IP for rate limiting"""
+    return request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', '127.0.0.1'))
+
+def _is_rate_limited(ip, limit=10, window=300):
+    """Check if client has exceeded rate limit"""
+    now = datetime.utcnow()
+    cutoff = now - timedelta(seconds=window)
+    
+    # Clean old entries
+    _rate_limit_store[ip] = [req_time for req_time in _rate_limit_store[ip] if req_time > cutoff]
+    
+    # Check current count
+    if len(_rate_limit_store[ip]) >= limit:
+        return True
+    
+    _rate_limit_store[ip].append(now)
+    return False
+
+def rate_limit(limit=10, window=300):
+    """Rate limiting decorator"""
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            ip = _get_client_ip()
+            if _is_rate_limited(ip, limit, window):
+                log.warning(f"Rate limit exceeded for IP: {ip}")
+                return jsonify({
+                    "error": "Rate limit exceeded",
+                    "message": f"Too many requests. Maximum {limit} requests per {window} seconds.",
+                    "retry_after": window
+                }), 429
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
 
 # ---------------------------------------------------------------------------
 # Auth helper (re-use your existing decorator if available; this is a fallback)
@@ -35,9 +112,11 @@ def _get_user_from_cookie():
         if not secret:
             raise ValueError("JWT secret not configured")
         return jwt.decode(token, secret, algorithms=["HS256"])
-    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, jwt.InvalidSignatureError):
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, jwt.InvalidSignatureError) as e:
+        log.warning(f"JWT authentication failed: {type(e).__name__}")
         return None
-    except (jwt.DecodeError, ValueError):
+    except (jwt.DecodeError, ValueError) as e:
+        log.error(f"JWT decode error: {type(e).__name__}: {e}")
         return None
 
 
@@ -630,8 +709,17 @@ def _score_uace_programme(programme: dict, applicant: dict) -> dict:
         }
 
     applicant_subjects = {s.strip() for s in applicant.get("uace_subjects", [])}
-    applicant_principal_count = int(applicant.get("uace_principal_passes", 0))
-    applicant_points = int(applicant.get("uace_points", 0))
+    try:
+        applicant_principal_count = int(applicant.get("uace_principal_passes", 0))
+    except (ValueError, TypeError):
+        log.warning(f"Invalid uace_principal_passes value: {applicant.get('uace_principal_passes')}")
+        applicant_principal_count = 0
+    
+    try:
+        applicant_points = int(applicant.get("uace_points", 0))
+    except (ValueError, TypeError):
+        log.warning(f"Invalid uace_points value: {applicant.get('uace_points')}")
+        applicant_points = 0
     applicant_uace_year = applicant.get("uace_year")
 
     reasons_fail = []
@@ -707,15 +795,15 @@ def _score_diploma_programme(programme: dict, applicant: dict) -> dict:
     class_hierarchy = ["Pass", "Credit", "Distinction", "Second Class Lower", "Second Class Upper", "First Class"]
 
     if applicant_diploma_class:
-        try:
+        if applicant_diploma_class in class_hierarchy:
             applicant_level = class_hierarchy.index(applicant_diploma_class)
             required_level = class_hierarchy.index(required_class) if required_class in class_hierarchy else 0
             if applicant_level < required_level:
                 reasons_fail.append(f"Minimum {required_class} Diploma required; you have {applicant_diploma_class}")
             else:
                 reasons_pass.append(f"Diploma class: {applicant_diploma_class} ✓")
-        except ValueError:
-            reasons_pass.append(f"Diploma class submitted ({applicant_diploma_class})")
+        else:
+            reasons_fail.append(f"Invalid diploma class: {applicant_diploma_class}")
 
     relevant_fields = diploma_entry.get("relevant_fields", [])
     if applicant_diploma_field and relevant_fields:
@@ -778,7 +866,11 @@ def _score_masters_programme(programme: dict, applicant: dict) -> dict:
             reasons_pass.append(f"Degree class submitted ({applicant_degree_class})")
 
     work_exp = pg_entry.get("work_experience_years", 0)
-    applicant_work_years = int(applicant.get("work_experience_years", 0))
+    try:
+        applicant_work_years = int(applicant.get("work_experience_years", 0))
+    except (ValueError, TypeError):
+        log.warning(f"Invalid work_experience_years value: {applicant.get('work_experience_years')}")
+        applicant_work_years = 0
     if work_exp > 0:
         if applicant_work_years < work_exp:
             reasons_warn.append(f"Recommended {work_exp}+ years work experience; you have {applicant_work_years}")
@@ -876,7 +968,11 @@ def _score_bachelors_programme(programme: dict, applicant: dict) -> dict:
             reasons_pass.append(f"Degree class submitted ({applicant_degree_class})")
 
     work_exp = pg_entry.get("work_experience_years", 0)
-    applicant_work_years = int(applicant.get("work_experience_years", 0))
+    try:
+        applicant_work_years = int(applicant.get("work_experience_years", 0))
+    except (ValueError, TypeError):
+        log.warning(f"Invalid work_experience_years value: {applicant.get('work_experience_years')}")
+        applicant_work_years = 0
     if work_exp > 0:
         if applicant_work_years < work_exp:
             reasons_warn.append(f"Recommended {work_exp}+ years work experience; you have {applicant_work_years}")
@@ -909,13 +1005,18 @@ def _next_intakes(intake_months: list) -> list:
     return result[:2]  # Show next 2 upcoming intakes
 
 
+@lru_cache(maxsize=128)  # Cache 128 items (default timeout)
+def _get_programmes():
+    """Get programmes with caching"""
+    return KIU_PROGRAMMES
+
 def _recommend(applicant: dict) -> dict:
     entry_route = applicant.get("entry_route", "uace_direct")
     recommended = []
     partially_eligible = []
     not_eligible = []
 
-    for prog in KIU_PROGRAMMES:
+    for prog in _get_programmes():
         # Skip postgraduate if not using bachelors route
         if prog["level"] == "postgraduate" and entry_route != "bachelors":
             continue
@@ -986,6 +1087,7 @@ def _recommend(applicant: dict) -> dict:
 # Routes
 # ---------------------------------------------------------------------------
 @recommendations_bp.route("/v1/recommendations", methods=["POST"])
+@rate_limit(limit=10, window=300)
 @login_required
 def get_recommendations(user):
     """
@@ -1013,6 +1115,10 @@ def get_recommendations(user):
 
     """
     data = request.get_json(silent=True) or {}
+    
+    # Input validation
+    if not data:
+        return jsonify({"error": "Invalid JSON data"}), 400
 
     # Validate entry route
     valid_routes = ["uce_direct", "national_cert", "uace_direct", "hec", "diploma", "bachelors", "masters", "phd", "international"]
@@ -1064,7 +1170,7 @@ def list_programmes():
     faculty_filter = request.args.get("faculty", "").lower()
     level_filter = request.args.get("level", "").lower()
 
-    progs = KIU_PROGRAMMES
+    progs = _get_programmes()
     if faculty_filter:
         progs = [p for p in progs if faculty_filter in p["faculty"].lower()]
     if level_filter:
@@ -1082,14 +1188,26 @@ def list_programmes():
 
 
 @recommendations_bp.route("/v1/recommendations/check-eligibility", methods=["POST"])
+@rate_limit(limit=20, window=300)
 def check_eligibility():
     """
     Quick NCHE eligibility check — no auth required.
     Used on the public-facing 'Am I eligible?' tool.
     """
     data = request.get_json(silent=True) or {}
+    
+    # Input validation
+    if not data:
+        return jsonify({"error": "Invalid JSON data"}), 400
+    
     programme_id = data.get("programme_id")
+    if not programme_id or not isinstance(programme_id, str):
+        return jsonify({"error": "programme_id is required and must be a string"}), 400
+    
     entry_route = data.get("entry_route", "uace_direct")
+    valid_routes = ["uce_direct", "national_cert", "uace_direct", "hec", "diploma", "bachelors", "masters", "phd", "international"]
+    if entry_route not in valid_routes:
+        return jsonify({"error": f"Invalid entry_route. Must be one of: {', '.join(valid_routes)}"}), 400
 
     programme = next((p for p in KIU_PROGRAMMES if p["id"] == programme_id), None)
     if not programme:
