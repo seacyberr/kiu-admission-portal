@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, XCircle, AlertTriangle, Award, BookOpen, Users, Target, Shield, FileText } from "lucide-react";
+import { CheckCircle, XCircle, AlertTriangle, Award, Users, Target, Shield, Clock } from "lucide-react";
 
 interface NCHESubject {
   name: string;
@@ -106,12 +106,6 @@ const NCHE_UACE_SUBJECTS = [
   "Power and Energy", "Electronics"
 ];
 
-// NCHE UACE Subsidiary Subjects
-const NCHE_UACE_SUBSIDIARY_SUBJECTS = [
-  "General Paper",
-  "Subsidiary Mathematics",
-  "Subsidiary ICT"
-];
 
 // NCHE UACE Grades (UNEB grading system)
 const NCHE_UACE_GRADES = ["A", "B", "C", "D", "E", "O", "F"];
@@ -216,14 +210,6 @@ export default function NCHERecommendationsPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const fmtUGX = (amount: number) => {
-    return new Intl.NumberFormat("en-UG", {
-      style: "currency",
-      currency: "UGX",
-      minimumFractionDigits: 0,
-    }).format(amount);
   };
 
   const getAdmissionCategoryColor = (category: string) => {
@@ -640,7 +626,7 @@ export default function NCHERecommendationsPage() {
                       {programme.nche_assessment?.admission_category}
                     </Badge>
                     <Badge variant="outline" className="text-xs">
-                      {programme.nche_category.replace("_", " ").title()}
+                      {programme.nche_category.replace("_", " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
                     </Badge>
                   </div>
                 </div>
