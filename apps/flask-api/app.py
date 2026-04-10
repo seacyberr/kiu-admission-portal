@@ -127,9 +127,9 @@ def create_app():
     # Warm up cache on startup
     try:
         warm_cache()
-        logger.info("Cache warm-up completed successfully")
+        log.info("Cache warm-up completed successfully")
     except Exception as e:
-        logger.warning(f"Cache warm-up failed: {e}")
+        log.warning(f"Cache warm-up failed: {e}")
 
     # Request middleware
     @app.before_request

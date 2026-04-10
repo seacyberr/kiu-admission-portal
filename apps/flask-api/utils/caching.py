@@ -425,8 +425,8 @@ class CacheMiddleware:
     
     def init_app(self, app):
         """Initialize cache middleware"""
-        app.before_request_funcs.append(self.before_request)
-        app.after_request_funcs.append(self.after_request)
+        app.before_request(self.before_request)
+        app.after_request(self.after_request)
     
     def before_request(self):
         """Add cache information to request context"""
