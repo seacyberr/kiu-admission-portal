@@ -57,13 +57,57 @@ const UGANDA_DISTRICTS = [
 
 // ── UNEB Subject lists ────────────────────────────────────────────────────────
 
+// Complete UNEB UCE (O-Level) Subjects - All 28 subjects
 const OLEVEL_SUBJECTS = [
-  "English Language", "Mathematics", "Physics", "Chemistry", "Biology",
-  "Geography", "History", "Christian Religious Education (CRE)",
-  "Islamic Religious Education (IRE)", "Fine Art", "Music",
-  "Entrepreneurship Education", "Computer Studies", "Agriculture",
-  "Home Economics", "Commerce", "French", "Kiswahili",
-  "Literature in English", "Technical Drawing", "Physical Education",
+  // Compulsory / Core
+  "English Language",
+  "Mathematics",
+  // Sciences
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "Agriculture",
+  "General Science",
+  // Humanities & Social Studies
+  "History",
+  "Geography",
+  "Political Education",
+  "Economics",
+  // Languages
+  "Literature in English",
+  "French",
+  "German",
+  "Latin",
+  "Kiswahili",
+  "Arabic",
+  "Luganda",
+  // Religious Studies
+  "Christian Religious Education (CRE)",
+  "Islamic Religious Education (IRE)",
+  "Divinity",
+  // Technical & Creative
+  "Technical Drawing",
+  "Metalwork",
+  "Woodwork",
+  "Building Construction",
+  "Electricity & Electronics",
+  "Power & Energy",
+  "Fine Art",
+  "Music",
+  "Dance",
+  "Drama",
+  "Physical Education",
+  // Business & Technology
+  "Commerce",
+  "Entrepreneurship Education",
+  "Principles of Accounts",
+  "Computer Studies",
+  "Information & Communication Technology (ICT)",
+  // Home Economics
+  "Home Economics",
+  "Food & Nutrition",
+  "Clothing & Textiles",
+  // Additional Mathematics
   "Additional Mathematics",
 ];
 
@@ -94,11 +138,23 @@ const OLEVEL_GRADES_NEW = [
 ];
 
 const ALEVEL_PRINCIPAL_SUBJECTS = [
-  "Mathematics", "Physics", "Chemistry", "Biology", "Geography",
-  "History", "Literature in English", "Economics",
-  "Entrepreneurship Education", "Art & Design", "Technical Drawing",
+  // Sciences
+  "Mathematics", "Physics", "Chemistry", "Biology", "Agriculture",
+  "Technical Drawing", "Foods and Nutrition",
+  // Arts & Humanities
+  "History", "Geography", "Economics", "Entrepreneurship Education",
+  "Art and Design", "Fine Art", "Music", "Drama", "Performing Arts",
+  // Languages
+  "Literature in English", "Luganda", "French", "German", "Arabic",
+  "Latin", "Kiswahili",
+  // Religious Studies
   "Christian Religious Education (CRE)", "Islamic Religious Education (IRE)",
-  "Divinity", "Fine Art", "Music",
+  "Divinity",
+  // Commercial
+  "Commerce", "Principles of Accounts",
+  // Technical
+  "Metalwork", "Woodwork", "Building Construction",
+  "Power and Energy", "Electronics",
 ];
 
 const ALEVEL_SUBSIDIARY_SUBJECTS = [

@@ -40,22 +40,78 @@ class CertificateVerificationService:
         self.uace_grades = ['A', 'B', 'C', 'D', 'E', 'O', 'F']
         
         # Subject lists for validation
+        # Complete UNEB UCE (O-Level) Subjects - All 28 subjects
         self.valid_uce_subjects = [
-            'English Language', 'Mathematics', 'Physics', 'Chemistry', 'Biology',
-            'Geography', 'History', 'Christian Religious Education (CRE)',
-            'Islamic Religious Education (IRE)', 'Fine Art', 'Music',
-            'Entrepreneurship Education', 'Computer Studies', 'Agriculture',
-            'Home Economics', 'Commerce', 'French', 'Kiswahili',
-            'Literature in English', 'Technical Drawing', 'Physical Education',
+            # Compulsory / Core
+            'English Language',
+            'Mathematics',
+            # Sciences
+            'Physics',
+            'Chemistry',
+            'Biology',
+            'Agriculture',
+            'General Science',
+            # Humanities & Social Studies
+            'History',
+            'Geography',
+            'Political Education',
+            'Economics',
+            # Languages
+            'Literature in English',
+            'French',
+            'German',
+            'Latin',
+            'Kiswahili',
+            'Arabic',
+            'Luganda',
+            # Religious Studies
+            'Christian Religious Education (CRE)',
+            'Islamic Religious Education (IRE)',
+            'Divinity',
+            # Technical & Creative
+            'Technical Drawing',
+            'Metalwork',
+            'Woodwork',
+            'Building Construction',
+            'Electricity & Electronics',
+            'Power & Energy',
+            'Fine Art',
+            'Music',
+            'Dance',
+            'Drama',
+            'Physical Education',
+            # Business & Technology
+            'Commerce',
+            'Entrepreneurship Education',
+            'Principles of Accounts',
+            'Computer Studies',
+            'Information & Communication Technology (ICT)',
+            # Home Economics
+            'Home Economics',
+            'Food & Nutrition',
+            'Clothing & Textiles',
+            # Additional Mathematics
             'Additional Mathematics',
         ]
         
         self.valid_uace_principal_subjects = [
-            'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Geography',
-            'History', 'Literature in English', 'Economics',
-            'Entrepreneurship Education', 'Art & Design', 'Technical Drawing',
+            # Sciences
+            'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Agriculture',
+            'Technical Drawing', 'Foods and Nutrition',
+            # Arts & Humanities
+            'History', 'Geography', 'Economics', 'Entrepreneurship Education',
+            'Art and Design', 'Fine Art', 'Music', 'Drama', 'Performing Arts',
+            # Languages
+            'Literature in English', 'Luganda', 'French', 'German', 'Arabic',
+            'Latin', 'Kiswahili',
+            # Religious Studies
             'Christian Religious Education (CRE)', 'Islamic Religious Education (IRE)',
-            'Divinity', 'Fine Art', 'Music',
+            'Divinity',
+            # Commercial
+            'Commerce', 'Principles of Accounts',
+            # Technical
+            'Metalwork', 'Woodwork', 'Building Construction',
+            'Power and Energy', 'Electronics',
         ]
         
         self.valid_uace_subsidiary_subjects = [

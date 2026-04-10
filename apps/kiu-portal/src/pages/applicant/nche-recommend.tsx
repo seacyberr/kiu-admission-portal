@@ -85,11 +85,32 @@ interface NCHEProgramme {
   nche_compliant?: boolean;
 }
 
-// NCHE UACE Subjects (actual UNEB subjects)
+// NCHE UACE Principal Subjects (actual UNEB subjects)
 const NCHE_UACE_SUBJECTS = [
-  "Mathematics", "Physics", "Chemistry", "Biology", "Geography", "History",
-  "Economics", "Literature", "Divinity", "Entrepreneurship", "Computer Studies",
-  "Technical Drawing", "Art", "Music", "Agriculture", "General Paper"
+  // Sciences
+  "Mathematics", "Physics", "Chemistry", "Biology", "Agriculture",
+  "Technical Drawing", "Foods and Nutrition",
+  // Arts & Humanities
+  "History", "Geography", "Economics", "Entrepreneurship",
+  "Art and Design", "Fine Art", "Music", "Drama", "Performing Arts",
+  // Languages
+  "Literature in English", "Luganda", "French", "German", "Arabic",
+  "Latin", "Kiswahili",
+  // Religious Studies
+  "Christian Religious Education", "Islamic Religious Education",
+  "Divinity",
+  // Commercial
+  "Commerce", "Principles of Accounts",
+  // Technical
+  "Metalwork", "Woodwork", "Building Construction",
+  "Power and Energy", "Electronics"
+];
+
+// NCHE UACE Subsidiary Subjects
+const NCHE_UACE_SUBSIDIARY_SUBJECTS = [
+  "General Paper",
+  "Subsidiary Mathematics",
+  "Subsidiary ICT"
 ];
 
 // NCHE UACE Grades (UNEB grading system)
@@ -119,7 +140,7 @@ const NCHE_DIPLOMAS = [
 
 export default function NCHERecommendationsPage() {
   const [step, setStep] = useState<"qualification" | "uace" | "uce" | "diploma" | "bachelors" | "results">("qualification");
-  const [qualificationType, setQualificationType] = useState<"uace" | "diploma" | "bachelors">("uace");
+  const [qualificationType, setQualificationType] = useState<"uce" | "uace" | "diploma" | "bachelors">("uce");
   const [uaceSubjects, setUaceSubjects] = useState<NCHESubject[]>([]);
   const [uceDivision, setUceDivision] = useState<string>("");
   const [uceCredits, setUceCredits] = useState<string[]>([]);
@@ -217,6 +238,25 @@ export default function NCHERecommendationsPage() {
       </div>
 
       <div className="space-y-4">
+        {/* O-Level / UCE - Entry Level */}
+        <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50 bg-blue-50"
+             onClick={() => { setQualificationType("uce"); setStep("uce"); }}>
+          <div className="flex items-center space-x-3">
+            <input
+              type="radio"
+              name="qualification"
+              checked={qualificationType === "uce"}
+              onChange={() => setQualificationType("uce")}
+              className="w-4 h-4"
+            />
+            <div>
+              <h3 className="font-semibold text-blue-800">UCE (O-Level)</h3>
+              <p className="text-sm text-gray-600">Entry level: Certificate, HEC or Diploma</p>
+            </div>
+          </div>
+        </div>
+
+        {/* A-Level / UACE */}
         <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
              onClick={() => { setQualificationType("uace"); setStep("uace"); }}>
           <div className="flex items-center space-x-3">
@@ -234,6 +274,7 @@ export default function NCHERecommendationsPage() {
           </div>
         </div>
 
+        {/* Diploma / Certificate */}
         <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
              onClick={() => { setQualificationType("diploma"); setStep("diploma"); }}>
           <div className="flex items-center space-x-3">

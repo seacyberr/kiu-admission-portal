@@ -33,6 +33,262 @@ LAST UPDATED: April 2026
 VERIFIED: Yes - Against official KIU fee brochures
 """
 
+# PROGRAM LISTS BY LEVEL
+# ======================
+
+# CERTIFICATE PROGRAMS (Entry level for O-Level holders)
+CERTIFICATE_PROGRAMS = [
+    "Certificate in Nursing",
+    "Certificate in Midwifery",
+    "Certificate in Medical Laboratory",
+    "Certificate in Pharmacy",
+    "Certificate in Clinical Medicine",
+    "Certificate in Public Health",
+    "Certificate in Business Administration",
+    "Certificate in Information Technology",
+    "Certificate in Education",
+    "Certificate in Agriculture",
+    "Certificate in Hotel Management",
+    "Certificate in Tourism",
+]
+
+# DIPLOMA PROGRAMS (For O-Level + 2 passes or Certificate holders)
+DIPLOMA_PROGRAMS = [
+    # Health Sciences
+    "Diploma in Nursing",
+    "Diploma in Midwifery",
+    "Diploma in Medical Laboratory",
+    "Diploma in Pharmacy",
+    "Diploma in Clinical Medicine",
+    "Diploma in Public Health",
+    "Diploma in Environmental Health",
+    "Diploma in Dental Surgery",
+    "Diploma in Orthopedics",
+    "Diploma in Optometry",
+    # Business & Management
+    "Diploma in Business Administration",
+    "Diploma in Accounting",
+    "Diploma in Finance",
+    "Diploma in Marketing",
+    "Diploma in Human Resource Management",
+    "Diploma in Procurement",
+    "Diploma in Logistics",
+    # ICT & Computing
+    "Diploma in Computer Science",
+    "Diploma in Information Technology",
+    "Diploma in Software Engineering",
+    "Diploma in Networking",
+    "Diploma in Cyber Security",
+    # Education
+    "Diploma in Education (Primary)",
+    "Diploma in Education (Secondary)",
+    "Diploma in Early Childhood Education",
+    "Diploma in Special Needs Education",
+    # Law & Social Sciences
+    "Diploma in Law",
+    "Diploma in Social Work",
+    "Diploma in Counseling",
+    # Engineering & Technical
+    "Diploma in Civil Engineering",
+    "Diploma in Electrical Engineering",
+    "Diploma in Mechanical Engineering",
+    "Diploma in Automotive Engineering",
+    # Agriculture & Environment
+    "Diploma in Agriculture",
+    "Diploma in Forestry",
+    "Diploma in Fisheries",
+    "Diploma in Animal Production",
+    # Journalism & Media
+    "Diploma in Journalism",
+    "Diploma in Mass Communication",
+    "Diploma in Public Relations",
+    # Hospitality & Tourism
+    "Diploma in Hotel Management",
+    "Diploma in Tourism",
+    "Diploma in Catering",
+]
+
+# HEC (Higher Education Certificate) PROGRAMS
+# Foundation year for A-Level holders who don't qualify for direct degree
+HEC_PROGRAMS = [
+    "HEC - Sciences Track (Biological Sciences)",
+    "HEC - Sciences Track (Physical Sciences)",
+    "HEC - Arts Track (Humanities)",
+    "HEC - Arts Track (Social Sciences)",
+    "HEC - Business Track",
+    "HEC - Education Track",
+    "HEC - Engineering Track",
+    "HEC - Health Sciences Track",
+]
+
+# BACHELOR'S DEGREE PROGRAMS
+BACHELOR_PROGRAMS = [
+    # Medicine & Health Sciences (Western Campus)
+    "Bachelor of Medicine and Bachelor of Surgery (MBChB)",
+    "Bachelor of Dental Surgery (BDS)",
+    "Bachelor of Pharmacy (BPharm)",
+    "Bachelor of Nursing Sciences",
+    "Bachelor of Medical Laboratory Sciences",
+    "Bachelor of Public Health",
+    "Bachelor of Environmental Health",
+    "Bachelor of Clinical Medicine",
+    "Bachelor of Optometry",
+    "Bachelor of Physiotherapy",
+    "Bachelor of Radiology",
+    "Bachelor of Anesthesia",
+    # Business & Management
+    "Bachelor of Business Administration (BBA)",
+    "Bachelor of Commerce (B.Com)",
+    "Bachelor of Accounting and Finance",
+    "Bachelor of Procurement and Logistics",
+    "Bachelor of Human Resource Management",
+    "Bachelor of Marketing",
+    "Bachelor of Entrepreneurship",
+    "Bachelor of International Business",
+    # Computing & ICT
+    "Bachelor of Computer Science",
+    "Bachelor of Information Technology",
+    "Bachelor of Software Engineering",
+    "Bachelor of Computer Engineering",
+    "Bachelor of Data Science",
+    "Bachelor of Artificial Intelligence",
+    "Bachelor of Cyber Security",
+    # Education
+    "Bachelor of Education (Arts)",
+    "Bachelor of Education (Science)",
+    "Bachelor of Education (Primary)",
+    "Bachelor of Education (Early Childhood)",
+    "Bachelor of Education (Special Needs)",
+    "Bachelor of Education (Business)",
+    # Law & Social Sciences
+    "Bachelor of Laws (LLB)",
+    "Bachelor of Social Work",
+    "Bachelor of Counseling",
+    "Bachelor of Public Administration",
+    "Bachelor of Governance and Ethics",
+    "Bachelor of International Relations",
+    # Engineering
+    "Bachelor of Civil Engineering",
+    "Bachelor of Electrical Engineering",
+    "Bachelor of Mechanical Engineering",
+    "Bachelor of Telecommunications Engineering",
+    "Bachelor of Biomedical Engineering",
+    # Agriculture & Environment
+    "Bachelor of Agriculture",
+    "Bachelor of Agricultural Economics",
+    "Bachelor of Animal Production",
+    "Bachelor of Crop Science",
+    "Bachelor of Forestry",
+    "Bachelor of Fisheries",
+    "Bachelor of Environmental Science",
+    "Bachelor of Natural Resources Management",
+    # Arts & Humanities
+    "Bachelor of Arts in Economics",
+    "Bachelor of Arts in Geography",
+    "Bachelor of Arts in History",
+    "Bachelor of Arts in Political Science",
+    "Bachelor of Arts in Sociology",
+    "Bachelor of Arts in Psychology",
+    "Bachelor of Arts in Philosophy",
+    "Bachelor of Arts in Literature",
+    "Bachelor of Arts in Languages",
+    # Journalism & Media
+    "Bachelor of Journalism and Media",
+    "Bachelor of Mass Communication",
+    "Bachelor of Public Relations",
+    # Hospitality & Tourism
+    "Bachelor of Hotel Management",
+    "Bachelor of Tourism",
+    "Bachelor of Catering",
+    # Sciences
+    "Bachelor of Science in Biology",
+    "Bachelor of Science in Chemistry",
+    "Bachelor of Science in Physics",
+    "Bachelor of Science in Mathematics",
+    "Bachelor of Science in Statistics",
+    # Development Studies
+    "Bachelor of Development Studies",
+    "Bachelor of Community Development",
+]
+
+# MASTERS DEGREE PROGRAMS
+MASTERS_PROGRAMS = [
+    # Business & Management
+    "Master of Business Administration (MBA)",
+    "Master of Commerce (M.Com)",
+    "Master of Accounting",
+    "Master of Finance",
+    "Master of Marketing",
+    "Master of Human Resource Management",
+    "Master of Procurement",
+    # Education
+    "Master of Education (M.Ed)",
+    "Master of Arts in Education",
+    "Master of Science in Education",
+    # Public Health
+    "Master of Public Health (MPH)",
+    "Master of Health Administration",
+    "Master of Epidemiology",
+    "Master of Biostatistics",
+    # Health Sciences
+    "Master of Nursing",
+    "Master of Midwifery",
+    "Master of Medical Laboratory Sciences",
+    "Master of Clinical Medicine",
+    # Computing
+    "Master of Computer Science",
+    "Master of Information Technology",
+    "Master of Data Science",
+    "Master of Software Engineering",
+    # Social Sciences
+    "Master of Social Work",
+    "Master of Public Administration",
+    "Master of Development Studies",
+    "Master of International Relations",
+    # Agriculture
+    "Master of Agriculture",
+    "Master of Agricultural Economics",
+    "Master of Animal Science",
+    "Master of Crop Science",
+    # Law
+    "Master of Laws (LLM)",
+    # Engineering
+    "Master of Engineering",
+    # General
+    "Master of Arts (MA)",
+    "Master of Science (MSc)",
+]
+
+# PhD / DOCTORATE PROGRAMS
+PHD_PROGRAMS = [
+    # Business
+    "Doctor of Philosophy (PhD) in Business Administration",
+    "PhD in Management",
+    "PhD in Finance",
+    "PhD in Marketing",
+    # Education
+    "PhD in Education",
+    "PhD in Educational Administration",
+    "PhD in Curriculum Studies",
+    # Health
+    "PhD in Public Health",
+    "PhD in Health Sciences",
+    "PhD in Nursing",
+    # Social Sciences
+    "PhD in Development Studies",
+    "PhD in Social Work",
+    "PhD in International Relations",
+    # Agriculture
+    "PhD in Agriculture",
+    "PhD in Agricultural Economics",
+    # Computing
+    "PhD in Computer Science",
+    "PhD in Information Technology",
+    # General
+    "PhD in Arts",
+    "PhD in Science",
+]
+
 # FEE CALCULATION HELPERS
 def get_functional_fee(program_level: str, program_category: str, is_international: bool = False) -> int:
     """

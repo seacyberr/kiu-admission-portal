@@ -84,36 +84,40 @@ export default function NewApplicant() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[
+                // Entry Level - Secondary Education
                 {
                   key: 'o_level' as HighestEducation,
                   icon: School,
                   label: 'O-Level (UCE)',
-                  sub: 'Apply for HEC or Diploma',
+                  sub: 'Start here: Certificate, HEC or Diploma',
                 },
-                {
-                  key: 'a_level' as HighestEducation,
-                  icon: GraduationCap,
-                  label: 'A-Level (UACE)',
-                  sub: 'Answer 2 quick questions',
-                },
-                {
-                  key: 'diploma' as HighestEducation,
-                  icon: FileText,
-                  label: 'DIPLOMA',
-                  sub: 'Apply for Degree',
-                },
-                {
-                  key: 'hec' as HighestEducation,
-                  icon: FileText,
-                  label: 'HEC',
-                  sub: 'Apply for Degree',
-                },
+                // Alternative Secondary Path
                 {
                   key: 'national_cert' as HighestEducation,
                   icon: Award,
                   label: 'National Certificate',
-                  sub: 'Technical & Vocational entry',
+                  sub: 'Technical/Vocational qualification',
                 },
+                // Post-Secondary Pathways
+                {
+                  key: 'a_level' as HighestEducation,
+                  icon: GraduationCap,
+                  label: 'A-Level (UACE)',
+                  sub: 'Direct entry to Bachelor\'s Degree',
+                },
+                {
+                  key: 'hec' as HighestEducation,
+                  icon: FileText,
+                  label: 'HEC (Higher Education Certificate)',
+                  sub: 'Progress to Bachelor\'s Degree',
+                },
+                {
+                  key: 'diploma' as HighestEducation,
+                  icon: FileText,
+                  label: 'Diploma',
+                  sub: 'Advanced entry to Bachelor\'s Degree',
+                },
+                // Tertiary Education
                 {
                   key: 'bachelors' as HighestEducation,
                   icon: GraduationCap,
@@ -124,13 +128,13 @@ export default function NewApplicant() {
                   key: 'masters' as HighestEducation,
                   icon: Award,
                   label: "Master's Degree",
-                  sub: "Bachelor's degree holder",
+                  sub: 'Apply for PhD programmes',
                 },
                 {
                   key: 'phd' as HighestEducation,
                   icon: BookOpen,
-                  label: 'PhD',
-                  sub: "Master's degree holder",
+                  label: 'PhD / Doctorate',
+                  sub: 'Highest academic qualification',
                 },
               ].map(({ key, icon: Icon, label, sub }) => (
                 <button
