@@ -9,7 +9,10 @@ from functools import wraps
 from werkzeug.utils import secure_filename
 from models import db, AdmissionApplication, Program, User
 from routes.auth import get_current_user
-from lib.qualification_checker import UgandaQualificationChecker
+from services.qualification_service import UgandaQualificationService
+
+# Maintain backward compatibility
+UgandaQualificationChecker = UgandaQualificationService
 from utils.error_handlers import (
     handle_kiu_error, validate_json_payload, ValidationError, 
     NotFoundError, ConflictError, sanitize_input, validate_phone,
@@ -520,9 +523,12 @@ def update_application_status(app_id):
 @validate_json_payload(required_fields=["alevelSubjects"])
 def recommend_programs():
     """
+    DEPRECATED: Use /api/v1/nche/assess instead for unified recommendations.
+    This endpoint is kept for backward compatibility but will be removed.
+
     Recommend programs based on A-Level subject combination with NCHE compliance.
-    The core guidance feature described in the project proposal.
     """
+    log.warning("Using deprecated /admission/recommend endpoint. Migrate to /v1/nche/assess")
     user, error = get_current_user()
     if error:
         raise ValidationError(error)

@@ -1,5 +1,4 @@
-import { useState, useRef } 
-from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -206,6 +205,14 @@ function readDegreeQualificationFromUrl(): DegreeQualification {
   return "a_level";
 }
 
+function readPreselectedProgram(): { programId: number | null; autoAdvance: boolean } {
+  if (typeof window === "undefined") return { programId: null, autoAdvance: false };
+  const sp = new URLSearchParams(window.location.search);
+  const program = sp.get("program");
+  const auto = sp.get("auto") === "true";
+  return { programId: program ? parseInt(program, 10) : null, autoAdvance: auto };
+}
+
 export default function Apply({ target }: { target: ApplyTarget }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -233,7 +240,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
   const degreeQualification = readDegreeQualificationFromUrl();
   const examLevel: ExamLevel = target === "degree" ? degreeQualification : target;
   const shouldShowALevel = examLevel === "a_level";
-  const shouldShowOlevel = examLevel === "o_level";
+  const shouldShowOlevel = (examLevel as string) === "o_level";
   const shouldShowCert = examLevel === "diploma" || examLevel === "hec";
   const shouldShowMasters = examLevel === "masters";
   const shouldShowPhd = examLevel === "phd";
@@ -243,13 +250,30 @@ export default function Apply({ target }: { target: ApplyTarget }) {
     defaultValues: {
       examLevel,
       nationality: "Ugandan",
-      programIds: [],
+      programIds: readPreselectedProgram().programId ? [readPreselectedProgram().programId!] : [],
       oLevelYear: new Date().getFullYear() - 2,
       oLevelCurriculum: "new",
       oLevelGrades: [{ subject: "", grade: "", points: 0 }],
       aLevelGrades: [{ subject: "", grade: "", points: 0, subjectType: "principal" }],
     },
   });
+
+  // Auto-advance to next step if program pre-selected from recommendations
+  useEffect(() => {
+    const { programId, autoAdvance } = readPreselectedProgram();
+    if (programId && autoAdvance && allPrograms.length > 0) {
+      // Validate the program exists
+      const programExists = allPrograms.some((p: any) => p.id === programId);
+      if (programExists && step === "program") {
+        toast({ title: "Program pre-selected from recommendations", description: "You can change it if needed" });
+        // Navigate to next step
+        if (canGoNext && step === "program") {
+          setStep(stepOrder[currentIdx + 1]);
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allPrograms, step]);
 
   const watchExamLevel = watch("examLevel");
   const watchProgramIds = watch("programIds") || [];
@@ -334,7 +358,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
     setIsSaving(true);
     try {
       const unebGrades: any = {};
-      if (examLevel === "o_level" || examLevel === "a_level") {
+      if ((examLevel as string) === "o_level" || examLevel === "a_level") {
         unebGrades.olevel = (values.oLevelGrades ?? []).map((g) => ({
           ...g,
           year: values.oLevelYear,
@@ -353,14 +377,14 @@ export default function Apply({ target }: { target: ApplyTarget }) {
       const examYear =
         examLevel === "a_level"
           ? values.aLevelYear
-          : examLevel === "o_level"
+          : (examLevel as string) === "o_level"
             ? values.oLevelYear
             : values.certYear;
 
       const indexNumber =
         examLevel === "a_level"
           ? values.aLevelIndexNumber || values.oLevelIndexNumber
-          : examLevel === "o_level"
+          : (examLevel as string) === "o_level"
             ? values.oLevelIndexNumber
             : values.certIndexNumber;
 
@@ -537,7 +561,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
     setIsSubmitting(true);
     try {
       const unebGrades: any = {};
-      if (examLevel === "o_level" || examLevel === "a_level") {
+      if ((examLevel as string) === "o_level" || examLevel === "a_level") {
         unebGrades.olevel = (data.oLevelGrades ?? []).map((g) => ({
           ...g,
           year: data.oLevelYear,
@@ -556,14 +580,14 @@ export default function Apply({ target }: { target: ApplyTarget }) {
       const examYear =
         examLevel === "a_level"
           ? data.aLevelYear
-          : examLevel === "o_level"
+          : (examLevel as string) === "o_level"
             ? data.oLevelYear
             : data.certYear;
 
       const indexNumber =
         examLevel === "a_level"
           ? data.aLevelIndexNumber || data.oLevelIndexNumber
-          : examLevel === "o_level"
+          : (examLevel as string) === "o_level"
             ? data.oLevelIndexNumber
             : data.certIndexNumber;
 
@@ -631,7 +655,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
     const indexNumber =
       examLevel === "a_level"
         ? data.aLevelIndexNumber || data.oLevelIndexNumber
-        : examLevel === "o_level"
+        : (examLevel as string) === "o_level"
           ? data.oLevelIndexNumber
           : data.certIndexNumber;
 
@@ -1173,7 +1197,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* O-Level Certificate (required for o_level and a_level modes) */}
-                  {(examLevel === "o_level" || examLevel === "a_level") && (
+                  {((examLevel as string) === "o_level" || examLevel === "a_level") && (
                     <div
                       onClick={() => olevelInputRef.current?.click()}
                       className={`border-2 border-dashed rounded-2xl p-6 cursor-pointer transition-all text-center

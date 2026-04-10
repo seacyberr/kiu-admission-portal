@@ -149,6 +149,7 @@ class AdmissionApplication(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     program_id = db.Column(db.Integer, db.ForeignKey("programs.id"), nullable=False)
     status = db.Column(db.String(30), nullable=False, default="pending")
+    payment_status = db.Column(db.String(20), nullable=False, default="pending")  # pending, paid, waived
 
     # Program choices (up to 3 programs as JSON array of IDs)
     program_choices = db.Column(db.JSON, nullable=False, default=list)
@@ -158,9 +159,36 @@ class AdmissionApplication(db.Model):
     exam_year = db.Column(db.Integer, nullable=False)
     index_number = db.Column(db.String(50), nullable=False)
     # uneb_grades format:
-    # { "olevel": [{"subject":"Mathematics","grade":"D1","points":1},...],
+    # { "olevel": [{"subject":"Mathematics","grade":"D1","points":1,"curriculum":"old"},...],
     #   "alevel": [{"subject":"Mathematics","grade":"A","points":6,"subjectType":"principal"},...] }
     uneb_grades = db.Column(db.JSON, nullable=False, default=dict)
+
+    # Curriculum tracking for Uganda dual curriculum transition (2024-2025)
+    # "old" = Pre-2024 curriculum (D1-D2-C3-C4-C5-C6-P7-P8-F9)
+    # "new" = 2024+ curriculum (A-B-C-D-E)
+    curriculum_version = db.Column(db.String(10), default="old")
+    olevel_curriculum = db.Column(db.String(10), default="old")
+    alevel_curriculum = db.Column(db.String(10), default="old")
+
+    # HEC (Higher Education Certificate) tracking
+    hec_track = db.Column(db.String(20))  # "arts", "biological", "physical", null
+    hec_institution = db.Column(db.String(200))
+    hec_completion_year = db.Column(db.Integer)
+    hec_gpa = db.Column(db.Float)
+
+    # Diploma/Certificate entry tracking
+    diploma_institution = db.Column(db.String(200))
+    diploma_program = db.Column(db.String(200))
+    diploma_completion_year = db.Column(db.Integer)
+    diploma_class = db.Column(db.String(20))  # "distinction", "credit", "pass"
+
+    # Previous degree tracking (for Masters/PhD)
+    previous_degree_type = db.Column(db.String(50))  # "bachelors", "masters"
+    previous_degree_institution = db.Column(db.String(200))
+    previous_degree_program = db.Column(db.String(200))
+    previous_degree_year = db.Column(db.Integer)
+    previous_degree_gpa = db.Column(db.Float)
+    previous_degree_class = db.Column(db.String(20))  # "first", "second_upper", "second_lower"
 
     # Uploaded files
     olevel_certificate_path = db.Column(db.Text)
@@ -206,14 +234,35 @@ class AdmissionApplication(db.Model):
             "program": self.program.to_dict() if self.program else None,
             "programChoices": self.program_choices or [],
             "status": self.status,
+            "paymentStatus": self.payment_status,
             "examLevel": self.exam_level,
             "examYear": self.exam_year,
             "indexNumber": self.index_number,
             "unebGrades": self.uneb_grades,
+            "curriculumVersion": self.curriculum_version,
+            "olevelCurriculum": self.olevel_curriculum,
+            "alevelCurriculum": self.alevel_curriculum,
+            "hecTrack": self.hec_track,
+            "hecInstitution": self.hec_institution,
+            "hecCompletionYear": self.hec_completion_year,
+            "hecGpa": self.hec_gpa,
+            "diplomaInstitution": self.diploma_institution,
+            "diplomaProgram": self.diploma_program,
+            "diplomaCompletionYear": self.diploma_completion_year,
+            "diplomaClass": self.diploma_class,
+            "previousDegreeType": self.previous_degree_type,
+            "previousDegreeInstitution": self.previous_degree_institution,
+            "previousDegreeProgram": self.previous_degree_program,
+            "previousDegreeYear": self.previous_degree_year,
+            "previousDegreeGpa": self.previous_degree_gpa,
+            "previousDegreeClass": self.previous_degree_class,
             "olevelCertificatePath": self.olevel_certificate_path,
             "alevelCertificatePath": self.alevel_certificate_path,
             "diplomaCertificatePath": self.diploma_certificate_path,
             "hecCertificatePath": self.hec_certificate_path,
+            "nationalCertificatePath": self.national_certificate_path,
+            "bachelorsDegreePath": self.bachelors_degree_path,
+            "mastersDegreePath": self.masters_degree_path,
             "personalStatement": self.personal_statement,
             "dateOfBirth": self.date_of_birth.isoformat() if self.date_of_birth else None,
             "gender": self.gender,
@@ -423,4 +472,101 @@ class Notification(db.Model):
             "isRead": self.is_read,
             "link": self.link,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class Payment(db.Model):
+    __tablename__ = "payments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    application_id = db.Column(db.Integer, db.ForeignKey("admission_applications.id"), nullable=False)
+    reference = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    amount = db.Column(db.Integer, nullable=False)  # Amount in smallest currency unit
+    currency = db.Column(db.String(3), nullable=False, default="UGX")
+    phone_number = db.Column(db.String(20))  # Phone number used for mobile money
+    status = db.Column(db.String(20), nullable=False, default="pending")  # pending, successful, failed, refunded
+    gateway_response = db.Column(db.Text)  # Store full gateway response
+    paid_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = db.relationship("User", backref="payments", lazy="joined")
+    application = db.relationship("AdmissionApplication", backref="payments", lazy="joined")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "userId": self.user_id,
+            "applicationId": self.application_id,
+            "reference": self.reference,
+            "amount": self.amount,
+            "currency": self.currency,
+            "phoneNumber": self.phone_number,
+            "status": self.status,
+            "paidAt": self.paid_at.isoformat() if self.paid_at else None,
+            "createdAt": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class AuditLog(db.Model):
+    """Comprehensive audit log for tracking all system actions"""
+    __tablename__ = "audit_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    # User information
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    user_email = db.Column(db.String(255))
+    user_role = db.Column(db.String(20))
+    ip_address = db.Column(db.String(45))  # IPv6 compatible
+    user_agent = db.Column(db.Text)
+
+    # Action details
+    action = db.Column(db.String(50), nullable=False, index=True)  # e.g., 'user_login', 'application_created'
+    entity_type = db.Column(db.String(50), nullable=False)  # e.g., 'user', 'application', 'payment'
+    entity_id = db.Column(db.Integer)  # ID of affected entity
+
+    # Data tracking
+    old_values = db.Column(db.JSON)  # Previous state (for updates)
+    new_values = db.Column(db.JSON)  # New state
+    changes = db.Column(db.JSON)  # Diff between old and new
+
+    # Additional context
+    description = db.Column(db.Text)
+    status = db.Column(db.String(20), default="success")  # success, failed, warning
+    error_message = db.Column(db.Text)
+    request_id = db.Column(db.String(50))  # X-Request-ID for correlation
+    session_id = db.Column(db.String(100))
+
+    # Geographic info (if available)
+    country = db.Column(db.String(2))
+    city = db.Column(db.String(100))
+
+    # Relationships
+    user = db.relationship("User", backref="audit_logs", lazy="joined")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "userId": self.user_id,
+            "userEmail": self.user_email,
+            "userRole": self.user_role,
+            "ipAddress": self.ip_address,
+            "userAgent": self.user_agent,
+            "action": self.action,
+            "entityType": self.entity_type,
+            "entityId": self.entity_id,
+            "oldValues": self.old_values,
+            "newValues": self.new_values,
+            "changes": self.changes,
+            "description": self.description,
+            "status": self.status,
+            "errorMessage": self.error_message,
+            "requestId": self.request_id,
+            "sessionId": self.session_id,
+            "country": self.country,
+            "city": self.city,
         }

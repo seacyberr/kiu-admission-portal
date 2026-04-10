@@ -7,8 +7,9 @@
  * which provides official standards-based assessments with direct applications.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import { useForm } from "react-hook-form";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -671,7 +672,7 @@ export default function RecommendationsPage() {
                   <p className="text-xs text-red-600 mt-1">{apiError.detail}</p>
                 )}
                 <p className="text-xs text-red-500 mt-2">
-                  Contact KIU Admissions: <strong>admissions@kiu.ac.ug</strong> · +256-760-502660
+                  Contact KIU Admissions: <strong>admissions@kiu.ac.ug</strong> · +256 414 100808
                 </p>
               </div>
             </div>

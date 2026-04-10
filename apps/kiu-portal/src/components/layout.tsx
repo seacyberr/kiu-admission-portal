@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { data: user, isLoading } = useGetCurrentUser({ query: { retry: false } });
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -161,7 +161,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <ul className="space-y-2 text-sm text-primary-foreground/80">
               <li>Kansanga, Kampala, Uganda</li>
               <li>admissions@kiu.ac.ug</li>
-              <li>+256 000 000 000</li>
+              <li>+256 414 100808</li>
             </ul>
           </div>
         </div>

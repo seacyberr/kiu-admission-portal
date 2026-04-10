@@ -49,7 +49,14 @@ export async function apiFetch<T>(
     headers['Content-Type'] = 'application/json';
   }
 
-  let response = await fetch(`${API_BASE}${endpoint}`, {
+  // Add cache-busting headers to prevent browser caching
+  headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0';
+  headers['Pragma'] = 'no-cache';
+  headers['Expires'] = '0';
+  // Add timestamp to bust cache for GET requests
+  const cacheBuster = method === 'GET' ? `?_t=${Date.now()}` : '';
+
+  let response = await fetch(`${API_BASE}${endpoint}${cacheBuster}`, {
     method,
     headers,
     credentials: 'include', // Send httpOnly cookies with every request
@@ -61,8 +68,9 @@ export async function apiFetch<T>(
     try {
       await handleTokenRefresh();
       
-      // Retry original request with fresh token
-      response = await fetch(`${API_BASE}${endpoint}`, {
+      // Retry original request with fresh token (also add cache-busting)
+      const retryCacheBuster = method === 'GET' ? `?_t=${Date.now()}` : '';
+      response = await fetch(`${API_BASE}${endpoint}${retryCacheBuster}`, {
         method,
         headers,
         credentials: 'include',

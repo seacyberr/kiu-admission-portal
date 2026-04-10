@@ -13,7 +13,13 @@ def openapi_spec():
             "title": "KIU Admission & Career Portal API",
             "version": "1.0.0",
             "description": "REST API for Kampala International University's admission and career portal.",
-            "contact": {"email": "admissions@kiu.ac.ug"},
+            "contact": {
+                "name": "Kampala International University",
+                "email": "admissions@kiu.ac.ug",
+                "phone": "+256 414 100808",
+                "url": "https://www.kiu.ac.ug",
+                "address": "Kansanga, Kampala, Uganda"
+            },
             "license": {"name": "MIT"},
         },
         "servers": [

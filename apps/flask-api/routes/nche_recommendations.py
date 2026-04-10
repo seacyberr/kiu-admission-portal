@@ -824,16 +824,23 @@ def assess_nche_eligibility(programme: Dict, applicant: Dict) -> Dict:
 def get_nche_recommendations(applicant: Dict) -> List[Dict]:
     """Get NCHE-compliant programme recommendations"""
     recommendations = []
-    
+
     for programme in KIU_NCHE_PROGRAMMES:
         assessment = assess_nche_eligibility(programme, applicant)
-        
+
         if assessment["eligible"] or assessment["meets_nche_minimum"]:
+            # Determine qualification type for application link
+            qualification = "a_level"
+            if applicant.get("diploma_type"):
+                qualification = "diploma"
+            elif applicant.get("bachelor_gpa"):
+                qualification = "degree" if programme.get("nche_category") == "business_management" else "masters"
+
             recommendation = {
                 **programme,
                 "nche_assessment": assessment,
-                "apply_url": f"/apply/{programme['id']}",
-                "direct_application": True,
+                "apply_url": f"/apply/degree?program={programme['id']}&qualification={qualification}&auto=true",
+                "direct_application": assessment["eligible"],
                 "nche_compliant": True
             }
             recommendations.append(recommendation)

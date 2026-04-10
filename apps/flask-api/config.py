@@ -25,6 +25,9 @@ def _resolve_db_url() -> str:
 
 
 def _default_database_url() -> str:
+    """Default database URL - MySQL as per project proposal."""
+    # MySQL is the required database per proposal
+    # For development without MySQL, set DATABASE_URL to use SQLite
     return "mysql+pymysql://root@localhost:3306/kiu_admissions"
 
 

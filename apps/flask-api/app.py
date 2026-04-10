@@ -180,6 +180,17 @@ def create_app():
                     resp.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return resp
 
+    # Global API cache-control - prevent browser caching of all API responses
+    @app.after_request
+    def _api_cache_control(resp):
+        if resp is not None and request.path.startswith('/api/'):
+            # Don't override if already set by specific endpoint
+            if 'Cache-Control' not in resp.headers:
+                resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+                resp.headers['Pragma'] = 'no-cache'
+                resp.headers['Expires'] = '0'
+        return resp
+
     # Register blueprints
     from routes.auth import auth_bp
     from routes.admission import admission_bp
@@ -190,6 +201,10 @@ def create_app():
     from routes.notifications import notifications_bp
     from routes.nche_recommendations import recommendations_bp
     from routes.certificate_verification import certificate_verification_bp
+    from routes.payments import payments_bp
+    from routes.reports import reports_bp
+    from routes.audit import audit_bp
+    from routes.recommendations_v2 import recommendations_v2_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(admission_bp, url_prefix="/api/admission")
@@ -199,8 +214,14 @@ def create_app():
     app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
     app.register_blueprint(docs_bp, url_prefix="/api/docs")
     app.register_blueprint(certificate_verification_bp, url_prefix="/api/certificate-verification")
-    
-    # Primary NCHE-based recommendations
+    app.register_blueprint(payments_bp, url_prefix="/api/payments")
+    app.register_blueprint(reports_bp, url_prefix="/api/reports")
+    app.register_blueprint(audit_bp, url_prefix="/api/audit")
+
+    # Unified Recommendations API v2 (handles both old and new curriculum)
+    app.register_blueprint(recommendations_v2_bp, url_prefix="/api/v2/recommendations")
+
+    # Legacy NCHE-based recommendations (deprecated, kept for backward compatibility)
     app.register_blueprint(recommendations_bp, url_prefix="/api")
 
     # Initialize Prometheus metrics

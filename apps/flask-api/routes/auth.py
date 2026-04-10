@@ -17,6 +17,15 @@ log = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__)
 
+
+def _add_no_cache_headers(response):
+    """Add headers to prevent browser caching of auth responses"""
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    response.headers["Vary"] = "Cookie, Authorization"
+    return response
+
 BREVO_SMTP_HOST = "smtp-relay.brevo.com"
 BREVO_SMTP_PORT = 587
 BREVO_SMTP_USER = os.environ.get("BREVO_SMTP_USER", "")
@@ -420,19 +429,19 @@ def resend_otp():
 def login():
     data = request.get_json()
     if not data:
-        return jsonify({"error": "Bad request", "message": "No JSON body provided"}), 400
+        return _add_no_cache_headers(jsonify({"error": "Bad request", "message": "No JSON body provided"})), 400
 
     email    = data.get("email",    "").strip().lower()
     password = data.get("password", "")
 
     if not email or not password:
-        return jsonify({"error": "Validation error",
-                        "message": "email and password are required"}), 400
+        return _add_no_cache_headers(jsonify({"error": "Validation error",
+                        "message": "email and password are required"})), 400
 
     user = User.query.filter_by(email=email).first()
     if not user or not user.check_password(password):
-        return jsonify({"error": "Unauthorized",
-                        "message": "Invalid email or password"}), 401
+        return _add_no_cache_headers(jsonify({"error": "Unauthorized",
+                        "message": "Invalid email or password"})), 401
 
     if not user.is_verified:
         recent = (
@@ -443,12 +452,12 @@ def login():
         )
         if not recent:
             _create_and_dispatch_otp(user)
-        return jsonify({
+        return _add_no_cache_headers(jsonify({
             "error": "Email not verified",
             "message": "Please verify your email. A new OTP has been sent.",
             "email": user.email,
             "needsVerification": True,
-        }), 403
+        })), 403
 
     access_token  = generate_token(user.id, user.role)
     refresh_token = generate_refresh_token(user.id)
@@ -460,7 +469,7 @@ def login():
     })
     _set_auth_cookie(response, access_token)
     _set_refresh_cookie(response, refresh_token)
-    return response, 200
+    return _add_no_cache_headers(response), 200
 
 
 @auth_bp.route("/refresh", methods=["POST"])
@@ -480,16 +489,16 @@ def refresh_token_route():
         rt_value = body.get("refreshToken")
 
     if not rt_value:
-        return jsonify({"error": "Unauthorized", "message": "No refresh token provided"}), 401
+        return _add_no_cache_headers(jsonify({"error": "Unauthorized", "message": "No refresh token provided"})), 401
 
     rt = RefreshToken.query.filter_by(token=rt_value, is_revoked=False).first()
     if not rt:
-        return jsonify({"error": "Unauthorized", "message": "Invalid refresh token"}), 401
+        return _add_no_cache_headers(jsonify({"error": "Unauthorized", "message": "Invalid refresh token"})), 401
 
     if rt.expires_at < datetime.utcnow():
         rt.is_revoked = True
         db.session.commit()
-        return jsonify({"error": "Unauthorized", "message": "Refresh token expired"}), 401
+        return _add_no_cache_headers(jsonify({"error": "Unauthorized", "message": "Refresh token expired"})), 401
 
     # Token rotation — revoke old, issue new pair
     rt.is_revoked = True
@@ -505,15 +514,15 @@ def refresh_token_route():
     })
     _set_auth_cookie(response, new_access)
     _set_refresh_cookie(response, new_refresh)
-    return response, 200
+    return _add_no_cache_headers(response), 200
 
 
 @auth_bp.route("/me", methods=["GET"])
 def me():
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
-    return jsonify(user.to_dict()), 200
+        return _add_no_cache_headers(jsonify({"error": "Unauthorized", "message": error})), 401
+    return _add_no_cache_headers(jsonify(user.to_dict())), 200
 
 
 @auth_bp.route("/logout", methods=["POST"])
@@ -537,7 +546,8 @@ def logout():
                 db.session.commit()
 
     response = jsonify({"message": "Logged out"})
-    return _clear_auth_cookies(response), 200
+    _clear_auth_cookies(response)
+    return _add_no_cache_headers(response), 200
 
 
 @auth_bp.route("/forgot-password", methods=["POST"])
