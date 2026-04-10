@@ -9,6 +9,7 @@ from flask import url_for
 class TestUserRegistration:
     """Test user registration workflow"""
     
+    @pytest.mark.critical
     def test_successful_registration(self, client, valid_registration_data):
         """Test successful user registration"""
         response = client.post(
@@ -69,6 +70,7 @@ class TestUserRegistration:
 class TestUserLogin:
     """Test user login workflow"""
     
+    @pytest.mark.critical
     def test_successful_login(self, client, valid_login_data, applicant_user):
         """Test successful login"""
         response = client.post('/api/v1/auth/login', json=valid_login_data)
@@ -148,6 +150,7 @@ class TestTokenRefresh:
 class TestUserProfile:
     """Test user profile management"""
     
+    @pytest.mark.critical
     def test_get_current_user(self, client, auth_headers, applicant_user):
         """Test getting current user profile"""
         response = client.get('/api/v1/auth/me', headers=auth_headers)

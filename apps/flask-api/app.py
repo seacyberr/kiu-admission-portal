@@ -294,7 +294,7 @@ def create_app():
 
     # Initialize database and seed data
     with app.app_context():
-        db.create_all()
+        db.create_all(checkfirst=True)
         run_migrations()
         seed_database(
             replace_programs=config.REPLACE_PROGRAMS,

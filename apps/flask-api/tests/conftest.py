@@ -21,19 +21,64 @@ from services.kiu_programs_database import KIU_PROGRAMS_DB
 
 
 def pytest_collection_modifyitems(config, items):
-    """Configure test collection - organize by markers."""
+    """Configure test collection - organize by markers and priority."""
+    # Priority test mapping - tests that are CRITICAL (must always pass)
+    critical_patterns = [
+        "test_successful_registration",
+        "test_login_success",
+        "test_token_refresh",
+        "test_olevel_to_certificate",
+        "test_alevel_to_bachelor",
+        "test_apply_with_valid_data",
+        "test_accept_application",
+        "test_reject_application",
+        "test_password_hashing",
+        "test_applicant_role_access",
+        "test_admin_role_access",
+        "test_db_connection",
+        "test_user_model",
+        "test_program_model",
+    ]
+    
+    # Important patterns - should run in CI
+    important_patterns = [
+        "test_alevel_to_diploma",
+        "test_hec_to_bachelor",
+        "test_diploma_progression",
+        "test_masters_entry",
+        "test_phd_entry",
+        "test_health_science",
+        "test_multiple_applications",
+        "test_interview_scheduling",
+        "test_rate_limiting",
+        "test_validation",
+        "test_finalist_profile",
+        "test_job_applications",
+    ]
+    
     # Add markers for test organization
     for item in items:
-        if "test_auth" in item.nodeid:
+        nodeid = item.nodeid.lower()
+        
+        # Category markers
+        if "test_auth" in nodeid:
             item.add_marker(pytest.mark.auth)
-        elif "test_admission" in item.nodeid:
+        elif "test_admission" in nodeid:
             item.add_marker(pytest.mark.admission)
-        elif "test_admin" in item.nodeid:
+        elif "test_admin" in nodeid:
             item.add_marker(pytest.mark.admin)
-        elif "test_career" in item.nodeid:
+        elif "test_career" in nodeid:
             item.add_marker(pytest.mark.career)
-        elif "test_pathway" in item.nodeid:
+        elif "test_pathway" in nodeid:
             item.add_marker(pytest.mark.pathway)
+        
+        # Priority markers
+        if any(pattern in nodeid for pattern in critical_patterns):
+            item.add_marker(pytest.mark.critical)
+        elif any(pattern in nodeid for pattern in important_patterns):
+            item.add_marker(pytest.mark.important)
+        else:
+            item.add_marker(pytest.mark.extended)
 
 
 @pytest.fixture
