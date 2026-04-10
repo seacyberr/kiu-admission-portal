@@ -141,6 +141,8 @@ const NCHE_DIPLOMAS = [
 export default function NCHERecommendationsPage() {
   const [step, setStep] = useState<"qualification" | "uace" | "uce" | "diploma" | "bachelors" | "results">("qualification");
   const [qualificationType, setQualificationType] = useState<"uce" | "uace" | "diploma" | "bachelors">("uce");
+  const [uaceCurriculum, setUaceCurriculum] = useState<"old" | "new">("new");
+  const [uceCurriculum, setUceCurriculum] = useState<"old" | "new">("new");
   const [uaceSubjects, setUaceSubjects] = useState<NCHESubject[]>([]);
   const [uceDivision, setUceDivision] = useState<string>("");
   const [uceCredits, setUceCredits] = useState<string[]>([]);
@@ -319,9 +321,28 @@ export default function NCHERecommendationsPage() {
         <p className="text-gray-600">NCHE Uganda standard assessment</p>
       </div>
 
+      {/* Curriculum Selector */}
+      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <Label className="font-semibold text-blue-800">Curriculum Type</Label>
+        <p className="text-sm text-gray-600 mb-2">Select the curriculum you studied under</p>
+        <select
+          value={uaceCurriculum}
+          onChange={(e) => setUaceCurriculum(e.target.value as "old" | "new")}
+          className="w-full p-2 border rounded bg-white"
+        >
+          <option value="new">New Curriculum (2024+)</option>
+          <option value="old">Old Curriculum (Pre-2024)</option>
+        </select>
+        <p className="text-xs text-gray-500 mt-1">
+          {uaceCurriculum === "new" 
+            ? "New Curriculum: 3 Principal Subjects max, Grades A-E (6 points max)" 
+            : "Old Curriculum: 3 Principal + 2 Subsidiary max, Different grading system"}
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <h3 className="font-semibold mb-3">Select Subjects & Grades (Max 5)</h3>
+          <h3 className="font-semibold mb-3">Select Principal Subjects & Grades (Max 5)</h3>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {NCHE_UACE_SUBJECTS.map((subject) => (
               <div key={subject} className="flex items-center space-x-2">
@@ -409,6 +430,25 @@ export default function NCHERecommendationsPage() {
       <div className="text-center">
         <h2 className="text-2xl font-bold mb-2">UCE Results</h2>
         <p className="text-gray-600">NCHE UCE Division assessment</p>
+      </div>
+
+      {/* Curriculum Selector */}
+      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <Label className="font-semibold text-blue-800">Curriculum Type</Label>
+        <p className="text-sm text-gray-600 mb-2">Select the curriculum you studied under</p>
+        <select
+          value={uceCurriculum}
+          onChange={(e) => setUceCurriculum(e.target.value as "old" | "new")}
+          className="w-full p-2 border rounded bg-white"
+        >
+          <option value="new">New Curriculum (2024+)</option>
+          <option value="old">Old Curriculum (Pre-2024)</option>
+        </select>
+        <p className="text-xs text-gray-500 mt-1">
+          {uceCurriculum === "new" 
+            ? "New Curriculum: 9 Subjects, Pass 6 to qualify" 
+            : "Old Curriculum: 8 Subjects, Division 1-4 to qualify"}
+        </p>
       </div>
 
       <div className="space-y-4">
