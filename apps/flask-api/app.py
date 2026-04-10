@@ -24,7 +24,7 @@ try:
 except ImportError:
     pass
 
-from flask import Flask, g, jsonify, request, send_from_directory
+from flask import Flask, g, jsonify, request, send_from_directory, make_response
 try:
     from flask_cors import CORS
 except ModuleNotFoundError:
@@ -97,14 +97,45 @@ def create_app():
     os.makedirs(config.UPLOAD_FOLDER, exist_ok=True)
     os.makedirs(os.path.join(config.UPLOAD_FOLDER, "certificates"), exist_ok=True)
 
-    # Configure CORS
+    # Configure CORS using manual after_request handler
     cors_origins = config.CORS_ORIGINS
     if cors_origins == "*":
-        origins = "*"
+        origins = ["*"]
     else:
         origins = [o.strip() for o in cors_origins.split(",") if o.strip()]
-    if CORS:
-        CORS(app, resources={r"/api/*": {"origins": origins}})
+    
+    @app.after_request
+    def after_request_cors(resp):
+        # If resp is None, create a new response
+        if resp is None:
+            resp = make_response('')
+            
+        # Ensure resp is a valid response object with headers
+        if not hasattr(resp, 'headers'):
+            return resp
+            
+        if request.path.startswith('/api/'):
+            # Get the origin from the request or use the first allowed origin
+            req_origin = request.headers.get('Origin')
+            if req_origin and req_origin in origins:
+                resp.headers['Access-Control-Allow-Origin'] = req_origin
+            elif '*' in origins:
+                resp.headers['Access-Control-Allow-Origin'] = '*'
+            elif origins:
+                resp.headers['Access-Control-Allow-Origin'] = origins[0]
+            else:
+                resp.headers['Access-Control-Allow-Origin'] = 'http://localhost:5173'
+                
+            resp.headers['Access-Control-Allow-Credentials'] = 'true'
+            resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+            resp.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Request-ID, Accept'
+            
+        return resp
+    
+    # Handle OPTIONS requests for CORS preflight
+    @app.route('/api/<path:path>', methods=['OPTIONS'])
+    def handle_options(path):
+        return '', 204
 
     # Initialize extensions
     db.init_app(app)
@@ -138,14 +169,15 @@ def create_app():
 
     @app.after_request
     def _security_headers_and_request_id(resp):
-        resp.headers["X-Request-ID"] = getattr(g, "request_id", "")
-        if config.ENABLE_SECURITY_HEADERS:
-            resp.headers["X-Content-Type-Options"] = "nosniff"
-            resp.headers["X-Frame-Options"] = "DENY"
-            resp.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-            resp.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-            if request.headers.get("X-Forwarded-Proto") == "https" or config.ENABLE_HSTS:
-                resp.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        if resp is not None:
+            resp.headers["X-Request-ID"] = getattr(g, "request_id", "")
+            if config.ENABLE_SECURITY_HEADERS:
+                resp.headers["X-Content-Type-Options"] = "nosniff"
+                resp.headers["X-Frame-Options"] = "DENY"
+                resp.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+                resp.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+                if request.headers.get("X-Forwarded-Proto") == "https" or config.ENABLE_HSTS:
+                    resp.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return resp
 
     # Register blueprints

@@ -442,3 +442,4 @@ class CacheMiddleware:
             response.headers['X-Cache'] = 'HIT'
             response.headers['X-Cache-Key'] = g.cache_info.get('key', '')
             response.headers['X-Cache-TTL'] = str(g.cache_info.get('ttl', ''))
+        return response

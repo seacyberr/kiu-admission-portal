@@ -683,85 +683,18 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
     setApplicationId(json.id);
     setStep("upload");
-  } catch (err: any) {
-    console.error("Application save failed:", err);
-    toast({ title: "Application failed", description: err.message || "Unknown error", variant: "destructive" });
-    setValidationErrors({ submit: err.message || "Failed to save application" });
-  } finally {
-    setIsSubmitting(false);
-    setIsSaving(false);
-  }
-};
-
-// ── Certificate upload ─────────────────────────────────────────────────────
-const uploadCertificates = async () => {
-  if (!applicationId) return;
-  setUploadingCerts(true);
-  let allOk = true;
-
-  const upload = async (file: File, type: "olevel" | "alevel" | "diploma" | "hec") => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("type", type);
-    const res = await fetch(`${BASE}/api/admission/applications/${applicationId}/certificate`, {
-      method: "POST",
-      credentials: "include",
-      body: formData,
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      allOk = false;
-      if (json.error) {
-        setValidationErrors({ submit: json.message });
-      }
-    }
   };
 
-  try {
-    await Promise.all([
-      olevelFile && upload(olevelFile, "olevel"),
-      alevelFile && upload(alevelFile, "alevel"),
-      diplomaFile && upload(diplomaFile, "diploma"),
-      hecFile && upload(hecFile, "hec"),
-    ]);
-    
-    if (allOk) {
-      toast({ title: "Application Submitted!", description: "Track your status in the dashboard." });
-      setLocation("/dashboard");
-    } else {
-      toast({ title: "Upload issue", description: "Application saved but some certificates failed to upload.", variant: "destructive" });
-      setLocation("/dashboard");
-    }
-  } catch (err) {
-    console.error("Certificate upload failed:", err);
-    toast({ title: "Upload failed", description: "Failed to upload certificates", variant: "destructive" });
-    setValidationErrors({ submit: "Failed to upload certificates. Please try again." });
-  } finally {
-    setUploadingCerts(false);
-  }
-};
-
-// ── Progress bar ───────────────────────────────────────────────────────────
-const visibleSteps = STEPS.filter((s) => stepOrder.includes(s.key));
-const stepProgress = ((currentIdx + 1) / stepOrder.length) * 100;
-
-// ── Render ─────────────────────────────────────────────────────────────────
-return (
-  <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    {/* Header */}
-    <div className="mb-8">
-      <button onClick={() => (currentIdx === 0 ? setLocation("/apply") : goBack())} className="inline-flex items-center text-sm font-semibold text-muted-foreground hover:text-primary mb-4 transition-colors">
-        <ArrowLeft className="w-4 h-4 mr-2" /> {currentIdx === 0 ? "Back to Program Selection" : "Previous Step"}
-      </button>
-      <h1 className="text-3xl font-display font-bold text-primary">Admission Application</h1>
-      <p className="text-muted-foreground mt-1">KIU Online Admissions — {new Date().getFullYear()}/{new Date().getFullYear() + 1} Academic Year</p>
-    </div>
+  // Render
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Header */}
       <div className="mb-8">
         <button onClick={() => (currentIdx === 0 ? setLocation("/apply") : goBack())} className="inline-flex items-center text-sm font-semibold text-muted-foreground hover:text-primary mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-2" /> {currentIdx === 0 ? "Back to Program Selection" : "Previous Step"}
         </button>
         <h1 className="text-3xl font-display font-bold text-primary">Admission Application</h1>
-        <p className="text-muted-foreground mt-1">KIU Online Admissions — {new Date().getFullYear()}/{new Date().getFullYear() + 1} Academic Year</p>
+        <p className="text-muted-foreground mt-1">KIU Online Admissions - {new Date().getFullYear()}/{new Date().getFullYear() + 1} Academic Year</p>
       </div>
 
       {/* Progress */}
