@@ -230,6 +230,7 @@ def create_app():
 
     # Health check endpoints
     @app.route("/api/healthz")
+    @app.route("/api/health")
     def healthz():
         return jsonify({"status": "ok", "service": "kiu-portal-api"}), 200
 
