@@ -31,6 +31,7 @@ def reset_database():
         
         # Delete in order to avoid foreign key constraints
         tables_to_clear = [
+            ("finalist_profiles", "Finalist profiles"),
             ("admission_applications", "Applications"),
             ("otp_codes", "OTP codes"),
             ("refresh_tokens", "Refresh tokens"),
