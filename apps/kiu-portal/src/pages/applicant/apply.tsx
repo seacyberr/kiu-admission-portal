@@ -57,22 +57,24 @@ const UGANDA_DISTRICTS = [
 
 // ── UNEB Subject lists ────────────────────────────────────────────────────────
 
-// Complete UNEB UCE (O-Level) Subjects - All 28 subjects
-const OLEVEL_SUBJECTS = [
-  // Compulsory / Core
+// UNEB UCE (O-Level) Subjects - Official UNEB List
+// Structure: 8 Compulsory + 2 Optional = 10 Total Subjects
+
+const OLEVEL_COMPULSORY_SUBJECTS = [
+  // 8 Compulsory Subjects (All students must take these)
   "English Language",
   "Mathematics",
-  // Sciences
-  "Physics",
-  "Chemistry",
   "Biology",
-  "Agriculture",
-  "General Science",
-  // Humanities & Social Studies
+  "Chemistry",
+  "Physics",
   "History",
   "Geography",
-  "Political Education",
-  "Economics",
+  "Christian Religious Education (CRE)",
+  // Note: IRE can substitute CRE for Muslim students
+];
+
+const OLEVEL_OPTIONAL_SUBJECTS = [
+  // Optional Subjects (Choose 2 from this list)
   // Languages
   "Literature in English",
   "French",
@@ -81,11 +83,10 @@ const OLEVEL_SUBJECTS = [
   "Kiswahili",
   "Arabic",
   "Luganda",
-  // Religious Studies
-  "Christian Religious Education (CRE)",
-  "Islamic Religious Education (IRE)",
-  "Divinity",
-  // Technical & Creative
+  // Sciences & Agriculture
+  "Agriculture",
+  "General Science",
+  // Technical & Creative Arts
   "Technical Drawing",
   "Metalwork",
   "Woodwork",
@@ -97,7 +98,9 @@ const OLEVEL_SUBJECTS = [
   "Dance",
   "Drama",
   "Physical Education",
-  // Business & Technology
+  "Islamic Religious Education (IRE)",
+  "Divinity",
+  // Business & ICT
   "Commerce",
   "Entrepreneurship Education",
   "Principles of Accounts",
@@ -110,6 +113,9 @@ const OLEVEL_SUBJECTS = [
   // Additional Mathematics
   "Additional Mathematics",
 ];
+
+// Combined list for backward compatibility
+const OLEVEL_SUBJECTS = [...OLEVEL_COMPULSORY_SUBJECTS, ...OLEVEL_OPTIONAL_SUBJECTS];
 
 // Old Curriculum: D1, D2, C3, C4, C5, C6, P7, P8, F9
 const OLEVEL_GRADES_OLD = [
@@ -138,28 +144,74 @@ const OLEVEL_GRADES_NEW = [
 ];
 
 const ALEVEL_PRINCIPAL_SUBJECTS = [
-  // Sciences
-  "Mathematics", "Physics", "Chemistry", "Biology", "Agriculture",
-  "Technical Drawing", "Foods and Nutrition",
-  // Arts & Humanities
-  "History", "Geography", "Economics", "Entrepreneurship Education",
-  "Art and Design", "Fine Art", "Music", "Drama", "Performing Arts",
-  // Languages
-  "Literature in English", "Luganda", "French", "German", "Arabic",
-  "Latin", "Kiswahili",
-  // Religious Studies
-  "Christian Religious Education (CRE)", "Islamic Religious Education (IRE)",
+  // Sciences (Group 1)
+  "Mathematics",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "Agriculture",
+  "Technical Drawing",
+  "Food and Nutrition",
+  "Human Biology",
+  "Botany",
+  "Zoology",
+  "Geology",
+  "Computer Studies",
+  // Arts & Humanities (Group 2)
+  "History",
+  "Geography",
+  "Economics",
   "Divinity",
-  // Commercial
-  "Commerce", "Principles of Accounts",
-  // Technical
-  "Metalwork", "Woodwork", "Building Construction",
-  "Power and Energy", "Electronics",
+  "Islamic Religious Education",
+  "Christian Religious Education",
+  "Art",
+  "Literature in English",
+  "Kiswahili",
+  "Luganda",
+  "Arabic",
+  "French",
+  "German",
+  "Latin",
+  "Music",
+  "History of Art",
+  "Archaeology",
+  "Political Education",
+  // Commercial (Group 3)
+  "Principles of Accounts",
+  "Commerce",
+  "Entrepreneurship",
+  "Financial Accounting",
+  "Economics",
+  // Technical (Group 4)
+  "Metalwork",
+  "Woodwork",
+  "Building Construction",
+  "Power and Energy",
+  "Electronics",
+  "Electricity",
+  "Automobile Mechanics",
+  "Aviation Technology",
 ];
 
+// Note: A-Level students must select:
+// - 3 Principal Subjects (from any groups, but at least 2 from same group)
+// - 2 Subsidiary Subjects (General Paper is compulsory + 1 other)
+
 const ALEVEL_SUBSIDIARY_SUBJECTS = [
-  "General Paper", "Subsidiary ICT", "Subsidiary Mathematics",
+  // Subsidiary Subjects (2 required)
+  // General Paper is compulsory for all A-Level students
+  "General Paper",
+  // Choose 1 additional subsidiary subject:
+  "Subsidiary ICT",
+  "Subsidiary Mathematics",
+  "General Studies",
+  "Sub-Math",
 ];
+
+// UNEB UACE Subject Requirements:
+// - 3 Principal Subjects (max 3, min 2 for certain programs)
+// - 2 Subsidiary Subjects (General Paper + 1 other)
+// - Total: 5 subjects for A-Level certificate
 
 const ALEVEL_GRADES = [
   { label: "A – 6 points", value: "A", points: 6 },
@@ -906,7 +958,14 @@ export default function Apply({ target }: { target: ApplyTarget }) {
             {step === "olevel" && (
               <Card className="p-8">
                 <h2 className="text-xl font-bold mb-1">Uganda Certificate of Education (UCE)</h2>
-                <p className="text-muted-foreground text-sm mb-6">Enter your O-Level results as they appear on your UNEB certificate. Include at least 5 subjects.</p>
+                <p className="text-muted-foreground text-sm mb-2">Enter your O-Level results as they appear on your UNEB certificate.</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm">
+                  <p className="font-medium text-blue-900">📋 UNEB UCE Subject Requirements:</p>
+                  <p className="text-blue-800 mt-1">
+                    • <strong>8 Compulsory subjects:</strong> English, Math, Bio, Chem, Physics, History, Geo, CRE/IRE<br/>
+                    • <strong>2 Optional subjects:</strong> Choose from Languages, Arts, Technical, or Commercial subjects
+                  </p>
+                </div>
 
                 <div className="grid md:grid-cols-3 gap-5 mb-6">
                   <div className="space-y-2">
@@ -998,7 +1057,14 @@ export default function Apply({ target }: { target: ApplyTarget }) {
             {step === "alevel" && (
               <Card className="p-8">
                 <h2 className="text-xl font-bold mb-1">Uganda Advanced Certificate of Education (UACE)</h2>
-                <p className="text-muted-foreground text-sm mb-6">Enter your A-Level results. Degree programs require at least 2 principal subjects.</p>
+                <p className="text-muted-foreground text-sm mb-2">Enter your A-Level results as they appear on your UNEB certificate.</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm">
+                  <p className="font-medium text-blue-900">📋 UNEB UACE Subject Requirements:</p>
+                  <p className="text-blue-800 mt-1">
+                    • <strong>3 Principal subjects:</strong> Choose from Sciences, Arts, Commercial, or Technical groups<br/>
+                    • <strong>2 Subsidiary subjects:</strong> General Paper (compulsory) + 1 other (ICT, Sub-Math, or General Studies)
+                  </p>
+                </div>
 
                 <div className="grid md:grid-cols-3 gap-5 mb-6">
                   <div className="space-y-2">
