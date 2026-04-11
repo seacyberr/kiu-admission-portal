@@ -70,8 +70,8 @@ structlog>=24.0.0,<25.0.0
 Flask-Caching>=2.3.0,<3.0.0
 cachelib>=0.13.0,<1.0.0
 
-# Redis (optional - uncomment if using Redis)
-# redis>=5.0.0,<6.0.0
+# Redis (required for rate limiting)
+redis>=5.0.0,<6.0.0
 
 # =============================================================================
 # ASYNC & TASK QUEUE (Optional)
