@@ -20,7 +20,7 @@ else:
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app import create_app
-from models import db, User, Application, Certificate, PasswordResetToken, OTP, AuditLog, RefreshToken
+from models import db, User, AdmissionApplication, OtpCode, AuditLog, RefreshToken
 from sqlalchemy import text
 
 def reset_database():
@@ -31,12 +31,10 @@ def reset_database():
         
         # Delete in order to avoid foreign key constraints
         tables_to_clear = [
-            ("certificates", "Uploaded certificates"),
-            ("applications", "Applications"),
-            ("password_reset_tokens", "Password reset tokens"),
+            ("admission_applications", "Applications"),
+            ("otp_codes", "OTP codes"),
             ("refresh_tokens", "Refresh tokens"),
             ("audit_logs", "Audit logs"),
-            ("otps", "OTP codes"),
             ("users", "User accounts"),
         ]
         
@@ -50,7 +48,7 @@ def reset_database():
         
         # Reset auto-increment counters for MySQL
         print("\n🔄 Resetting auto-increment counters...")
-        tables_with_ai = ['users', 'applications', 'certificates', 'audit_logs']
+        tables_with_ai = ['users', 'admission_applications', 'otp_codes', 'audit_logs']
         for table in tables_with_ai:
             try:
                 db.session.execute(text(f"ALTER TABLE {table} AUTO_INCREMENT = 1"))
