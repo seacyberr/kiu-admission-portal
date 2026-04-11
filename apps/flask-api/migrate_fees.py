@@ -3,6 +3,16 @@
 
 import sys
 import os
+
+# Activate venv if not already active
+venv_path = "/home/sea/venv"
+if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
+    pass  # Already in venv
+else:
+    activate_script = os.path.join(venv_path, "bin", "activate_this.py")
+    if os.path.exists(activate_script):
+        exec(open(activate_script).read(), {'__file__': activate_script})
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app import create_app
