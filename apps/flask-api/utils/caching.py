@@ -24,6 +24,7 @@ class CacheManager:
     
     def __init__(self, redis_url: str = None, default_ttl: int = 300):
         self.redis_client = None
+        self.memory_cache = {}  # Always initialize memory cache
         self.default_ttl = default_ttl  # 5 minutes default
         
         if redis_url:
@@ -42,9 +43,8 @@ class CacheManager:
                 logger.warning(f"Local Redis connection failed, using memory cache: {e}")
                 self.redis_client = None
         
-        # Fallback to in-memory cache
+        # Log if using in-memory cache
         if not self.redis_client:
-            self.memory_cache = {}
             logger.info("Using in-memory cache (Redis unavailable)")
     
     def _generate_key(self, prefix: str, identifier: str, *args) -> str:
@@ -119,8 +119,10 @@ class CacheManager:
             result = self.redis_client.setex(key, ttl, serialized)
             return result
         except Exception as e:
-            logger.error(f"Cache set failed: {e}")
-            return False
+            logger.warning(f"Cache set failed (using memory): {e}")
+            # Store in memory cache as fallback
+            self.memory_cache[key] = value
+            return True
     
     def delete(self, key: str) -> bool:
         """
