@@ -704,6 +704,7 @@ def assess_nche_eligibility(programme: Dict, applicant: Dict) -> Dict:
         "reasons": [],
         "missing_requirements": [],
         "recommendations": [],
+        "meets_nche_minimum": False,
         "transparency": {
             "checked_criteria": [],
             "failed_criteria": [],
