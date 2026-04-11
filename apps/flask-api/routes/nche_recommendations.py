@@ -698,24 +698,24 @@ def calculate_uace_points(subjects_grades: Dict[str, str]) -> Tuple[int, int]:
     return total_points, principal_passes
 
 def assess_nche_eligibility(programme: Dict, applicant: Dict) -> Dict:
-    """NCHE-compliant eligibility assessment"""
+    """NCHE-compliant eligibility assessment with full transparency"""
     assessment = {
         "eligible": False,
-        "strong_candidate": False,
-        "admission_category": "Not Eligible",
-        "meets_nche_minimum": False,
-        "meets_programme_requirements": False,
-        "points_calculation": {},
-        "subject_assessment": {},
-        "nche_compliance": {
+        "reasons": [],
+        "missing_requirements": [],
+        "recommendations": [],
+        "transparency": {
+            "checked_criteria": [],
+            "failed_criteria": [],
+            "passed_criteria": [],
+            "actionable_steps": [],
+            "alternative_pathways": [],
             "meets_minimum_standards": False,
             "meets_programme_requirements": False,
             "meets_quota_requirements": False
         },
-        "reasons_pass": [],
-        "reasons_fail": [],
-        "warnings": [],
-        "recommendations": []
+        "points_calculation": None,
+        "qualification_summary": {}
     }
     
     # UACE Assessment
