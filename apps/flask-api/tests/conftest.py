@@ -519,11 +519,11 @@ def valid_registration_data():
 
 
 @pytest.fixture
-def valid_login_data(user_data):
-    """Valid login credentials."""
+def valid_login_data(applicant_user):
+    """Valid login credentials for applicant_user fixture."""
     return {
-        "email": user_data["email"],
-        "password": user_data["password"]
+        "email": applicant_user.email,
+        "password": "TestPassword123!"
     }
 
 

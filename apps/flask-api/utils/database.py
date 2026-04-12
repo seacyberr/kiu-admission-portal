@@ -16,18 +16,36 @@ def atomic_transaction():
     """
     Atomic transaction context manager.
     Automatically commits on success, rolls back on exception.
-    
+    Handles existing transactions (e.g., in tests) gracefully.
+
     Usage:
         with atomic_transaction():
             db.session.add(obj)
             # Auto-committed if no exception
     """
+    # Check if we're already in a transaction (e.g., in tests)
+    # For scoped_session, we need to access the actual session
     try:
-        with db.session.begin():
+        session = db.session()
+        in_tx = session.in_transaction() if hasattr(session, 'in_transaction') else False
+    except:
+        in_tx = False
+
+    if in_tx:
+        # Already in a transaction, just yield control
+        try:
             yield
-    except Exception:
-        logger.error("Transaction failed, rolled back", exc_info=True)
-        raise
+        except Exception:
+            logger.error("Transaction failed", exc_info=True)
+            raise
+    else:
+        # No existing transaction, use db.session.begin()
+        try:
+            with db.session.begin():
+                yield
+        except Exception:
+            logger.error("Transaction failed, rolled back", exc_info=True)
+            raise
 
 
 def transactional(f):

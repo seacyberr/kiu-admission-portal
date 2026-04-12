@@ -17,7 +17,7 @@ class TestRegistrationAndVerificationFlow:
         })
         assert register_response.status_code == 201
         register_data = register_response.get_json()
-        assert register_data["needsVerification"] is True
+        assert register_data["data"]["needsVerification"] is True
 
         # Step 2: Get OTP from database (simulating terminal output)
         from models import OtpCode, User
@@ -33,8 +33,8 @@ class TestRegistrationAndVerificationFlow:
         })
         assert verify_response.status_code == 200
         verify_data = verify_response.get_json()
-        assert "token" in verify_data
-        token = verify_data["token"]
+        assert "accessToken" in verify_data["data"]
+        token = verify_data["data"]["accessToken"]
 
         # Step 4: Login (should work now)
         login_response = client.post("/api/auth/login", json={
@@ -43,7 +43,7 @@ class TestRegistrationAndVerificationFlow:
         })
         assert login_response.status_code == 200
         login_data = login_response.get_json()
-        assert "accessToken" in login_data
+        assert "accessToken" in login_data["data"]
 
         # Step 5: Get profile
         me_response = client.get("/api/auth/me", headers={
@@ -51,7 +51,7 @@ class TestRegistrationAndVerificationFlow:
         })
         assert me_response.status_code == 200
         me_data = me_response.get_json()
-        assert me_data["email"] == "integration@test.com"
+        assert me_data["data"]["email"] == "integration@test.com"
 
 
 class TestAdmissionApplicationFlow:
