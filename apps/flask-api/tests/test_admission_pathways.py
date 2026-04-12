@@ -29,7 +29,7 @@ class TestOlevelPathway:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -56,7 +56,7 @@ class TestOlevelPathway:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -79,7 +79,7 @@ class TestOlevelPathway:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -113,7 +113,7 @@ class TestAlevelPathway:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -141,7 +141,7 @@ class TestAlevelPathway:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -169,7 +169,7 @@ class TestAlevelPathway:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -200,7 +200,7 @@ class TestHECPathway:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -228,7 +228,7 @@ class TestDiplomaPathway:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -260,7 +260,7 @@ class TestDiplomaPathway:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -289,7 +289,7 @@ class TestMastersPathway:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -313,7 +313,7 @@ class TestMastersPathway:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -349,7 +349,7 @@ class TestPhDPathway:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -373,7 +373,7 @@ class TestPhDPathway:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -406,7 +406,7 @@ class TestHealthSciencePathways:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -434,7 +434,7 @@ class TestHealthSciencePathways:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -471,7 +471,7 @@ class TestMultipleProgramApplications:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -502,7 +502,7 @@ class TestCurriculumVersions:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -527,7 +527,7 @@ class TestCurriculumVersions:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -549,7 +549,7 @@ class TestApplicationValidation:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -568,7 +568,7 @@ class TestApplicationValidation:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )
@@ -587,7 +587,7 @@ class TestApplicationValidation:
         }
         
         response = client.post(
-            '/api/v1/admissions/apply',
+            '/api/admissions/apply',
             json=payload,
             headers=auth_headers
         )

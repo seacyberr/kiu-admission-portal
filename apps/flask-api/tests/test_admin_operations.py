@@ -17,7 +17,7 @@ class TestAdminApplicationReview:
         app3 = create_application(status='accepted')
         
         response = client.get(
-            '/api/v1/admin/applications',
+            '/api/admin/applications',
             headers=admin_auth_headers
         )
         
@@ -32,7 +32,7 @@ class TestAdminApplicationReview:
         create_application(status='rejected')
         
         response = client.get(
-            '/api/v1/admin/applications?status=submitted',
+            '/api/admin/applications?status=submitted',
             headers=admin_auth_headers
         )
         
@@ -46,7 +46,7 @@ class TestAdminApplicationReview:
         create_application()
         
         response = client.get(
-            f'/api/v1/admin/applications?search={applicant_user.first_name}',
+            f'/api/admin/applications?search={applicant_user.first_name}',
             headers=admin_auth_headers
         )
         
@@ -57,7 +57,7 @@ class TestAdminApplicationReview:
         app = create_application(status='submitted')
         
         response = client.get(
-            f'/api/v1/admin/applications/{app.id}',
+            f'/api/admin/applications/{app.id}',
             headers=admin_auth_headers
         )
         
@@ -68,7 +68,7 @@ class TestAdminApplicationReview:
     def test_non_admin_cannot_view_all_applications(self, client, auth_headers):
         """Test non-admin cannot access admin endpoints"""
         response = client.get(
-            '/api/v1/admin/applications',
+            '/api/admin/applications',
             headers=auth_headers
         )
         
@@ -88,7 +88,7 @@ class TestApplicationDecisionWorkflow:
         }
         
         response = client.post(
-            f'/api/v1/admin/applications/{app.id}/decision',
+            f'/api/admin/applications/{app.id}/decision',
             json=decision_payload,
             headers=admin_auth_headers
         )
@@ -108,7 +108,7 @@ class TestApplicationDecisionWorkflow:
         }
         
         response = client.post(
-            f'/api/v1/admin/applications/{app.id}/decision',
+            f'/api/admin/applications/{app.id}/decision',
             json=decision_payload,
             headers=admin_auth_headers
         )
@@ -128,7 +128,7 @@ class TestApplicationDecisionWorkflow:
         }
         
         response = client.post(
-            f'/api/v1/admin/applications/{app.id}/decision',
+            f'/api/admin/applications/{app.id}/decision',
             json=decision_payload,
             headers=admin_auth_headers
         )
@@ -147,7 +147,7 @@ class TestApplicationDecisionWorkflow:
         }
         
         response = client.post(
-            f'/api/v1/admin/applications/{app.id}/request-documents',
+            f'/api/admin/applications/{app.id}/request-documents',
             json=request_payload,
             headers=admin_auth_headers
         )
@@ -172,7 +172,7 @@ class TestInterviewScheduling:
         }
         
         response = client.post(
-            f'/api/v1/admin/applications/{app.id}/schedule-interview',
+            f'/api/admin/applications/{app.id}/schedule-interview',
             json=interview_payload,
             headers=admin_auth_headers
         )
@@ -193,7 +193,7 @@ class TestInterviewScheduling:
         }
         
         response = client.put(
-            f'/api/v1/admin/applications/{app.id}/interview',
+            f'/api/admin/applications/{app.id}/interview',
             json=update_payload,
             headers=admin_auth_headers
         )
@@ -210,7 +210,7 @@ class TestInterviewScheduling:
         }
         
         response = client.post(
-            f'/api/v1/admin/applications/{app.id}/interview-notes',
+            f'/api/admin/applications/{app.id}/interview-notes',
             json=notes_payload,
             headers=admin_auth_headers
         )
@@ -241,7 +241,7 @@ class TestProgramManagement:
         }
         
         response = client.post(
-            '/api/v1/admin/programs',
+            '/api/admin/programs',
             json=program_payload,
             headers=admin_auth_headers
         )
@@ -260,7 +260,7 @@ class TestProgramManagement:
         }
         
         response = client.put(
-            f'/api/v1/admin/programs/{program.id}',
+            f'/api/admin/programs/{program.id}',
             json=update_payload,
             headers=admin_auth_headers
         )
@@ -275,14 +275,14 @@ class TestProgramManagement:
         program = sample_programs['certificate']
         
         response = client.delete(
-            f'/api/v1/admin/programs/{program.id}',
+            f'/api/admin/programs/{program.id}',
             headers=admin_auth_headers
         )
         
         assert response.status_code == 200
         
         # Verify program is deactivated
-        get_response = client.get(f'/api/v1/programs/{program.id}')
+        get_response = client.get(f'/api/programs/{program.id}')
         assert get_response.get_json()['data']['program']['is_active'] is False
     
     def test_non_admin_cannot_create_program(self, client, auth_headers):
@@ -294,7 +294,7 @@ class TestProgramManagement:
         }
         
         response = client.post(
-            '/api/v1/admin/programs',
+            '/api/admin/programs',
             json=program_payload,
             headers=auth_headers
         )
@@ -318,7 +318,7 @@ class TestIntakeManagement:
         }
         
         response = client.post(
-            '/api/v1/admin/intakes',
+            '/api/admin/intakes',
             json=intake_payload,
             headers=admin_auth_headers
         )
@@ -330,7 +330,7 @@ class TestIntakeManagement:
     def test_admin_close_intake(self, client, admin_auth_headers, active_intake):
         """Test admin can close an intake"""
         response = client.post(
-            f'/api/v1/admin/intakes/{active_intake.id}/close',
+            f'/api/admin/intakes/{active_intake.id}/close',
             headers=admin_auth_headers
         )
         
@@ -346,7 +346,7 @@ class TestIntakeManagement:
         }
         
         response = client.put(
-            f'/api/v1/admin/intakes/{active_intake.id}/deadline',
+            f'/api/admin/intakes/{active_intake.id}/deadline',
             json=extension_payload,
             headers=admin_auth_headers
         )
@@ -365,7 +365,7 @@ class TestReportsAndAnalytics:
         create_application(status='rejected')
         
         response = client.get(
-            '/api/v1/admin/statistics/applications',
+            '/api/admin/statistics/applications',
             headers=admin_auth_headers
         )
         
@@ -381,7 +381,7 @@ class TestReportsAndAnalytics:
         create_application(status='enrolled')
         
         response = client.get(
-            '/api/v1/admin/reports/enrollment',
+            '/api/admin/reports/enrollment',
             headers=admin_auth_headers
         )
         
@@ -394,7 +394,7 @@ class TestReportsAndAnalytics:
         create_application(status='submitted')
         
         response = client.get(
-            '/api/v1/admin/applications/export?format=csv',
+            '/api/admin/applications/export?format=csv',
             headers=admin_auth_headers
         )
         
@@ -408,7 +408,7 @@ class TestUserManagement:
     def test_admin_view_all_users(self, client, admin_auth_headers, applicant_user, admin_user):
         """Test admin can view all users"""
         response = client.get(
-            '/api/v1/admin/users',
+            '/api/admin/users',
             headers=admin_auth_headers
         )
         
@@ -419,7 +419,7 @@ class TestUserManagement:
     def test_admin_filter_users_by_role(self, client, admin_auth_headers, applicant_user, admin_user):
         """Test admin can filter users by role"""
         response = client.get(
-            '/api/v1/admin/users?role=applicant',
+            '/api/admin/users?role=applicant',
             headers=admin_auth_headers
         )
         
@@ -431,14 +431,14 @@ class TestUserManagement:
     def test_admin_deactivate_user(self, client, admin_auth_headers, applicant_user):
         """Test admin can deactivate a user"""
         response = client.post(
-            f'/api/v1/admin/users/{applicant_user.id}/deactivate',
+            f'/api/admin/users/{applicant_user.id}/deactivate',
             headers=admin_auth_headers
         )
         
         assert response.status_code == 200
         
         # Verify user cannot login
-        login_response = client.post('/api/v1/auth/login', json={
+        login_response = client.post('/api/auth/login', json={
             'email': applicant_user.email,
             'password': 'TestPassword123!'
         })
@@ -450,7 +450,7 @@ class TestUserManagement:
         applicant_user.is_active = False
         
         response = client.post(
-            f'/api/v1/admin/users/{applicant_user.id}/activate',
+            f'/api/admin/users/{applicant_user.id}/activate',
             headers=admin_auth_headers
         )
         
@@ -464,7 +464,7 @@ class TestUserManagement:
         }
         
         response = client.put(
-            f'/api/v1/admin/users/{applicant_user.id}/role',
+            f'/api/admin/users/{applicant_user.id}/role',
             json=role_payload,
             headers=admin_auth_headers
         )
@@ -483,13 +483,13 @@ class TestAuditLogs:
         
         # Make some changes to generate logs
         client.post(
-            f'/api/v1/admin/applications/{app.id}/decision',
+            f'/api/admin/applications/{app.id}/decision',
             json={'decision': 'accept'},
             headers=admin_auth_headers
         )
         
         response = client.get(
-            f'/api/v1/admin/applications/{app.id}/audit-log',
+            f'/api/admin/applications/{app.id}/audit-log',
             headers=admin_auth_headers
         )
         
@@ -502,14 +502,14 @@ class TestAuditLogs:
         app = create_application()
         
         client.post(
-            f'/api/v1/admin/applications/{app.id}/decision',
+            f'/api/admin/applications/{app.id}/decision',
             json={'decision': 'accept', 'notes': 'Approved'},
             headers=admin_auth_headers
         )
         
         # Check log contains admin action
         response = client.get(
-            f'/api/v1/admin/applications/{app.id}/audit-log',
+            f'/api/admin/applications/{app.id}/audit-log',
             headers=admin_auth_headers
         )
         
@@ -534,7 +534,7 @@ class TestFeeManagement:
         }
         
         response = client.put(
-            f'/api/v1/admin/programs/{program.id}/fees',
+            f'/api/admin/programs/{program.id}/fees',
             json=fee_payload,
             headers=admin_auth_headers
         )
@@ -548,7 +548,7 @@ class TestFeeManagement:
         program = sample_programs['bachelor']
         
         response = client.get(
-            f'/api/v1/admin/programs/{program.id}/fee-history',
+            f'/api/admin/programs/{program.id}/fee-history',
             headers=admin_auth_headers
         )
         

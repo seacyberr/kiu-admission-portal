@@ -71,8 +71,11 @@ export type AdmissionApplication = {
   adminNotes?: string | null;
   submittedAt?: string | null;
   updatedAt?: string | null;
+  createdAt?: string | null;
   applicantName?: string | null;
   applicantEmail?: string | null;
+  applicantPhone?: string | null;
+  documents?: { documentType: string; fileUrl: string }[];
 };
 
 export type CareerPath = {

@@ -11,16 +11,13 @@ class TestFinalistProfile:
     
     def test_finalist_view_own_profile(self, client, finalist_user):
         """Test finalist can view their profile"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/profile',
+            '/api/career/profile',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -31,13 +28,10 @@ class TestFinalistProfile:
     
     def test_finalist_update_profile(self, client, finalist_user):
         """Test finalist can update their profile"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         update_payload = {
             'phone': '+256700000999',
@@ -47,7 +41,7 @@ class TestFinalistProfile:
         }
         
         response = client.put(
-            '/api/v1/career/profile',
+            '/api/career/profile',
             json=update_payload,
             headers={'Authorization': f'Bearer {token}'}
         )
@@ -58,16 +52,13 @@ class TestFinalistProfile:
     
     def test_applicant_cannot_access_career_profile(self, client, applicant_user):
         """Test applicant cannot access finalist features"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=applicant_user.id,
-                additional_claims={'role': 'applicant'}
-            )
+            token = AuthService.generate_token(applicant_user.id, 'applicant')
         
         response = client.get(
-            '/api/v1/career/profile',
+            '/api/career/profile',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -79,16 +70,13 @@ class TestCareerPaths:
     
     def test_finalist_view_career_paths(self, client, finalist_user):
         """Test finalist can view career paths"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/paths',
+            '/api/career/paths',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -98,18 +86,15 @@ class TestCareerPaths:
     
     def test_view_career_path_by_program(self, client, finalist_user, sample_programs):
         """Test viewing career paths for specific program"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         program = sample_programs['bachelor']
         
         response = client.get(
-            f'/api/v1/career/paths?program={program.id}',
+            f'/api/career/paths?program={program.id}',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -119,16 +104,13 @@ class TestCareerPaths:
     
     def test_view_career_path_details(self, client, finalist_user):
         """Test viewing detailed career path information"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/paths/software-engineer',
+            '/api/career/paths/software-engineer',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -144,16 +126,13 @@ class TestJobOpportunities:
     
     def test_finalist_view_job_opportunities(self, client, finalist_user):
         """Test finalist can view job opportunities"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/opportunities',
+            '/api/career/opportunities',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -163,16 +142,13 @@ class TestJobOpportunities:
     
     def test_filter_jobs_by_type(self, client, finalist_user):
         """Test filtering jobs by type (job/internship)"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/opportunities?type=internship',
+            '/api/career/opportunities?type=internship',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -183,16 +159,13 @@ class TestJobOpportunities:
     
     def test_filter_jobs_by_location(self, client, finalist_user):
         """Test filtering jobs by location"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/opportunities?location=Kampala',
+            '/api/career/opportunities?location=Kampala',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -200,16 +173,13 @@ class TestJobOpportunities:
     
     def test_view_job_details(self, client, finalist_user):
         """Test viewing detailed job information"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/opportunities/123',
+            '/api/career/opportunities/123',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -222,13 +192,10 @@ class TestJobApplications:
     
     def test_finalist_apply_for_job(self, client, finalist_user):
         """Test finalist can apply for a job"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         application_payload = {
             'opportunity_id': 'job-123',
@@ -238,7 +205,7 @@ class TestJobApplications:
         }
         
         response = client.post(
-            '/api/v1/career/applications',
+            '/api/career/applications',
             json=application_payload,
             headers={'Authorization': f'Bearer {token}'}
         )
@@ -247,16 +214,13 @@ class TestJobApplications:
     
     def test_finalist_view_own_applications(self, client, finalist_user):
         """Test finalist can view their job applications"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/my-applications',
+            '/api/career/my-applications',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -266,16 +230,13 @@ class TestJobApplications:
     
     def test_withdraw_job_application(self, client, finalist_user):
         """Test finalist can withdraw a job application"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.delete(
-            '/api/v1/career/applications/app-123',
+            '/api/career/applications/app-123',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -287,13 +248,10 @@ class TestCVBuilder:
     
     def test_finalist_create_cv(self, client, finalist_user):
         """Test finalist can create a CV"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         cv_payload = {
             'template': 'professional',
@@ -319,7 +277,7 @@ class TestCVBuilder:
         }
         
         response = client.post(
-            '/api/v1/career/cv',
+            '/api/career/cv',
             json=cv_payload,
             headers={'Authorization': f'Bearer {token}'}
         )
@@ -328,13 +286,10 @@ class TestCVBuilder:
     
     def test_finalist_update_cv(self, client, finalist_user):
         """Test finalist can update their CV"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         update_payload = {
             'sections': {
@@ -343,7 +298,7 @@ class TestCVBuilder:
         }
         
         response = client.put(
-            '/api/v1/career/cv',
+            '/api/career/cv',
             json=update_payload,
             headers={'Authorization': f'Bearer {token}'}
         )
@@ -352,16 +307,13 @@ class TestCVBuilder:
     
     def test_finalist_download_cv(self, client, finalist_user):
         """Test finalist can download CV as PDF"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/cv/download',
+            '/api/career/cv/download',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -375,16 +327,13 @@ class TestNetworking:
     
     def test_finalist_view_alumni_network(self, client, finalist_user):
         """Test finalist can view alumni network"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/alumni',
+            '/api/career/alumni',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -394,16 +343,13 @@ class TestNetworking:
     
     def test_search_alumni_by_industry(self, client, finalist_user):
         """Test searching alumni by industry"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/alumni?industry=technology',
+            '/api/career/alumni?industry=technology',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -411,13 +357,10 @@ class TestNetworking:
     
     def test_connect_with_alumni(self, client, finalist_user):
         """Test finalist can connect with alumni"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         connect_payload = {
             'alumni_id': 'alum-456',
@@ -425,7 +368,7 @@ class TestNetworking:
         }
         
         response = client.post(
-            '/api/v1/career/connect',
+            '/api/career/connect',
             json=connect_payload,
             headers={'Authorization': f'Bearer {token}'}
         )
@@ -438,16 +381,13 @@ class TestMentorship:
     
     def test_finalist_view_mentors(self, client, finalist_user):
         """Test finalist can view available mentors"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/mentors',
+            '/api/career/mentors',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -457,13 +397,10 @@ class TestMentorship:
     
     def test_finalist_request_mentorship(self, client, finalist_user):
         """Test finalist can request mentorship"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         request_payload = {
             'mentor_id': 'mentor-789',
@@ -472,7 +409,7 @@ class TestMentorship:
         }
         
         response = client.post(
-            '/api/v1/career/mentorship-requests',
+            '/api/career/mentorship-requests',
             json=request_payload,
             headers={'Authorization': f'Bearer {token}'}
         )
@@ -485,16 +422,13 @@ class TestSkillAssessments:
     
     def test_finalist_view_skill_assessments(self, client, finalist_user):
         """Test finalist can view available skill assessments"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/skill-assessments',
+            '/api/career/skill-assessments',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -504,13 +438,10 @@ class TestSkillAssessments:
     
     def test_finalist_take_skill_assessment(self, client, finalist_user):
         """Test finalist can take skill assessment"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         assessment_payload = {
             'assessment_id': 'python-basics',
@@ -521,7 +452,7 @@ class TestSkillAssessments:
         }
         
         response = client.post(
-            '/api/v1/career/skill-assessments/submit',
+            '/api/career/skill-assessments/submit',
             json=assessment_payload,
             headers={'Authorization': f'Bearer {token}'}
         )
@@ -530,16 +461,13 @@ class TestSkillAssessments:
     
     def test_view_skill_assessment_results(self, client, finalist_user):
         """Test finalist can view assessment results"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/skill-assessments/results',
+            '/api/career/skill-assessments/results',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -553,16 +481,13 @@ class TestCareerAnalytics:
     
     def test_finalist_view_career_analytics(self, client, finalist_user):
         """Test finalist can view their career analytics"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/analytics',
+            '/api/career/analytics',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -573,16 +498,13 @@ class TestCareerAnalytics:
     
     def test_finalist_view_job_market_insights(self, client, finalist_user):
         """Test finalist can view job market insights"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=finalist_user.id,
-                additional_claims={'role': 'finalist'}
-            )
+            token = AuthService.generate_token(finalist_user.id, 'finalist')
         
         response = client.get(
-            '/api/v1/career/market-insights',
+            '/api/career/market-insights',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -597,16 +519,13 @@ class TestEmployerFeatures:
     
     def test_employer_view_finalist_profiles(self, client, admin_user):
         """Test employer can view finalist profiles (admin access)"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=admin_user.id,
-                additional_claims={'role': 'admin'}
-            )
+            token = AuthService.generate_token(admin_user.id, 'admin')
         
         response = client.get(
-            '/api/v1/career/finalists',
+            '/api/career/finalists',
             headers={'Authorization': f'Bearer {token}'}
         )
         
@@ -616,13 +535,10 @@ class TestEmployerFeatures:
     
     def test_employer_post_job(self, client, admin_user):
         """Test employer can post job opportunity"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=admin_user.id,
-                additional_claims={'role': 'admin'}
-            )
+            token = AuthService.generate_token(admin_user.id, 'admin')
         
         job_payload = {
             'title': 'Software Developer',
@@ -637,7 +553,7 @@ class TestEmployerFeatures:
         }
         
         response = client.post(
-            '/api/v1/career/opportunities',
+            '/api/career/opportunities',
             json=job_payload,
             headers={'Authorization': f'Bearer {token}'}
         )
@@ -646,16 +562,13 @@ class TestEmployerFeatures:
     
     def test_employer_search_finalists(self, client, admin_user):
         """Test employer can search finalists by skills"""
-        from flask_jwt_extended import create_access_token
+        from services.auth_service import AuthService
         
         with client.application.app_context():
-            token = create_access_token(
-                identity=admin_user.id,
-                additional_claims={'role': 'admin'}
-            )
+            token = AuthService.generate_token(admin_user.id, 'admin')
         
         response = client.get(
-            '/api/v1/career/finalists?skills=python,javascript',
+            '/api/career/finalists?skills=python,javascript',
             headers={'Authorization': f'Bearer {token}'}
         )
         

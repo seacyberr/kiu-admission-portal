@@ -1,313 +1,242 @@
-# KIU Admission Portal v2.0
-
-**Kampala International University** - Professional Admission & Career Management System
-
-A modern, industry-standard portal handling Uganda's complete education pathway system (O-Level → PhD) with NCHE compliance.
+# KIU Admission Portal
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Node 18+](https://img.shields.io/badge/node-18+-green.svg)](https://nodejs.org/)
 
+**A cross-platform admission management system for Kampala International University**  
+Compliant with NCHE Uganda requirements. Works on Windows, macOS, Linux, and mobile devices.
+
 ---
 
-## Quick Start
+## 🚀 Quick Start (Cross-Platform)
 
+### Option 1: Docker Development (Recommended for Teams)
+The easiest way to get started without installing dependencies locally. Works identically on Windows, macOS, and Linux.
+
+**Step 1: Install Docker**
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) (Windows/Mac)
+- Or `sudo apt install docker.io docker-compose` (Linux)
+
+**Step 2: Start Development Environment**
 ```bash
-# One-command setup (Windows/Linux/MacOS)
-pnpm setup
+# Windows (Command Prompt or PowerShell)
+scripts\dev-start.bat
 
-# Start development
-pnpm dev
+# macOS / Linux
+chmod +x scripts/*.sh
+./scripts/dev-start.sh
 ```
 
----
+That's it! Access:
+- **Frontend**: http://localhost:5173
+- **API**: http://localhost:5001
+- **Database**: localhost:3306 (MySQL)
 
-## Repository Structure
+See [DOCKER_SETUP.md](DOCKER_SETUP.md) for detailed instructions.
 
-| Path | Description | Tech Stack |
-|------|-------------|------------|
-| [`apps/kiu-portal`](apps/kiu-portal) | React frontend | Vite + React + TypeScript + Tailwind |
-| [`apps/flask-api`](apps/flask-api) | REST API | Flask + SQLAlchemy + JWT |
-| [`lib/api-client-react`](lib/api-client-react) | Shared API client | React Query + TypeScript |
+### Option 2: Local Development (Advanced Users)
+Install dependencies directly on your machine. Requires Python 3.11+, Node.js 18+, MySQL, and Redis.
 
----
+**Step 1: Install Prerequisites**
+- [Node.js 18+](https://nodejs.org) (LTS version)
+- [Python 3.11+](https://python.org)
+- [MySQL 8.0](https://mysql.com)
+- [pnpm](https://pnpm.io) (`npm install -g pnpm`)
 
-## Features
-
-### Education Pathways Supported (NCHE Compliant)
-
-| Level | Entry Route | Programs Available |
-|-------|-------------|-------------------|
-| **O-Level (UCE)** | Direct | National Certificates, HEC |
-| **A-Level (UACE)** | Direct | Diploma, HEC, Bachelor |
-| **HEC** | Progression | Bachelor Degree |
-| **National Certificate** | Progression | Diploma, HEC |
-| **Diploma** | Progression | Bachelor (with credit transfer) |
-| **Bachelor** | Progression | Masters |
-| **Masters** | Progression | PhD |
-
-### Key Capabilities
-
-- ✅ **Dual Curriculum Support** - Old (Pre-2024) & New (2024+) UCE grading
-- ✅ **Qualification Assessment** - Automated eligibility checking
-- ✅ **Program Recommendations** - AI-powered matching
-- ✅ **Online Applications** - Complete admission workflow
-- ✅ **Document Management** - Secure upload & verification
-- ✅ **Payment Integration** - Application fees & tuition
-- ✅ **Admin Dashboard** - Application review & management
-
----
-
-## Tech Stack
-
-### Backend
-- **Framework**: Flask with Application Factory pattern
-- **Database**: PostgreSQL / MySQL with SQLAlchemy ORM
-- **Authentication**: JWT with refresh tokens
-- **Validation**: Pydantic schemas
-- **Security**: Rate limiting, CORS, bcrypt
-
-### Frontend
-- **Framework**: React 18+ with TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS
-- **State Management**: React Query + Context API
-- **Routing**: Wouter
-- **Forms**: React Hook Form + Zod
-
----
-
-## Documentation
-
-| Document | Purpose |
-|----------|---------|
-| [`PROFESSIONAL_REORGANIZATION.md`](PROFESSIONAL_REORGANIZATION.md) | Architecture & structure |
-| [`KIU_FEE_SOURCES.md`](KIU_FEE_SOURCES.md) | Verified 2025/2026 fee structure |
-| [`NCHE_ADMISSION_PATHWAYS.md`](NCHE_ADMISSION_PATHWAYS.md) | Uganda education standards |
-| [`APPLICATION_FORMS_DESIGN.md`](APPLICATION_FORMS_DESIGN.md) | Form specifications |
-| [`DEPLOYMENT.md`](DEPLOYMENT.md) | Production deployment |
-
----
-
-## Prerequisites
-
-- **Node.js** 18+ and **pnpm**
-- **Python** 3.11+
-- **PostgreSQL** 14+ or **MySQL** 8
-
----
-
-## Installation
-
-### Automated Setup
+**Step 2: Install Dependencies**
 ```bash
-pnpm setup
-```
-
-### Manual Setup
-```bash
-# Install Node dependencies
+# Install frontend dependencies
 pnpm install
 
-# Install Python dependencies
+# Install Python dependencies (cross-platform)
 cd apps/flask-api
 pip install -r requirements.txt
-
-# Setup database
-flask db upgrade
-flask seed
 ```
 
----
-
-## Development
-
-```bash
-# Start all services
-pnpm dev
-
-# Or individually:
-pnpm --filter kiu-portal dev      # Frontend only
-python apps/flask-api/run.py       # Backend only
-```
-
----
-
-## Configuration
-
-Create `.env` in `apps/flask-api/`:
+**Step 3: Configure**
+Create `apps/flask-api/.env`:
 ```env
-DATABASE_URL=postgresql://user:pass@localhost:5432/kiu_portal
-JWT_SECRET=your-secret-key
+# Database - Works with SQLite (no setup), PostgreSQL, or MySQL
+DATABASE_URL=sqlite:///kiu_portal.db
+
+# Or for PostgreSQL:
+# DATABASE_URL=postgresql://user:pass@localhost:5432/kiu_portal
+
+# Security
+JWT_SECRET=your-secret-key-here
 FLASK_ENV=development
 ```
 
----
-
-## API Endpoints
-
-### Authentication
-```
-POST /api/v1/auth/register
-POST /api/v1/auth/login
-POST /api/v1/auth/refresh
-POST /api/v1/auth/logout
-GET  /api/v1/auth/me
-```
-
-### Admissions
-```
-GET  /api/v1/programs
-POST /api/v1/admissions/apply
-GET  /api/v1/admissions/my-applications
-```
-
-### Recommendations
-```
-POST /api/v1/recommendations/assess
-GET  /api/v1/recommendations/programs
-```
-
-Full API docs: [`docs/API_DOCUMENTATION.md`](docs/API_DOCUMENTATION.md)
-
----
-
-## KIU Contact Information
-
-| | |
-|---|---|
-| **Phone** | +256 414 100808 |
-| **Email** | admissions@kiu.ac.ug |
-| **Website** | www.kiu.ac.ug |
-| **Main Campus** | Kansanga, Kampala, Uganda |
-| **Western Campus** | Ishaka, Bushenyi District |
-
----
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details
-
----
-
-**Kampala International University** - *The Leading Private University in Uganda*
-
-## Supported Qualification Entry Routes
-
-✅ **NCHE Uganda Approved Admission Pathways:**
-
-| Qualification Level | Description |
-|---------------------|-------------|
-| **O-Level / UCE** | Direct entry for bridging programmes |
-| **A-Level / UACE** | Standard undergraduate entry |
-| **Higher Education Certificate (HEC)** | Bridging programme |
-| **National Certificate** | Technical & vocational entry |
-| **Diploma** | Diploma holders direct entry |
-| **Bachelor's Degree** | Postgraduate entry |
-| **Master's Degree** | PhD & advanced programmes |
-
-
-## Prerequisites
-
-- **Node.js** 18+ and **pnpm**
-- **Python** 3.11+
-- **MySQL** 8 (local or Docker; CI uses MySQL for tests)
-
-## Install
-
- **ONE COMMAND FULL SETUP (WORKS ON WINDOWS / LINUX / MACOS):**
-
-```bash
-pnpm setup
-```
-
-This command automatically:
-- Installs all Node.js dependencies
-- Installs all Python packages
-- Automatically installs correct server for your OS (gunicorn/waitress)
-- Works identically on all operating systems
-
-## Configuration
-
-- **Database:** set `DATABASE_URL` (MySQL), e.g. `mysql+pymysql://user:pass@127.0.0.1:3306/kiu_admissions`. See [`apps/flask-api/config.py`](apps/flask-api/config.py).
-- **Secrets:** set `JWT_SECRET` or `SECRET_KEY` for JWT signing.
-- **CORS:** optional `CORS_ORIGINS` for allowed browser origins in production.
-
-Further deployment notes: [`DEPLOYMENT.md`](DEPLOYMENT.md).
-
-## Run locally
-
- **UNIVERSAL COMMANDS (WORK ON ALL OPERATING SYSTEMS):**
-
-**Terminal 1 - Backend API:**
-```bash
-pnpm dev:api
-```
-
-**Terminal 2 - Frontend:**
-```bash
-pnpm dev:portal
-```
-
- Application will be available at:
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:5000
-- API Documentation: http://localhost:5000/docs
-
----
-
-Manual run commands (not required):
-
-**1. API** (default port 5000):
+**Step 4: Initialize Database**
 ```bash
 cd apps/flask-api
+python -c "from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()"
+python scripts/seed_all_programs.py
+```
+
+**Step 5: Start Development**
+```bash
+# Terminal 1 - Backend (Port 5000)
+cd apps/flask-api
 python run.py
+
+# Terminal 2 - Frontend (Port 5173)
+pnpm --filter kiu-portal dev
 ```
 
-**2. Frontend:**
+**Access:**
+- Frontend: http://localhost:5173
+- API: http://localhost:5000
+
+---
+
+## 📱 Mobile & Responsive Design
+
+The application is fully responsive and works on:
+- ✅ Desktop (Windows, macOS, Linux)
+- ✅ Tablets (iPad, Android tablets)
+- ✅ Mobile phones (iOS Safari, Android Chrome)
+- ✅ No app installation required - works in browser
+
+**Key Responsive Features:**
+- Mobile-optimized forms
+- Touch-friendly buttons
+- Responsive tables with horizontal scroll
+- Optimized image uploads
+- Mobile payment flow
+
+---
+
+## 🗂️ Project Structure
+
+```
+Kiu-Admission-Portal/
+├── apps/
+│   ├── kiu-portal/          # React frontend (Vite + TypeScript)
+│   └── flask-api/           # Flask backend API
+│       ├── requirements.txt # Python dependencies
+│       ├── run.py          # Entry point
+│       └── .env            # Configuration
+├── lib/
+│   └── api-client-react/    # Shared API client
+├── package.json             # Node.js dependencies
+└── README.md               # This file
+```
+
+---
+
+## 🔧 System Requirements
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| Node.js | 18.x LTS | 20.x LTS |
+| Python | 3.11 | 3.12 |
+| RAM | 4 GB | 8 GB |
+| Storage | 2 GB free | 5 GB free |
+| Browser | Chrome 90+ | Latest Chrome/Firefox/Safari |
+
+### Optional for Production
+- **Redis** - For caching and rate limiting (falls back to memory if not available)
+- **PostgreSQL** - For production database (SQLite works for development)
+- **Sentry** - For error tracking (optional)
+
+---
+
+## 🧪 Testing
+
 ```bash
-pnpm --filter @workspace/kiu-portal dev
+# Backend tests (all platforms)
+cd apps/flask-api
+python -m pytest tests/ -v
+
+# Frontend tests
+pnpm --filter kiu-portal test
+
+# Type checking
+pnpm run typecheck
 ```
 
-The Vite dev server proxies browser requests to `/api` to the Flask backend. Override the proxy target if needed:
+---
+
+## 📦 Production Deployment
+
+**Simple deployment on any platform:**
 
 ```bash
-VITE_API_PROXY_TARGET=http://127.0.0.1:5001 pnpm --filter @workspace/kiu-portal dev
+# Build for production
+pnpm run build
+
+# Start production server
+cd apps/flask-api
+pip install gunicorn  # Linux/Mac
+# OR
+pip install waitress  # Windows
+
+# Run with production server
+gunicorn -w 4 -b 0.0.0.0:5000 wsgi:app  # Linux/Mac
+# OR
+waitress-serve --host 0.0.0.0 --port=5000 wsgi:app  # Windows
 ```
 
-See [`apps/kiu-portal/vite.config.ts`](apps/kiu-portal/vite.config.ts).
+---
 
-Authentication uses an **httpOnly** session cookie (`auth_token`); the SPA sends `credentials: 'include'` on API calls.
+## 📄 Documentation
 
-## Scripts (root)
+- **API Docs:** http://localhost:5000/docs (when running)
+- **Architecture:** `docs/ARCHITECTURE.md`
+- **NCHE Standards:** `docs/NCHE_STANDARDS.md`
+- **Deployment:** `docs/DEPLOYMENT.md`
 
-| Command | Description |
-|---------|-------------|
-| `pnpm run typecheck` | Typecheck `apps/*` and `lib/*` packages |
-| `pnpm run build` | Production build (typecheck + package builds) |
-| `pnpm run test:api` | Run Flask pytest suite |
+---
 
-## Frontend tests
+## 🐛 Troubleshooting
 
+**Issue: `pnpm` command not found**
 ```bash
-pnpm --filter @workspace/kiu-portal test
-pnpm --filter @workspace/kiu-portal test:e2e   # requires dev server; see Playwright config
+npm install -g pnpm
 ```
 
-## Backend tests
+**Issue: Database connection fails**
+- Use SQLite for easiest setup: `DATABASE_URL=sqlite:///kiu_portal.db`
 
-From the repo root (after installing Python dependencies under `apps/flask-api`):
-
+**Issue: Port already in use**
 ```bash
-pnpm run test:api
+# Find and kill process on port 5000
+# Windows:
+netstat -ano | findstr :5000
+taskkill /PID <PID> /F
+
+# macOS/Linux:
+lsof -ti:5000 | xargs kill -9
 ```
 
-Or directly:
-
+**Issue: Python packages fail to install**
 ```bash
-cd apps/flask-api && python3 -m pytest tests/ -q
+# Upgrade pip first
+python -m pip install --upgrade pip setuptools wheel
 ```
 
-## CI
+---
 
-GitHub Actions runs backend tests (MySQL), frontend typecheck/build, and frontend unit tests. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+## 🤝 Contributing
+
+This is a final year project. For issues or improvements, please document them for academic review.
+
+---
+
+## 📧 Support
+
+- **KIU IT Support:** itsupport@kiu.ac.ug
+- **Project Author:** [Student Email]
+- **Documentation:** See `docs/` folder
+
+---
+
+## 📜 License
+
+MIT License - See [LICENSE](LICENSE) file
+
+---
+
+**Kampala International University** - The Leading Private University in Uganda

@@ -1,0 +1,26 @@
+# Dockerfile for Frontend E2E Testing with Playwright
+FROM mcr.microsoft.com/playwright:v1.40.0-jammy
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml* ./
+
+# Install dependencies
+RUN npm install -g pnpm && \
+    pnpm install
+
+# Install Playwright browsers (Chromium only for speed)
+RUN npx playwright install chromium
+
+# Copy application code
+COPY . .
+
+# Build the app
+RUN pnpm run build
+
+# Expose ports for dev server and Playwright report
+EXPOSE 5173 9323
+
+# Default command: run tests
+CMD ["npx", "playwright", "test", "--reporter=html"]

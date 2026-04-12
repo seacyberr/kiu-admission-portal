@@ -8,6 +8,7 @@ and configurable cache invalidation strategies.
 import json
 import logging
 import hashlib
+import os
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, Union, List
 from functools import wraps
@@ -19,33 +20,50 @@ logger = logging.getLogger(__name__)
 
 class CacheManager:
     """
-    Advanced caching system with Redis backend and intelligent invalidation
+    Advanced caching system with Redis backend, connection pooling,
+    and intelligent invalidation with fallback to in-memory cache.
     """
     
     def __init__(self, redis_url: str = None, default_ttl: int = 300):
         self.redis_client = None
-        self.memory_cache = {}  # Always initialize memory cache
+        self.redis_pool = None
+        self.memory_cache = {}  # Fallback in-memory cache
         self.default_ttl = default_ttl  # 5 minutes default
+        self._redis_available = False
+        
+        # Get Redis URL from environment if not provided
+        if not redis_url:
+            redis_url = os.environ.get('REDIS_URL') or os.environ.get('CACHE_REDIS_URL')
         
         if redis_url:
             try:
-                self.redis_client = redis.from_url(redis_url, decode_responses=True)
-                logger.info("Connected to Redis for caching")
+                # Create connection pool for better performance
+                self.redis_pool = redis.ConnectionPool.from_url(
+                    redis_url, 
+                    decode_responses=True,
+                    max_connections=20,
+                    socket_connect_timeout=3,
+                    socket_timeout=3,
+                    retry_on_timeout=True,
+                    health_check_interval=30
+                )
+                self.redis_client = redis.Redis(connection_pool=self.redis_pool)
+                # Test the connection
+                self.redis_client.ping()
+                self._redis_available = True
+                logger.info("Connected to Redis for caching (connection pool: 20 max)")
             except Exception as e:
-                logger.warning(f"Redis connection failed, falling back to memory: {e}")
+                logger.warning(f"Redis not available, using in-memory cache: {e}")
                 self.redis_client = None
+                self.redis_pool = None
         else:
-            # Try to connect to local Redis instance
-            try:
-                self.redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
-                logger.info("Connected to local Redis instance")
-            except Exception as e:
-                logger.warning(f"Local Redis connection failed, using memory cache: {e}")
-                self.redis_client = None
+            logger.debug("No Redis URL configured, using in-memory cache")
         
-        # Log if using in-memory cache
-        if not self.redis_client:
-            logger.info("Using in-memory cache (Redis unavailable)")
+        # Log cache backend status
+        if self.redis_client:
+            logger.info("Cache backend: Redis")
+        else:
+            logger.info("Cache backend: In-memory (Redis not configured)")
     
     def _generate_key(self, prefix: str, identifier: str, *args) -> str:
         """Generate cache key with prefix and identifier"""
@@ -71,6 +89,66 @@ class CacheManager:
                 return json.loads(value.decode())  # Fallback to JSON
             except:
                 return None
+    
+    def health_check(self) -> dict:
+        """Check cache backend health"""
+        if not self._redis_available or not self.redis_client:
+            return {
+                "status": "fallback",
+                "backend": "in-memory",
+                "healthy": True,
+                "message": "Using in-memory cache (Redis not configured)"
+            }
+        
+        try:
+            info = self.redis_client.info()
+            return {
+                "status": "connected",
+                "backend": "redis",
+                "healthy": True,
+                "version": info.get("redis_version"),
+                "used_memory": info.get("used_memory_human"),
+                "connected_clients": info.get("connected_clients"),
+                "pool_size": self.redis_pool.max_connections if self.redis_pool else 0
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "backend": "redis",
+                "healthy": False,
+                "error": str(e)
+            }
+    
+    def get_stats(self) -> dict:
+        """Get cache statistics"""
+        if not self._redis_available or not self.redis_client:
+            return {
+                "backend": "in-memory",
+                "keys_in_memory": len(self.memory_cache)
+            }
+        
+        try:
+            info = self.redis_client.info()
+            return {
+                "backend": "redis",
+                "keys_total": self.redis_client.dbsize(),
+                "hits": info.get("keyspace_hits", 0),
+                "misses": info.get("keyspace_misses", 0),
+                "hit_rate": self._calculate_hit_rate(info),
+                "memory_used": info.get("used_memory_human"),
+                "evicted_keys": info.get("evicted_keys", 0)
+            }
+        except Exception as e:
+            return {"error": str(e)}
+    
+    def _calculate_hit_rate(self, info: dict) -> float:
+        """Calculate cache hit rate percentage"""
+        hits = info.get("keyspace_hits", 0)
+        misses = info.get("keyspace_misses", 0)
+        total = hits + misses
+        if total == 0:
+            return 0.0
+        return round((hits / total) * 100, 2)
     
     def get(self, key: str, default: Any = None) -> Any:
         """

@@ -53,6 +53,17 @@ export interface AdmissionApplication {
   adminNotes?: string;
   submittedAt: string;
   updatedAt: string;
+  createdAt: string;
+  applicantPhone: string;
+  documents?: ApplicationDocument[];
+}
+
+export interface ApplicationDocument {
+  id: number;
+  documentType: string;
+  fileUrl: string;
+  uploadedAt: string;
+  status: 'pending' | 'verified' | 'rejected';
 }
 
 export interface CareerPath {
@@ -84,10 +95,31 @@ export interface Opportunity {
   applicantCount: number;
 }
 
-export interface ApiResponse<T> {
-  data?: T;
-  error?: string;
+/**
+ * Standardized API Response Types (JSend format)
+ * Matches backend utils.api_response format
+ */
+
+export type ApiStatus = 'success' | 'fail' | 'error';
+
+export interface ApiResponse<T = unknown> {
+  status: ApiStatus;
+  data: T;
   message?: string;
+  errors?: Record<string, string>;
+  meta?: {
+    total?: number;
+    page?: number;
+    per_page?: number;
+    pages?: number;
+    [key: string]: unknown;
+  };
+}
+
+export interface ApiErrorResponse {
+  status: 'fail' | 'error';
+  message: string;
+  errors?: Record<string, string>;
 }
 
 export interface PaginatedResponse<T> {

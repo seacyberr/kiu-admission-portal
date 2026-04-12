@@ -107,23 +107,21 @@ def handle_kiu_error(func):
         try:
             return func(*args, **kwargs)
         except KIUError as e:
-            logger.error(f"KIU Error: {e.error_code} - {e.message}", exc_info=True)
-            return jsonify({
+            # ValidationError inherits from KIUError - handled here
+            log_level = logger.warning if isinstance(e, ValidationError) else logger.error
+            log_level(f"KIU Error: {e.error_code} - {e.message}", exc_info=not isinstance(e, ValidationError))
+            response = {
                 "error": e.error_code,
                 "message": e.message,
-                "details": e.details,
                 "timestamp": e.timestamp,
-                "status": "error"
-            }), e.status_code
-        except ValidationError as e:
-            logger.warning(f"Validation Error: {e.field} - {e.message}")
-            return jsonify({
-                "error": e.error_code,
-                "message": e.message,
-                "field": e.field,
-                "value": e.value,
-                "status": "validation_error"
-            }), e.status_code
+                "status": "error" if not isinstance(e, ValidationError) else "validation_error"
+            }
+            if hasattr(e, 'details') and e.details:
+                response["details"] = e.details
+            if hasattr(e, 'field') and e.field:
+                response["field"] = e.field
+                response["value"] = e.value
+            return jsonify(response), e.status_code
         except Exception as e:
             logger.error(f"Unexpected Error: {str(e)}", exc_info=True)
             return jsonify({

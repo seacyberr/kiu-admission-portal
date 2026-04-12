@@ -2,6 +2,14 @@
 import pytest
 import json
 from datetime import datetime, date, timedelta
+import os
+
+# Set test environment variables BEFORE importing app
+os.environ["JWT_SECRET"] = "test-secret-key-for-testing-only"
+os.environ["FLASK_ENV"] = "testing"
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+os.environ["SEED_DATABASE"] = "false"
+
 from app import create_app
 from models import db, User, Program, AdmissionApplication, OtpCode
 
@@ -10,7 +18,6 @@ from models import db, User, Program, AdmissionApplication, OtpCode
 def app():
     """Create test application."""
     import tempfile
-    import os
     
     # Create a temporary database file for each test
     db_fd, db_path = tempfile.mkstemp(suffix='.db')

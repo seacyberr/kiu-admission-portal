@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from models import db, Notification, User, AdmissionApplication, OpportunityApplication
 from routes.auth import get_current_user
+from utils.api_response import success_response, paginated_response, bad_request, unauthorized, forbidden, not_found, no_content
 import os
 import smtplib
 from email.mime.text import MIMEText
@@ -15,7 +16,7 @@ def list_notifications():
     """Get all notifications for the current user."""
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        return unauthorized(error)
 
     page = request.args.get("page", 1, type=int)
     per_page = min(request.args.get("perPage", 20, type=int), 100)
@@ -29,14 +30,14 @@ def list_notifications():
         page=page, per_page=per_page, error_out=False
     )
 
-    return jsonify({
-        "notifications": [n.to_dict() for n in paginated.items],
-        "total": paginated.total,
-        "unreadCount": Notification.query.filter_by(user_id=user.id, is_read=False).count(),
-        "page": page,
-        "perPage": per_page,
-        "pages": paginated.pages,
-    }), 200
+    return paginated_response(
+        items=[n.to_dict() for n in paginated.items],
+        total=paginated.total,
+        page=page,
+        per_page=per_page,
+        data_key="notifications",
+        meta={"unreadCount": Notification.query.filter_by(user_id=user.id, is_read=False).count()}
+    )
 
 
 @notifications_bp.route("/<int:notification_id>/read", methods=["PATCH"])
@@ -44,19 +45,19 @@ def mark_as_read(notification_id):
     """Mark a notification as read."""
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        return unauthorized(error)
 
     notification = db.session.get(Notification, notification_id)
     if not notification:
-        return jsonify({"error": "Not found", "message": "Notification not found"}), 404
+        return not_found("Notification not found")
 
     if notification.user_id != user.id:
-        return jsonify({"error": "Forbidden"}), 403
+        return forbidden("Access denied")
 
     notification.is_read = True
     db.session.commit()
 
-    return jsonify(notification.to_dict()), 200
+    return success_response(notification.to_dict())
 
 
 @notifications_bp.route("/read-all", methods=["PATCH"])
@@ -64,12 +65,12 @@ def mark_all_as_read():
     """Mark all notifications as read for the current user."""
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        return unauthorized(error)
 
     Notification.query.filter_by(user_id=user.id, is_read=False).update({"is_read": True})
     db.session.commit()
 
-    return jsonify({"message": "All notifications marked as read"}), 200
+    return success_response({}, message="All notifications marked as read")
 
 
 @notifications_bp.route("/<int:notification_id>", methods=["DELETE"])
@@ -77,19 +78,19 @@ def delete_notification(notification_id):
     """Delete a notification."""
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        return unauthorized(error)
 
     notification = db.session.get(Notification, notification_id)
     if not notification:
-        return jsonify({"error": "Not found", "message": "Notification not found"}), 404
+        return not_found("Notification not found")
 
     if notification.user_id != user.id:
-        return jsonify({"error": "Forbidden"}), 403
+        return forbidden("Access denied")
 
     db.session.delete(notification)
     db.session.commit()
 
-    return "", 204
+    return no_content()
 
 
 def send_email(to_email, subject, body_html, body_text=None):

@@ -30,6 +30,8 @@ import FinalistProfileEdit from "@/pages/finalist/profile";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminAdmissions from "@/pages/admin/admissions";
 import AdminOpportunities from "@/pages/admin/opportunities";
+import AdminUsers from "@/pages/admin/users";
+import AdminPrograms from "@/pages/admin/programs";
 import NotFound from "@/pages/not-found";
 import { RoleGuard } from "@/components/role-guard";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -286,6 +288,50 @@ function Router() {
           {() => (
             <RoleGuard roles={["admin"]}>
               <AdminOpportunities />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/admin/users">
+          {() => (
+            <RoleGuard roles={["admin"]}>
+              <AdminUsers />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/admin/programs">
+          {() => (
+            <RoleGuard roles={["admin"]}>
+              <AdminPrograms />
+            </RoleGuard>
+          )}
+        </Route>
+
+        {/* Finalist */}
+        <Route path="/finalist">
+          {() => (
+            <RoleGuard roles={["finalist", "admin"]}>
+              <FinalistDashboard />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/finalist/careers">
+          {() => (
+            <RoleGuard roles={["finalist", "admin"]}>
+              <CareerPaths />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/finalist/opportunities">
+          {() => (
+            <RoleGuard roles={["finalist", "admin"]}>
+              <Opportunities />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/finalist/profile">
+          {() => (
+            <RoleGuard roles={["finalist", "admin"]}>
+              <FinalistProfileEdit />
             </RoleGuard>
           )}
         </Route>

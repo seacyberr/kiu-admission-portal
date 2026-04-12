@@ -39,10 +39,6 @@ const ReviewSubmit = () => {
             <span className="text-gray-600">Documents Uploaded:</span>
             <span className="font-semibold text-green-700">3 Documents</span>
           </div>
-          <div className="flex justify-between py-3 border-b border-gray-100">
-            <span className="text-gray-600">Application Fee:</span>
-            <span className="font-semibold">UGX 50,000</span>
-          </div>
         </div>
 
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-8">

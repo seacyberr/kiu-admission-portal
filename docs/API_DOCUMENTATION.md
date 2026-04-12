@@ -45,25 +45,48 @@ Rate limit headers are included in responses:
 
 All API responses follow this structure:
 
-### Success Response
+### Success Response (JSend Format)
 ```json
 {
+  "status": "success",
   "data": { ... },
   "message": "Operation successful",
-  "timestamp": "2024-01-01T12:00:00Z"
+  "meta": {
+    "requestId": "uuid",
+    "timestamp": "2024-01-01T12:00:00Z",
+    "apiVersion": "1.0"
+  }
 }
 ```
 
-### Error Response
+### Fail Response (Client Error)
 ```json
 {
-  "error": "ERROR_CODE",
+  "status": "fail",
   "message": "Human-readable error message",
-  "details": {
-    "field": "validation_error",
-    "value": "invalid_value"
+  "errors": {
+    "field": "validation_error"
   },
-  "timestamp": "2024-01-01T12:00:00Z"
+  "error": "ERROR_CODE",
+  "meta": {
+    "requestId": "uuid",
+    "timestamp": "2024-01-01T12:00:00Z"
+  }
+}
+```
+
+### Error Response (Server Error)
+```json
+{
+  "status": "error",
+  "error": {
+    "type": "INTERNAL_ERROR",
+    "message": "An unexpected error occurred",
+    "id": "uuid-for-tracking"
+  },
+  "meta": {
+    "timestamp": "2024-01-01T12:00:00Z"
+  }
 }
 ```
 

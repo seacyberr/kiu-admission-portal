@@ -140,4 +140,45 @@ def run_migrations():
             "UPDATE users SET is_verified = TRUE WHERE role = 'admin'"
         ))
 
+    # ── Create indexes for performance ──────────────────────────────────────
+    # Note: SQLite doesn't support CREATE INDEX IF NOT EXISTS in older versions
+    # MySQL/PostgreSQL do support it
+    if db.engine.dialect.name in ("mysql", "postgresql"):
+        indexes_to_create = [
+            # Users table indexes
+            ("users", "idx_users_email", "CREATE INDEX idx_users_email ON users(email)"),
+            ("users", "idx_users_role", "CREATE INDEX idx_users_role ON users(role)"),
+            ("users", "idx_users_is_verified", "CREATE INDEX idx_users_is_verified ON users(is_verified)"),
+            ("users", "idx_users_created_at", "CREATE INDEX idx_users_created_at ON users(created_at)"),
+            # Programs table indexes
+            ("programs", "idx_programs_faculty", "CREATE INDEX idx_programs_faculty ON programs(faculty)"),
+            ("programs", "idx_programs_level", "CREATE INDEX idx_programs_level ON programs(level)"),
+            ("programs", "idx_programs_campus", "CREATE INDEX idx_programs_campus ON programs(campus)"),
+            # Admission applications indexes
+            ("admission_applications", "idx_app_user_id", "CREATE INDEX idx_app_user_id ON admission_applications(user_id)"),
+            ("admission_applications", "idx_app_program_id", "CREATE INDEX idx_app_program_id ON admission_applications(program_id)"),
+            ("admission_applications", "idx_app_status", "CREATE INDEX idx_app_status ON admission_applications(status)"),
+            ("admission_applications", "idx_app_exam_level", "CREATE INDEX idx_app_exam_level ON admission_applications(exam_level)"),
+            ("admission_applications", "idx_app_exam_year", "CREATE INDEX idx_app_exam_year ON admission_applications(exam_year)"),
+            # Refresh tokens indexes
+            ("refresh_tokens", "idx_rt_token", "CREATE INDEX idx_rt_token ON refresh_tokens(token)"),
+            ("refresh_tokens", "idx_rt_user_id", "CREATE INDEX idx_rt_user_id ON refresh_tokens(user_id)"),
+            # OTP codes indexes
+            ("otp_codes", "idx_otp_user_id", "CREATE INDEX idx_otp_user_id ON otp_codes(user_id)"),
+            ("otp_codes", "idx_otp_code", "CREATE INDEX idx_otp_code ON otp_codes(code)"),
+        ]
+        
+        existing_indexes = {}
+        for table, idx_name, create_sql in indexes_to_create:
+            try:
+                # Check if index already exists
+                if table not in existing_indexes:
+                    existing_indexes[table] = {idx['name'] for idx in insp.get_indexes(table)}
+                
+                if idx_name not in existing_indexes[table]:
+                    conn.execute(text(create_sql))
+                    log.info(f"Created index: {idx_name}")
+            except Exception as e:
+                log.warning(f"Could not create index {idx_name}: {e}")
+
     log.info("Database migrations completed")

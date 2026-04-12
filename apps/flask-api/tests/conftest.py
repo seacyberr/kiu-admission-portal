@@ -16,7 +16,7 @@ os.environ["FLASK_ENV"] = "testing"
 os.environ["UPLOAD_FOLDER"] = "/tmp/test_uploads"
 
 from app import create_app
-from models import db, User, Program, AdmissionApplication, Intake
+from models import db, User, Program, AdmissionApplication
 from services.kiu_programs_database import KIU_PROGRAMS_DB
 
 
@@ -102,6 +102,24 @@ def client(app):
 @pytest.fixture
 def test_user_email():
     return "test@example.com"
+
+
+@pytest.fixture
+def test_user(app, test_user_email):
+    """Create a test user (unverified) for OTP tests."""
+    with app.app_context():
+        user = User(
+            email=test_user_email,
+            first_name="Test",
+            last_name="User",
+            role="applicant",
+            is_verified=False,
+        )
+        user.set_password("TestPass123")
+        db.session.add(user)
+        db.session.commit()
+        return user
+
 
 # ============================================================================
 # APPLICATION FIXTURES
@@ -211,10 +229,7 @@ def auth_headers(app_context, applicant_user) -> Dict[str, str]:
     
     token = create_access_token(
         identity=applicant_user.id,
-        additional_claims={
-            "email": applicant_user.email,
-            "role": applicant_user.role
-        }
+        additional_claims={"role": applicant_user.role, "email": applicant_user.email}
     )
     return {
         "Authorization": f"Bearer {token}",
@@ -229,10 +244,22 @@ def admin_auth_headers(app_context, admin_user) -> Dict[str, str]:
     
     token = create_access_token(
         identity=admin_user.id,
-        additional_claims={
-            "email": admin_user.email,
-            "role": admin_user.role
-        }
+        additional_claims={"role": admin_user.role, "email": admin_user.email}
+    )
+    return {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+
+
+@pytest.fixture
+def finalist_auth_headers(app_context, finalist_user) -> Dict[str, str]:
+    """Generate finalist JWT authorization headers for career portal tests."""
+    from flask_jwt_extended import create_access_token
+    
+    token = create_access_token(
+        identity=finalist_user.id,
+        additional_claims={"role": finalist_user.role, "email": finalist_user.email}
     )
     return {
         "Authorization": f"Bearer {token}",
@@ -261,8 +288,6 @@ def create_program(app_context):
             level=level,
             campus=campus,
             faculty=faculty,
-            is_active=True,
-            is_admission_open=True,
             **kwargs
         )
         db.session.add(program)
@@ -486,8 +511,8 @@ def valid_registration_data():
     return {
         "email": "new.user@example.com",
         "password": "SecurePass123!",
-        "first_name": "New",
-        "last_name": "User",
+        "firstName": "New",
+        "lastName": "User",
         "phone": "+256700000003",
         "role": "applicant"
     }
@@ -539,16 +564,14 @@ def mock_email_service(monkeypatch):
     def mock_send_email(*args, **kwargs):
         return True
     
-    monkeypatch.setattr("services.email_service.send_email", mock_send_email)
+    monkeypatch.setattr("services.email_service.EmailService.send_otp_email", mock_send_email)
 
 
-@pytest.fixture(autouse=True)
-def mock_sms_service(monkeypatch):
-    """Mock SMS service to prevent actual SMS during testing."""
-    def mock_send_sms(*args, **kwargs):
-        return {"success": True, "message_id": "test-message-id"}
-    
-    monkeypatch.setattr("services.sms_service.send_sms", mock_send_sms)
+# SMS service mock removed - not currently implemented
+# @pytest.fixture(autouse=True)
+# def mock_sms_service(monkeypatch):
+#     """Mock SMS service to prevent actual SMS during testing."""
+#     pass
 
 
 # ============================================================================
@@ -613,6 +636,7 @@ def test_otp(app, test_user_email, test_user):
     # Ensure user exists
     _ = test_user
     with app.app_context():
+        from models import OtpCode
         user = User.query.filter_by(email=test_user_email).first()
         otp = OtpCode(
             user_id=user.id,
@@ -634,7 +658,8 @@ def auth_headers(client, verified_user_email, verified_user):
         "email": verified_user_email,
         "password": "TestPass123",
     })
-    token = response.get_json()["accessToken"]
+    data = response.get_json()
+    token = data["data"]["accessToken"]
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -647,5 +672,6 @@ def admin_headers(client, admin_user_email, admin_user):
         "email": admin_user_email,
         "password": "AdminPass123",
     })
-    token = response.get_json()["accessToken"]
+    data = response.get_json()
+    token = data["data"]["accessToken"]
     return {"Authorization": f"Bearer {token}"}

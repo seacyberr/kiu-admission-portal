@@ -18,6 +18,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     setIsMobileMenuOpen(false);
   }, [location]);
 
+  const [, setLocation] = useLocation();
+
   const handleLogout = async () => {
     try {
       await fetch(`${base}/api/auth/logout`, { method: "POST", credentials: "include" });
@@ -27,7 +29,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("kiu_user");
     queryClient.setQueryData(["me"], null);
     queryClient.removeQueries();
-    window.location.href = "/login";
+    // SPA navigation - no hard reload!
+    setLocation("/login");
   };
 
   const getNavLinks = () => {
@@ -77,12 +80,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-4 absolute right-0 top-0 h-full">
+          <div className="hidden md:flex items-center gap-4 pr-4">
             {!isLoading && !user && (
               <>
-                <Link href="/login" className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors">Sign In</Link>
+                <Link href="/login" className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">Sign In</Link>
                 <Link href="/register">
-                  <Button variant="accent" size="sm" className="rounded-full px-6">Register</Button>
+                  <Button variant="default" size="sm" className="rounded-full px-6 bg-blue-600 hover:bg-blue-700 text-white">Register</Button>
                 </Link>
               </>
             )}
@@ -123,8 +126,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               ))}
               {!user && (
                 <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-border">
-                  <Link href="/login"><Button variant="outline" className="w-full">Sign In</Button></Link>
-                  <Link href="/register"><Button variant="accent" className="w-full">Register</Button></Link>
+                  <Link href="/login"><Button variant="outline" className="w-full border-blue-600 text-blue-600 hover:bg-blue-50">Sign In</Button></Link>
+                  <Link href="/register"><Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">Register</Button></Link>
                 </div>
               )}
               {user && (

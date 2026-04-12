@@ -7,6 +7,7 @@ Supports all entry pathways: Direct, HEC, Diploma, Previous Degree
 from flask import Blueprint, request, jsonify
 import logging
 from services.recommendation_engine import RecommendationEngine
+from utils.api_response import success_response, bad_request, not_found
 
 recommendations_v2_bp = Blueprint("recommendations_v2", __name__)
 log = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ def assess_qualifications():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({"error": "No data provided"}), 400
+            return bad_request("No data provided")
 
         # Extract highest education level (what they have)
         highest_education = data.get("highestEducation", "olevel")
@@ -45,9 +46,9 @@ def assess_qualifications():
 
         # Validate curriculum values
         if olevel_curriculum not in ["old", "new"]:
-            return jsonify({"error": "olevelCurriculum must be 'old' or 'new'"}), 400
+            return bad_request("olevelCurriculum must be 'old' or 'new'", errors={"olevelCurriculum": "Invalid value"})
         if alevel_curriculum not in ["old", "new"]:
-            return jsonify({"error": "alevelCurriculum must be 'old' or 'new'"}), 400
+            return bad_request("alevelCurriculum must be 'old' or 'new'", errors={"alevelCurriculum": "Invalid value"})
 
         # Run recommendation engine
         engine = RecommendationEngine()
@@ -66,11 +67,11 @@ def assess_qualifications():
             target_level=target_level
         )
 
-        return jsonify(result), 200
+        return success_response(result)
 
     except Exception as e:
         log.error(f"Error in qualification assessment: {e}")
-        return jsonify({"error": "Assessment failed", "details": str(e)}), 500
+        return bad_request(f"Assessment failed: {str(e)}")
 
 
 @recommendations_v2_bp.route("/compare", methods=["POST"])
@@ -81,20 +82,20 @@ def compare_programs():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({"error": "No data provided"}), 400
+            return bad_request("No data provided")
 
         program_codes = data.get("programCodes", [])
         if len(program_codes) < 2:
-            return jsonify({"error": "Provide at least 2 programs to compare"}), 400
+            return bad_request("Provide at least 2 programs to compare", errors={"programCodes": "Minimum 2 required"})
 
         engine = RecommendationEngine()
         comparison = engine.compare_programs(program_codes)
 
-        return jsonify(comparison), 200
+        return success_response(comparison)
 
     except Exception as e:
         log.error(f"Error comparing programs: {e}")
-        return jsonify({"error": "Comparison failed", "details": str(e)}), 500
+        return bad_request(f"Comparison failed: {str(e)}")
 
 
 @recommendations_v2_bp.route("/curriculum-info", methods=["GET"])
@@ -102,7 +103,7 @@ def get_curriculum_info():
     """
     Get information about Uganda curriculum systems and all admission pathways
     """
-    return jsonify({
+    return success_response({
         "uganda_curriculum_systems": {
             "old_olevel": {
                 "name": "Old O-Level (UCE) - Pre-2024",
@@ -227,7 +228,7 @@ def get_curriculum_info():
                 "progresses_to": ["BSE", "BEE", "BME", "BCS", "BIT", "BSc"]
             }
         }
-    }), 200
+    })
 
 
 @recommendations_v2_bp.route("/programs", methods=["GET"])
@@ -263,7 +264,7 @@ def list_programs():
             "career_paths": prog.get("career_paths", [])
         })
 
-    return jsonify({
+    return success_response({
         "programs": programs,
         "total": len(programs),
         "filters_applied": {
@@ -271,7 +272,7 @@ def list_programs():
             "faculty": faculty_filter,
             "campus": campus_filter
         }
-    }), 200
+    })
 
 
 @recommendations_v2_bp.route("/program/<program_code>", methods=["GET"])
@@ -283,11 +284,11 @@ def get_program_details(program_code):
 
     program_code = program_code.upper()
     if program_code not in KIU_PROGRAMS:
-        return jsonify({"error": "Program not found"}), 404
+        return not_found("Program not found")
 
     prog = KIU_PROGRAMS[program_code]
 
-    return jsonify({
+    return success_response({
         "code": program_code,
         "name": prog["name"],
         "faculty": prog["faculty"],
@@ -300,4 +301,4 @@ def get_program_details(program_code):
         "career_paths": prog.get("career_paths", []),
         "progresses_from": prog.get("progresses_from", []),
         "progresses_to": prog.get("progresses_to", [])
-    }), 200
+    })

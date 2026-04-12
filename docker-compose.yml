@@ -4,21 +4,22 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # MySQL Database
   db:
-    image: postgres:15-alpine
-    container_name: kiu-postgres
+    image: mysql:8.0
+    container_name: kiu-mysql
     environment:
-      POSTGRES_DB: kiu_portal
-      POSTGRES_USER: kiu_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme_secure_password}
+      MYSQL_DATABASE: kiu_portal
+      MYSQL_USER: kiu_user
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
       - ./database_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
     ports:
-      - "5432:5432"
+      - "3306:3306"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kiu_user -d kiu_portal"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,22 +34,11 @@ services:
     container_name: kiu-api
     environment:
       FLASK_ENV: production
-      DATABASE_URL: postgresql://kiu_user:${DB_PASSWORD:-changeme_secure_password}@db:5432/kiu_portal
-      JWT_SECRET: ${JWT_SECRET:-your-jwt-secret-here}
-      SECRET_KEY: ${SECRET_KEY:-your-secret-key-here}
+      DATABASE_URL: mysql+pymysql://kiu_user:${DB_PASSWORD}@db:3306/kiu_portal
+      JWT_SECRET: ${JWT_SECRET}
+      SECRET_KEY: ${SECRET_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
-      # Payment Gateway Configuration
-      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-sandbox}
-      FLUTTERWAVE_SECRET_KEY: ${FLUTTERWAVE_SECRET_KEY:-}
-      FLUTTERWAVE_PUBLIC_KEY: ${FLUTTERWAVE_PUBLIC_KEY:-}
-      # SMS Configuration
-      SMS_PROVIDER: ${SMS_PROVIDER:-sandbox}
-      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
-      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
-      AT_USERNAME: ${AT_USERNAME:-}
-      AT_API_KEY: ${AT_API_KEY:-}
-      AT_SENDER_ID: ${AT_SENDER_ID:-KIU-PORTAL}
+      REDIS_URL: redis://redis:6379
       # SMTP Configuration
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
@@ -65,6 +55,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5001/api/healthz"]
       interval: 30s
@@ -92,17 +84,27 @@ services:
       - kiu-network
     restart: unless-stopped
 
-  # Redis Cache (optional - for caching and session storage)
+  # Redis Cache with persistence and connection pooling
   redis:
     image: redis:7-alpine
     container_name: kiu-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
     ports:
       - "6379:6379"
     networks:
       - kiu-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   # Nginx Reverse Proxy
   nginx:
@@ -122,26 +124,26 @@ services:
 
   # Database Backup Service
   backup:
-    image: postgres:15-alpine
+    image: mysql:8.0
     container_name: kiu-backup
     environment:
-      PGHOST: db
-      PGUSER: kiu_user
-      PGPASSWORD: ${DB_PASSWORD:-changeme_secure_password}
-      PGDATABASE: kiu_portal
+      MYSQL_HOST: db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: kiu_portal
       BACKUP_DIR: /backups
     volumes:
       - ./backups:/backups
-      - ./scripts/backup_database.py:/scripts/backup.py:ro
+      - ./scripts/backup_mysql.sh:/scripts/backup.sh:ro
     command: >
-      sh -c "echo '0 2 * * * python /scripts/backup.py' | crontab - && crond -f"
+      sh -c "echo '0 2 * * * /scripts/backup.sh' | crontab - && crond -f"
     depends_on:
       - db
     networks:
       - kiu-network
 
 volumes:
-  postgres_data:
+  mysql_data:
   api_logs:
   api_uploads:
   redis_data:

@@ -7,6 +7,7 @@ from sqlalchemy import func, desc
 from datetime import datetime, timedelta
 from models import db, AuditLog, User
 from routes.auth import get_current_user
+from utils.api_response import success_response, paginated_response, unauthorized, forbidden
 
 audit_bp = Blueprint("audit", __name__)
 
@@ -15,9 +16,9 @@ def check_admin_access():
     """Verify user is admin"""
     user, error = get_current_user()
     if error:
-        return None, (jsonify({"error": "Unauthorized", "message": error}), 401)
+        return None, unauthorized(error)
     if user.role != "admin":
-        return None, (jsonify({"error": "Forbidden", "message": "Admin access required"}), 403)
+        return None, forbidden("Admin access required")
     return user, None
 
 
@@ -66,21 +67,23 @@ def list_audit_logs():
     # Paginate
     paginated = query.paginate(page=page, per_page=per_page, error_out=False)
     
-    return jsonify({
-        "logs": [log.to_dict() for log in paginated.items],
-        "total": paginated.total,
-        "page": page,
-        "perPage": per_page,
-        "pages": paginated.pages,
-        "filters": {
-            "action": action,
-            "entityType": entity_type,
-            "entityId": entity_id,
-            "userId": user_id,
-            "status": status,
-            "days": days
+    return paginated_response(
+        items=[log.to_dict() for log in paginated.items],
+        total=paginated.total,
+        page=page,
+        per_page=per_page,
+        data_key="logs",
+        meta={
+            "filters": {
+                "action": action,
+                "entityType": entity_type,
+                "entityId": entity_id,
+                "userId": user_id,
+                "status": status,
+                "days": days
+            }
         }
-    }), 200
+    )
 
 
 @audit_bp.route("/<int:log_id>", methods=["GET"])
@@ -92,7 +95,7 @@ def get_audit_log(log_id):
     
     log = AuditLog.query.get_or_404(log_id)
     
-    return jsonify(log.to_dict()), 200
+    return success_response(log.to_dict())
 
 
 @audit_bp.route("/summary", methods=["GET"])
@@ -159,7 +162,7 @@ def get_audit_summary():
         AuditLog.status == "failed"
     ).count()
     
-    return jsonify({
+    return success_response({
         "period": f"Last {days} days",
         "total_logs": total_logs,
         "by_action": {action: count for action, count in action_stats},
@@ -171,7 +174,7 @@ def get_audit_summary():
         ],
         "security_events": security_events,
         "failed_actions": failed_count
-    }), 200
+    })
 
 
 @audit_bp.route("/actions", methods=["GET"])
@@ -184,10 +187,10 @@ def get_unique_actions():
     actions = db.session.query(AuditLog.action).distinct().all()
     entity_types = db.session.query(AuditLog.entity_type).distinct().all()
     
-    return jsonify({
+    return success_response({
         "actions": sorted([a[0] for a in actions]),
         "entityTypes": sorted([e[0] for e in entity_types])
-    }), 200
+    })
 
 
 @audit_bp.route("/user/<int:user_id>", methods=["GET"])
@@ -220,7 +223,7 @@ def get_user_audit_trail(user_id):
     
     target_user = User.query.get(user_id)
     
-    return jsonify({
+    return success_response({
         "user": target_user.to_dict() if target_user else None,
         "actions_performed": {
             "logs": [log.to_dict() for log in performed_logs.items],
@@ -234,7 +237,7 @@ def get_user_audit_trail(user_id):
             "total_actions": performed_logs.total,
             "actions_affecting_them": len(affected_logs)
         }
-    }), 200
+    })
 
 
 @audit_bp.route("/entity/<entity_type>/<int:entity_id>", methods=["GET"])
@@ -253,13 +256,13 @@ def get_entity_audit_trail(entity_type, entity_id):
         AuditLog.timestamp >= cutoff
     ).order_by(desc(AuditLog.timestamp)).all()
     
-    return jsonify({
+    return success_response({
         "entity_type": entity_type,
         "entity_id": entity_id,
         "period": f"Last {days} days",
         "logs": [log.to_dict() for log in logs],
         "total_changes": len(logs)
-    }), 200
+    })
 
 
 @audit_bp.route("/export", methods=["POST"])

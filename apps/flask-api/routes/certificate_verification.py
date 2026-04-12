@@ -9,6 +9,7 @@ from flask import Blueprint, request, jsonify, current_app
 from routes.auth import get_current_user
 from services.certificate_verification import certificate_verifier
 from models import db, AdmissionApplication
+from utils.api_response import success_response, bad_request, unauthorized, forbidden, not_found
 
 log = logging.getLogger(__name__)
 
@@ -27,25 +28,25 @@ def verify_certificate(application_id):
     """
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        return unauthorized(error)
     
     application = db.session.get(AdmissionApplication, application_id)
     if not application:
-        return jsonify({"error": "Not found", "message": "Application not found"}), 404
+        return not_found("Application not found")
     
     if application.user_id != user.id and user.role != "admin":
-        return jsonify({"error": "Forbidden", "message": "Access denied"}), 403
+        return forbidden("Access denied")
     
     data = request.get_json()
     if not data:
-        return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
+        return bad_request("No JSON body provided")
     
     certificate_type = data.get("certificate_type", "")
     if certificate_type not in ["uce", "uace", "diploma", "hec"]:
-        return jsonify({
-            "error": "Validation error",
-            "message": "certificate_type must be one of: uce, uace, diploma, hec"
-        }), 400
+        return bad_request(
+            "certificate_type must be one of: uce, uace, diploma, hec",
+            errors={"certificate_type": "Invalid value"}
+        )
     
     # Determine which certificate file to verify
     certificate_path = None
@@ -75,10 +76,7 @@ def verify_certificate(application_id):
         )
     
     if not certificate_path or not os.path.exists(certificate_path):
-        return jsonify({
-            "error": "Not found", 
-            "message": f"No {certificate_type.upper()} certificate found for this application"
-        }), 404
+        return not_found(f"No {certificate_type.upper()} certificate found for this application")
     
     try:
         # Perform verification
@@ -90,20 +88,15 @@ def verify_certificate(application_id):
         # Store verification result in application (if you have verification fields in your model)
         # For now, return the result
         
-        return jsonify({
-            "status": "success",
+        return success_response({
             "application_id": application_id,
             "certificate_type": certificate_type,
             "verification_result": verification_result,
-            "message": f"Certificate verification completed: {verification_result['verification_status']}"
-        }), 200
+        }, message=f"Certificate verification completed: {verification_result['verification_status']}")
         
     except Exception as e:
         log.error(f"Certificate verification failed: {str(e)}")
-        return jsonify({
-            "error": "Verification failed",
-            "message": f"Certificate verification encountered an error: {str(e)}"
-        }), 500
+        return bad_request(f"Certificate verification encountered an error: {str(e)}")
 
 
 @certificate_verification_bp.route("/verify-with-data", methods=["POST"])
@@ -116,20 +109,20 @@ def verify_certificate_with_data():
     """
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        return unauthorized(error)
     
     data = request.get_json()
     if not data:
-        return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
+        return bad_request("No JSON body provided")
     
     certificate_type = data.get("certificate_type", "")
     certificate_data = data.get("certificate_data", {})
     
     if certificate_type not in ["uce", "uace", "diploma", "hec"]:
-        return jsonify({
-            "error": "Validation error",
-            "message": "certificate_type must be one of: uce, uace, diploma, hec"
-        }), 400
+        return bad_request(
+            "certificate_type must be one of: uce, uace, diploma, hec",
+            errors={"certificate_type": "Invalid value"}
+        )
     
     try:
         # Perform verification based on certificate type
@@ -140,24 +133,19 @@ def verify_certificate_with_data():
         elif certificate_type in ["diploma", "hec"]:
             verification_result = certificate_verifier.verify_diploma_certificate(certificate_data)
         else:
-            return jsonify({
-                "error": "Validation error",
-                "message": f"Unsupported certificate type: {certificate_type}"
-            }), 400
+            return bad_request(
+                f"Unsupported certificate type: {certificate_type}",
+                errors={"certificate_type": "Unsupported"}
+            )
         
-        return jsonify({
-            "status": "success",
+        return success_response({
             "certificate_type": certificate_type,
             "verification_result": verification_result,
-            "message": f"Certificate verification completed: {verification_result['verification_status']}"
-        }), 200
+        }, message=f"Certificate verification completed: {verification_result['verification_status']}")
         
     except Exception as e:
         log.error(f"Certificate verification with data failed: {str(e)}")
-        return jsonify({
-            "error": "Verification failed",
-            "message": f"Certificate verification encountered an error: {str(e)}"
-        }), 500
+        return bad_request(f"Certificate verification encountered an error: {str(e)}")
 
 
 @certificate_verification_bp.route("/extract-data", methods=["POST"])
@@ -169,23 +157,23 @@ def extract_certificate_data():
     """
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        return unauthorized(error)
     
     data = request.get_json()
     if not data:
-        return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
+        return bad_request("No JSON body provided")
     
     ocr_text = data.get("ocr_text", "")
     certificate_type = data.get("certificate_type", "")
     
     if not ocr_text.strip():
-        return jsonify({"error": "Validation error", "message": "ocr_text is required"}), 400
+        return bad_request("ocr_text is required", errors={"ocr_text": "Required"})
     
     if certificate_type not in ["uce", "uace"]:
-        return jsonify({
-            "error": "Validation error",
-            "message": "certificate_type must be uce or uace"
-        }), 400
+        return bad_request(
+            "certificate_type must be uce or uace",
+            errors={"certificate_type": "Invalid value"}
+        )
     
     try:
         extracted_data = certificate_verifier.extract_certificate_data_from_text(
@@ -193,19 +181,14 @@ def extract_certificate_data():
             certificate_type.upper()
         )
         
-        return jsonify({
-            "status": "success",
+        return success_response({
             "certificate_type": certificate_type,
             "extracted_data": extracted_data,
-            "message": f"Data extraction completed with confidence score: {extracted_data['confidence_score']}%"
-        }), 200
+        }, message=f"Data extraction completed with confidence score: {extracted_data['confidence_score']}%")
         
     except Exception as e:
         log.error(f"Certificate data extraction failed: {str(e)}")
-        return jsonify({
-            "error": "Extraction failed",
-            "message": f"Data extraction encountered an error: {str(e)}"
-        }), 500
+        return bad_request(f"Data extraction encountered an error: {str(e)}")
 
 
 @certificate_verification_bp.route("/verification-status/<int:application_id>", methods=["GET"])
@@ -221,14 +204,14 @@ def get_verification_status(application_id):
     """
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        return unauthorized(error)
     
     application = db.session.get(AdmissionApplication, application_id)
     if not application:
-        return jsonify({"error": "Not found", "message": "Application not found"}), 404
+        return not_found("Application not found")
     
     if application.user_id != user.id and user.role != "admin":
-        return jsonify({"error": "Forbidden", "message": "Access denied"}), 403
+        return forbidden("Access denied")
     
     try:
         # Check which certificates are uploaded
@@ -274,19 +257,17 @@ def get_verification_status(application_id):
                 verification = certificate_verifier.verify_certificate_file(cert_path, "HEC")
                 certificates_status["hec"] = verification
         
-        return jsonify({
-            "status": "success",
+        return success_response({
             "application_id": application_id,
-            "certificates": certificates_status,
-            "overall_status": _calculate_overall_status(certificates_status)
-        }), 200
+            "certificates_status": certificates_status,
+            "overall_status": _calculate_overall_status(certificates_status),
+            "verified_count": len([c for c in certificates_status.values() if c.get("verification_status") == "verified"]),
+            "total_certificates": len(certificates_status)
+        })
         
     except Exception as e:
         log.error(f"Get verification status failed: {str(e)}")
-        return jsonify({
-            "error": "Status check failed",
-            "message": f"Status check encountered an error: {str(e)}"
-        }), 500
+        return bad_request(f"Status check encountered an error: {str(e)}")
 
 
 def _calculate_overall_status(certificates_status):
@@ -369,15 +350,16 @@ def get_verification_standards():
             }
         }
         
-        return jsonify({
-            "status": "success",
+        # Add o_level and a_level as aliases for uce and uace
+        standards["o_level"] = standards["uce"]
+        standards["a_level"] = standards["uace"]
+        
+        return success_response({
             "standards": standards,
-            "message": "Verification standards retrieved successfully"
-        }), 200
+            "o_level": standards["uce"],
+            "a_level": standards["uace"],
+        }, message="Verification standards retrieved successfully")
         
     except Exception as e:
         log.error(f"Get verification standards failed: {str(e)}")
-        return jsonify({
-            "error": "Standards retrieval failed",
-            "message": f"Failed to retrieve verification standards: {str(e)}"
-        }), 500
+        return bad_request(f"Failed to retrieve verification standards: {str(e)}")

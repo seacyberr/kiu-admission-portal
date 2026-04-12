@@ -1,95 +1,56 @@
-# KIU Portal API - Production Requirements
-# Generated: April 2026
-# Python: 3.10+
+# KIU Admission Portal - Python Dependencies
+# Python: 3.11+
+# Works on Windows, macOS, and Linux
 
-# =============================================================================
-# CORE FLASK & EXTENSIONS
-# =============================================================================
-Flask>=3.1.0,<4.0.0
-Flask-SQLAlchemy>=3.1.0,<4.0.0
-Flask-Cors>=6.0.0,<7.0.0
-Flask-Limiter>=3.12.0,<4.0.0
-Flask-Bcrypt>=1.0.1,<2.0.0
-Flask-Mail>=0.10.0,<1.0.0
-Flask-Caching>=2.3.0,<3.0.0
-Werkzeug>=3.1.0,<4.0.0
-Jinja2>=3.1.2,<4.0.0
-itsdangerous>=2.2.0,<3.0.0
+# Core Flask & Extensions (cross-platform)
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Cors==5.0.0
+Flask-Bcrypt==1.0.1
+Flask-Limiter==3.5.0
+Flask-Caching==2.1.0
+Werkzeug==3.0.3
 
-# =============================================================================
-# DATABASE
-# =============================================================================
-SQLAlchemy>=2.0.0,<3.0.0
-PyMySQL>=1.1.0,<2.0.0
-alembic>=1.13.0,<2.0.0
-cachelib>=0.13.0,<1.0.0
+# Database (SQLite works everywhere, PyMySQL for MySQL)
+SQLAlchemy==2.0.36
+PyMySQL==1.1.1
+alembic==1.14.0
 
-# =============================================================================
-# AUTHENTICATION & SECURITY
-# =============================================================================
-PyJWT>=2.10.0,<3.0.0
-cryptography>=44.0.0,<46.0.0
-bcrypt>=4.0.0,<5.0.0
-email-validator>=2.2.0,<3.0.0
+# Caching & Rate Limiting (Optional Redis - falls back to memory)
+redis==5.0.1
+limits==3.13.0
 
-# =============================================================================
-# SERIALIZATION & VALIDATION
-# =============================================================================
-marshmallow>=3.26.0,<4.0.0
-marshmallow-sqlalchemy>=1.4.0,<2.0.0
-pydantic>=2.12.0,<3.0.0
+# Authentication & Security
+PyJWT==2.10.0
+cryptography==44.0.0
+bcrypt==4.2.1
+email-validator==2.2.0
 
-# =============================================================================
-# API DOCUMENTATION
-# =============================================================================
-flasgger>=0.9.7,<1.0.0
-apispec>=6.0.0,<7.0.0
-PyYAML>=6.0.0,<7.0.0
+# Data Serialization
+marshmallow==3.23.1
+marshmallow-sqlalchemy==1.1.0
 
-# =============================================================================
-# MONITORING & LOGGING
-# =============================================================================
-sentry-sdk>=2.0.0,<3.0.0
-blinker>=1.7.0,<2.0.0
-structlog>=24.0.0,<25.0.0
+# Monitoring & Logging (Production features)
+sentry-sdk==1.40.0
+structlog==24.4.0
+prometheus-client==0.19.0
+blinker==1.7.0
 
-# =============================================================================
-# CACHING & RATE LIMITING
-# =============================================================================
-redis>=5.0.0,<6.0.0
-limits>=3.13.0,<4.0.0
+# Configuration
+python-dotenv==1.0.1
 
-# =============================================================================
-# HTTP & NETWORKING
-# =============================================================================
-requests>=2.31.0,<3.0.0
-urllib3>=1.26.11,<3.0.0
-certifi>=2024.0.0
+# HTTP & Networking
+requests==2.32.3
+urllib3==2.2.3
 
-# =============================================================================
-# UTILITIES
-# =============================================================================
-python-dotenv>=1.0.0,<2.0.0
-click>=8.1.0,<9.0.0
-phonenumbers>=8.12.0,<9.0.0
-python-dateutil>=2.9.0,<3.0.0
+# Utilities
+click==8.1.7
+phonenumbers==8.13.51
+python-dateutil==2.9.0
 
-# =============================================================================
-# MONITORING & METRICS
-# =============================================================================
-prometheus-client>=0.20.0,<1.0.0
+# Testing
+pytest==8.3.4
 
-# =============================================================================
-# SERVER (Production)
-# =============================================================================
-gunicorn>=23.0.0,<26.0.0
-
-# =============================================================================
-# TESTING (Development)
-# =============================================================================
-pytest>=8.0.0,<10.0.0
-pytest-cov>=5.0.0,<8.0.0
-pytest-xdist>=3.5.0,<4.0.0
-
-# Windows-only (commented for Linux/Mac)
-# waitress>=3.0.0,<4.0.0; platform_system == "Windows"
+# Production Server (platform-specific)
+gunicorn==23.0.0; sys_platform != 'win32'
+waitress==3.0.2; sys_platform == 'win32'

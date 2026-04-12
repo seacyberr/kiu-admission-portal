@@ -1,0 +1,26 @@
+# Dockerfile for Flask API Testing
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    default-libmysqlclient-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY apps/flask-api/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY apps/flask-api/ .
+
+# Set environment variables
+ENV FLASK_APP=app.py
+ENV FLASK_ENV=testing
+ENV PYTHONPATH=/app
+
+# Run tests by default
+CMD ["python", "-m", "pytest", "tests/", "-v", "--tb=short"]

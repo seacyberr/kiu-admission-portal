@@ -15,15 +15,15 @@ class User(db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.Text, nullable=False)
-    first_name = db.Column(db.String(100), nullable=False)
-    last_name = db.Column(db.String(100), nullable=False)
-    phone = db.Column(db.String(20))
-    national_id = db.Column(db.String(50))
-    role = db.Column(db.String(20), nullable=False, default="applicant")
-    is_verified = db.Column(db.Boolean, default=False, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    first_name = db.Column(db.String(100), nullable=False, index=True)
+    last_name = db.Column(db.String(100), nullable=False, index=True)
+    phone = db.Column(db.String(20), index=True)
+    national_id = db.Column(db.String(50), index=True)
+    role = db.Column(db.String(20), nullable=False, default="applicant", index=True)
+    is_verified = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def set_password(self, password):
@@ -84,18 +84,18 @@ class Program(db.Model):
     __tablename__ = "programs"
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
-    code = db.Column(db.String(20), unique=True, nullable=False)
-    faculty = db.Column(db.String(255), nullable=False)
-    department = db.Column(db.String(255))
-    level = db.Column(db.String(20), nullable=False)
+    name = db.Column(db.String(255), nullable=False, index=True)
+    code = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    faculty = db.Column(db.String(255), nullable=False, index=True)
+    department = db.Column(db.String(255), index=True)
+    level = db.Column(db.String(20), nullable=False, index=True)
     duration = db.Column(db.String(50))
     description = db.Column(db.Text)
     entry_requirements = db.Column(db.Text)
     min_olevel_points = db.Column(db.Integer)
     min_alevel_points = db.Column(db.Integer)
     available_slots = db.Column(db.Integer, default=100)
-    campus = db.Column(db.String(50), nullable=False, default="kampala")  # 'kampala' or 'western'
+    campus = db.Column(db.String(50), nullable=False, default="kampala", index=True)  # 'kampala' or 'western'
     fees_local_per_semester = db.Column(db.Integer)  # Tuition fees per semester for local/East African students (UGX)
     fees_international_per_semester = db.Column(db.Integer)  # Tuition fees per semester for international students (USD)
     functional_fees_local = db.Column(db.Integer)  # Functional fees for local students (UGX)
@@ -145,19 +145,18 @@ class AdmissionApplication(db.Model):
     __tablename__ = "admission_applications"
 
     id = db.Column(db.Integer, primary_key=True)
-    application_number = db.Column(db.String(30), unique=True, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    program_id = db.Column(db.Integer, db.ForeignKey("programs.id"), nullable=False)
-    status = db.Column(db.String(30), nullable=False, default="pending")
-    payment_status = db.Column(db.String(20), nullable=False, default="pending")  # pending, paid, waived
+    application_number = db.Column(db.String(30), unique=True, nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    program_id = db.Column(db.Integer, db.ForeignKey("programs.id"), nullable=False, index=True)
+    status = db.Column(db.String(30), nullable=False, default="pending", index=True)
 
     # Program choices (up to 3 programs as JSON array of IDs)
     program_choices = db.Column(db.JSON, nullable=False, default=list)
 
     # UNEB details (stored as structured JSON)
-    exam_level = db.Column(db.String(20), nullable=False)
-    exam_year = db.Column(db.Integer, nullable=False)
-    index_number = db.Column(db.String(50), nullable=False)
+    exam_level = db.Column(db.String(20), nullable=False, index=True)
+    exam_year = db.Column(db.Integer, nullable=False, index=True)
+    index_number = db.Column(db.String(50), nullable=False, index=True)
     # uneb_grades format:
     # { "olevel": [{"subject":"Mathematics","grade":"D1","points":1,"curriculum":"old"},...],
     #   "alevel": [{"subject":"Mathematics","grade":"A","points":6,"subjectType":"principal"},...] }
@@ -234,7 +233,6 @@ class AdmissionApplication(db.Model):
             "program": self.program.to_dict() if self.program else None,
             "programChoices": self.program_choices or [],
             "status": self.status,
-            "paymentStatus": self.payment_status,
             "examLevel": self.exam_level,
             "examYear": self.exam_year,
             "indexNumber": self.index_number,
@@ -471,40 +469,6 @@ class Notification(db.Model):
             "type": self.notification_type,
             "isRead": self.is_read,
             "link": self.link,
-            "createdAt": self.created_at.isoformat() if self.created_at else None,
-        }
-
-
-class Payment(db.Model):
-    __tablename__ = "payments"
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    application_id = db.Column(db.Integer, db.ForeignKey("admission_applications.id"), nullable=False)
-    reference = db.Column(db.String(50), unique=True, nullable=False, index=True)
-    amount = db.Column(db.Integer, nullable=False)  # Amount in smallest currency unit
-    currency = db.Column(db.String(3), nullable=False, default="UGX")
-    phone_number = db.Column(db.String(20))  # Phone number used for mobile money
-    status = db.Column(db.String(20), nullable=False, default="pending")  # pending, successful, failed, refunded
-    gateway_response = db.Column(db.Text)  # Store full gateway response
-    paid_at = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    user = db.relationship("User", backref="payments", lazy="joined")
-    application = db.relationship("AdmissionApplication", backref="payments", lazy="joined")
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "userId": self.user_id,
-            "applicationId": self.application_id,
-            "reference": self.reference,
-            "amount": self.amount,
-            "currency": self.currency,
-            "phoneNumber": self.phone_number,
-            "status": self.status,
-            "paidAt": self.paid_at.isoformat() if self.paid_at else None,
             "createdAt": self.created_at.isoformat() if self.created_at else None,
         }
 

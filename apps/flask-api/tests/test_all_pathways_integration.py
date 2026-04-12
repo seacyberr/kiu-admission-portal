@@ -36,7 +36,7 @@ class TestOlevelDirectPathway:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -63,7 +63,7 @@ class TestOlevelDirectPathway:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -99,7 +99,7 @@ class TestAlevelDirectPathway:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -129,7 +129,7 @@ class TestAlevelDirectPathway:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -159,7 +159,7 @@ class TestHECPathway:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -189,7 +189,7 @@ class TestDiplomaPathway:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -218,7 +218,7 @@ class TestDiplomaPathway:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -253,7 +253,7 @@ class TestMastersPathway:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -300,7 +300,7 @@ class TestPhDPathway:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -334,7 +334,7 @@ class TestHealthSciencePathways:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -366,7 +366,7 @@ class TestInternationalStudents:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -404,7 +404,7 @@ class TestMultipleProgramApplications:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -448,7 +448,7 @@ class TestMatureAgeEntry:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -482,7 +482,7 @@ class TestCurriculumTransitions:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -509,7 +509,7 @@ class TestCurriculumTransitions:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -530,7 +530,7 @@ class TestApplicationValidation:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -549,7 +549,7 @@ class TestApplicationValidation:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )
@@ -568,7 +568,7 @@ class TestApplicationValidation:
         }
         
         response = client.post(
-            '/api/v1/apply',
+            '/api/apply',
             data=json.dumps(payload),
             headers={**auth_headers, 'Content-Type': 'application/json'}
         )

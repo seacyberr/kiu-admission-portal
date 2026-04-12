@@ -8,10 +8,11 @@ from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify, current_app, Response
 from sqlalchemy import func, and_, or_
 from models import (
-    db, AdmissionApplication, Program, User, Payment, 
+    db, AdmissionApplication, Program, User,
     ApplicationStatusHistory, OpportunityApplication
 )
 from routes.auth import get_current_user
+from utils.api_response import success_response, bad_request, unauthorized, forbidden
 
 reports_bp = Blueprint("reports", __name__)
 
@@ -20,9 +21,9 @@ def check_admin_access():
     """Verify user is admin"""
     user, error = get_current_user()
     if error:
-        return None, (jsonify({"error": "Unauthorized", "message": error}), 401)
+        return None, unauthorized(error)
     if user.role != "admin":
-        return None, (jsonify({"error": "Forbidden", "message": "Admin access required"}), 403)
+        return None, forbidden("Admin access required")
     return user, None
 
 
@@ -71,7 +72,7 @@ def get_dashboard_stats():
     total_users = User.query.count()
     new_users = User.query.filter(User.created_at >= since).count()
     
-    return jsonify({
+    return success_response({
         "period": f"Last {days} days",
         "applications": {
             "total": total_applications,
@@ -152,7 +153,7 @@ def get_applications_report():
     if export_format == "csv":
         return export_to_csv(data, "applications_report.csv")
     
-    return jsonify({
+    return success_response({
         "count": len(data),
         "applications": data
     })
@@ -203,7 +204,7 @@ def get_payments_report():
     if export_format == "csv":
         return export_to_csv(data, "payments_report.csv")
     
-    return jsonify({
+    return success_response({
         "count": len(data),
         "total_amount_ugx": total_amount,
         "total_amount_formatted": f"UGX {total_amount:,.0f}",
@@ -256,7 +257,7 @@ def get_program_analytics(program_id):
             "applications": count
         })
     
-    return jsonify({
+    return success_response({
         "program": {
             "id": program.id,
             "name": program.name,
@@ -312,7 +313,7 @@ def get_enrollment_forecast():
             "status": "full" if fill_rate >= 100 else "almost_full" if fill_rate >= 80 else "open"
         })
     
-    return jsonify({
+    return success_response({
         "monthly_trend": [
             {"month": month.strftime("%Y-%m"), "applications": count}
             for month, count in monthly_applications
@@ -328,7 +329,7 @@ def get_enrollment_forecast():
 def export_to_csv(data, filename):
     """Export data to CSV format"""
     if not data:
-        return jsonify({"error": "No data to export"}), 400
+        return bad_request("No data to export")
     
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=data[0].keys())

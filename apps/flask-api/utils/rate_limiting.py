@@ -44,11 +44,10 @@ class AdvancedRateLimiter:
             return request.remote_addr or "127.0.0.1"
     
     def get_user_identifier(self) -> str:
-        """Get unique identifier for rate limiting"""
-        from routes.auth import get_current_user
-        
-        user, _ = get_current_user()
-        if user and not user.is_anonymous:
+        """Get unique identifier for rate limiting using Flask g object"""
+        # Use Flask g object to avoid circular import from routes.auth
+        user = getattr(g, 'current_user', None)
+        if user and hasattr(user, 'id'):
             return f"user:{user.id}"
         else:
             return f"ip:{self.get_client_ip()}"

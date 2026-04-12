@@ -7,6 +7,8 @@ import { Button, Input, Label, Card } from '@/components/ui/shared';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import LinkedInLogin from '@/components/LinkedInLogin';
+import { useQueryClient } from '@tanstack/react-query';
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -20,6 +22,7 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -95,6 +98,8 @@ export default function Login() {
       // Access token is now in httpOnly cookie set by the server.
       // Store user object for UI-only purposes (role, display name etc.)
       localStorage.setItem("kiu_user", JSON.stringify(json.user));
+      queryClient.setQueryData(["me"], json.user);
+      queryClient.invalidateQueries({ queryKey: ["me"] });
       toast({ title: "Welcome back!", description: "Logged in successfully." });
 
       if (json.user.role === "admin") setLocation("/admin");
@@ -188,6 +193,46 @@ export default function Login() {
               Sign In
             </Button>
           </form>
+
+          {/* Social Login Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-muted-foreground">Or continue with</span>
+            </div>
+          </div>
+
+          {/* LinkedIn Login */}
+          <LinkedInLogin 
+            onSuccess={(data) => {
+              // Auth token stored in httpOnly cookie by backend
+              // Store user data for UI only
+              if (data.user) {
+                localStorage.setItem("kiu_user", JSON.stringify(data.user));
+                queryClient.setQueryData(["me"], data.user);
+                queryClient.invalidateQueries({ queryKey: ["me"] });
+              }
+              
+              // Redirect based on role
+              if (data.user.role === "admin") {
+                setLocation("/admin");
+              } else if (data.user.role === "finalist") {
+                setLocation("/career");
+              } else {
+                setLocation("/dashboard");
+              }
+            }}
+            onError={(error) => {
+              toast({
+                title: "LinkedIn Login Failed",
+                description: error,
+                variant: "destructive"
+              });
+            }}
+            className="bg-[#0077b5] hover:bg-[#006396] text-white border-0"
+          />
 
           <div className="mt-8 text-center text-sm text-muted-foreground">
             Don't have an account?{" "}

@@ -1,14 +1,19 @@
 import os
 import uuid
 import re
-from flask import Blueprint, request, jsonify, current_app
+import logging
+from flask import Blueprint, request, jsonify, current_app, g
+from flask_jwt_extended import jwt_required
 from datetime import datetime, date
 import random
 import string
 from functools import wraps
 from werkzeug.utils import secure_filename
 from models import db, AdmissionApplication, Program, User
+from sqlalchemy.orm import joinedload
 from routes.auth import get_current_user
+
+logger = logging.getLogger(__name__)
 from services.qualification_service import UgandaQualificationService
 
 # Maintain backward compatibility
@@ -22,6 +27,8 @@ from utils.caching import (
     cache_manager, cache_program_list, cache_user_data, 
     cache_application_status, invalidate_user_cache, invalidate_program_cache
 )
+from utils.database import atomic_transaction, get_or_404
+from utils.api_response import success_response, paginated_response, bad_request, unauthorized, forbidden, not_found, created
 
 
 def sanitize_text(text):
@@ -176,15 +183,15 @@ def list_programs():
     )
     programs = query.order_by(level_order, Program.campus, Program.faculty, Program.name).all()
 
-    return jsonify({"programs": [p.to_dict(nationality=nationality) for p in programs]}), 200
+    return success_response({"programs": [p.to_dict(nationality=nationality) for p in programs]})
 
 
 @admission_bp.route("/programs/<int:program_id>", methods=["GET"])
 def get_program(program_id):
     program = db.session.get(Program, program_id)
     if not program:
-        return jsonify({"error": "Not found", "message": "Program not found"}), 404
-    return jsonify(program.to_dict()), 200
+        return not_found("Program not found")
+    return success_response(program.to_dict())
 
 
 # ---------------------------------------------------------------------------
@@ -192,6 +199,7 @@ def get_program(program_id):
 # ---------------------------------------------------------------------------
 
 @admission_bp.route("/applications", methods=["POST"])
+@jwt_required()
 @handle_kiu_error
 @validate_json_payload(required_fields=["programIds", "examLevel", "examYear", "indexNumber", "unebGrades", "dateOfBirth", "gender"])
 def create_application():
@@ -222,7 +230,17 @@ def create_application():
     if existing:
         raise ConflictError("You have already submitted an application")
 
-    exam_level = data["examLevel"]
+    exam_level_raw = data.get("examLevel", "").lower().strip()
+    # Normalize exam level aliases
+    exam_level_map = {
+        "o_level": "o_level", "olevel": "o_level", "uce": "o_level",
+        "a_level": "a_level", "alevel": "a_level", "uace": "a_level",
+        "diploma": "diploma",
+        "hec": "hec",
+        "masters": "masters", "master": "masters",
+        "phd": "phd", "doctorate": "phd"
+    }
+    exam_level = exam_level_map.get(exam_level_raw, exam_level_raw)
     valid_exam_levels = ("o_level", "a_level", "diploma", "hec", "masters", "phd")
     if exam_level not in valid_exam_levels:
         raise ValidationError(f"examLevel must be one of: {', '.join(valid_exam_levels)}", "examLevel", exam_level)
@@ -316,10 +334,11 @@ def create_application():
         status="pending",
     )
     try:
-        db.session.add(application)
-        db.session.commit()
+        with atomic_transaction():
+            db.session.add(application)
+            # Auto-committed on success, auto-rolled back on exception
         
-        # Log successful application creation
+        # Log successful application creation (outside transaction)
         log_application_action(
             action="created",
             application_id=application.id,
@@ -331,10 +350,9 @@ def create_application():
             }
         )
         
-        return jsonify(application.to_dict()), 201
+        return created(application.to_dict(), message="Application created successfully")
         
     except Exception as e:
-        db.session.rollback()
         logger.error(f"Failed to create application: {str(e)}", exc_info=True)
         raise ValidationError(f"Failed to save application: {str(e)}")
 
@@ -365,8 +383,16 @@ def upload_certificate(app_id):
     if not allowed_file(file.filename):
         raise ValidationError("Only PDF, JPG, JPEG, PNG allowed")
 
+    # Validate file extension against allowed types
+    if "." not in file.filename:
+        raise ValidationError("File must have an extension", "file", file.filename)
+    ext = file.filename.rsplit(".", 1)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise ValidationError(f"Invalid file extension '.{ext}'. Allowed: {', '.join(ALLOWED_EXTENSIONS)}", "file", ext)
+
     try:
-        ext = file.filename.rsplit(".", 1)[1].lower()
+        # Generate safe filename - use only validated extension from user input
+        # UUID ensures uniqueness, no user input in filename base
         unique_name = f"{app_id}_{cert_type}_{uuid.uuid4().hex[:8]}.{ext}"
         cert_dir = os.path.join(current_app.config["UPLOAD_FOLDER"], "certificates")
         os.makedirs(cert_dir, exist_ok=True)
@@ -374,10 +400,12 @@ def upload_certificate(app_id):
         file.save(save_path)
 
         url_path = f"/api/uploads/certificates/{secure_filename(unique_name)}"
-        setattr(application, f"{cert_type}_certificate_path", url_path)
-        db.session.commit()
         
-        # Log successful certificate upload
+        with atomic_transaction():
+            setattr(application, f"{cert_type}_certificate_path", url_path)
+            # Auto-committed on success
+        
+        # Log successful certificate upload (outside transaction)
         log_application_action(
             action="certificate_uploaded",
             application_id=app_id,
@@ -389,43 +417,56 @@ def upload_certificate(app_id):
             }
         )
         
-        return jsonify({
-            "message": f"{cert_type.upper()} certificate uploaded successfully",
+        return success_response({
             "path": url_path,
             "application": application.to_dict(),
-        }), 200
+        }, message=f"{cert_type.upper()} certificate uploaded successfully")
         
     except Exception as e:
-        db.session.rollback()
         logger.error(f"Failed to upload certificate: {str(e)}", exc_info=True)
         raise ValidationError(f"Failed to upload certificate: {str(e)}")
 
 
 @admission_bp.route("/applications/mine", methods=["GET"])
+@jwt_required()
 @handle_kiu_error
 def get_my_application():
     user, error = get_current_user()
     if error:
         raise ValidationError(error)
-    application = AdmissionApplication.query.filter_by(user_id=user.id).first()
-    return jsonify({"application": application.to_dict() if application else None}), 200
+    # Use eager loading to prevent N+1 queries
+    application = (
+        AdmissionApplication.query
+        .options(joinedload(AdmissionApplication.program))
+        .filter_by(user_id=user.id)
+        .first()
+    )
+    return success_response({"application": application.to_dict() if application else None})
 
 
 @admission_bp.route("/applications/<int:app_id>", methods=["GET"])
+@jwt_required()
 @handle_kiu_error
 def get_application(app_id):
     user, error = get_current_user()
     if error:
         raise ValidationError(error)
-    application = db.session.get(AdmissionApplication, app_id)
+    # Use eager loading to prevent N+1 queries
+    application = (
+        AdmissionApplication.query
+        .options(joinedload(AdmissionApplication.program))
+        .filter_by(id=app_id)
+        .first()
+    )
     if not application:
         raise NotFoundError("Application not found")
     if application.user_id != user.id and user.role != "admin":
         raise ValidationError("Access denied")
-    return jsonify(application.to_dict()), 200
+    return success_response(application.to_dict())
 
 
 @admission_bp.route("/applications", methods=["GET"])
+@jwt_required()
 @handle_kiu_error
 def list_applications():
     user, error = get_current_user()
@@ -439,31 +480,92 @@ def list_applications():
     status_filter = request.args.get("status")
     search = request.args.get("search", "")
 
-    query = AdmissionApplication.query.join(User)
+    # Use eager loading to prevent N+1 queries
+    query = (
+        AdmissionApplication.query
+        .join(User)
+        .options(joinedload(AdmissionApplication.program))
+        .options(joinedload(AdmissionApplication.user))
+    )
     if status_filter:
         query = query.filter(AdmissionApplication.status == status_filter)
     if search:
+        # Sanitize search term to prevent LIKE injection
+        sanitized_search = search.replace("%", "").replace("_", "").replace("[", "").replace("]", "")
+        search_pattern = f"%{sanitized_search}%"
         query = query.filter(
-            (User.first_name.ilike(f"%{search}%")) |
-            (User.last_name.ilike(f"%{search}%")) |
-            (User.email.ilike(f"%{search}%")) |
-            (AdmissionApplication.application_number.ilike(f"%{search}%"))
+            (User.first_name.ilike(search_pattern)) |
+            (User.last_name.ilike(search_pattern)) |
+            (User.email.ilike(search_pattern)) |
+            (AdmissionApplication.application_number.ilike(search_pattern))
         )
 
     paginated = query.order_by(AdmissionApplication.submitted_at.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
 
-    return jsonify({
-        "applications": [a.to_dict() for a in paginated.items],
-        "total": paginated.total,
-        "page": page,
-        "perPage": per_page,
-        "pages": paginated.pages,
-    }), 200
+    return paginated_response(
+        items=[a.to_dict() for a in paginated.items],
+        total=paginated.total,
+        page=page,
+        per_page=per_page,
+        data_key="applications"
+    )
+
+
+@admission_bp.route("/applications/statistics", methods=["GET"])
+@jwt_required()
+@handle_kiu_error
+def get_application_statistics():
+    """Get application statistics for admin dashboard"""
+    # Check admin role
+    user, error = get_current_user()
+    if error or not user or user.role not in ["admin", "admissions_officer"]:
+        raise ValidationError("Admin access required")
+    
+    # Get all applications with eager loading to prevent N+1 queries
+    applications = AdmissionApplication.query.options(
+        joinedload(AdmissionApplication.program)
+    ).all()
+    
+    # Calculate statistics
+    total = len(applications)
+    by_status = {}
+    by_qualification = {}
+    by_program = {}
+    
+    for app in applications:
+        # By status
+        status = app.status or "pending"
+        by_status[status] = by_status.get(status, 0) + 1
+        
+        # By qualification type
+        qual = app.exam_level or "unknown"
+        by_qualification[qual] = by_qualification.get(qual, 0) + 1
+        
+        # By program
+        program_name = app.program.name if app.program else "Unknown"
+        by_program[program_name] = by_program.get(program_name, 0) + 1
+    
+    # Recent applications (last 30 days)
+    from datetime import datetime, timedelta
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    recent_count = AdmissionApplication.query.filter(
+        AdmissionApplication.created_at >= thirty_days_ago
+    ).count()
+    
+    return success_response({
+        "total": total,
+        "by_status": by_status,
+        "by_qualification": by_qualification,
+        "by_program": dict(sorted(by_program.items(), key=lambda x: x[1], reverse=True)[:10]),  # Top 10
+        "recent_30_days": recent_count,
+        "generated_at": datetime.utcnow().isoformat()
+    })
 
 
 @admission_bp.route("/applications/<int:app_id>/status", methods=["PATCH"])
+@jwt_required()
 @handle_kiu_error
 def update_application_status(app_id):
     user, error = get_current_user()
@@ -510,7 +612,7 @@ def update_application_status(app_id):
             }
         )
         
-        return jsonify(application.to_dict()), 200
+        return success_response(application.to_dict(), message="Application status updated")
         
     except Exception as e:
         db.session.rollback()
@@ -672,7 +774,7 @@ def recommend_programs():
 
     recommendations.sort(key=lambda x: x["matchScore"], reverse=True)
 
-    return jsonify({
+    return success_response({
         "recommendations": recommendations,
         "total": len(recommendations),
         "qualificationCheck": qualification_result,
@@ -687,7 +789,7 @@ def recommend_programs():
             "errors": nche_errors,
             "warnings": nche_warnings,
         },
-    }), 200
+    })
 
 
 @admission_bp.route("/check-qualifications", methods=["POST"])
@@ -698,7 +800,7 @@ def check_qualifications():
     """
     data = request.get_json()
     if not data:
-        return jsonify({"error": "Bad request", "message": "No JSON body"}), 400
+        return bad_request("No JSON body provided")
     
     olevel_grades = data.get("olevelGrades", [])
     alevel_grades = data.get("alevelGrades", [])
@@ -725,17 +827,18 @@ def check_qualifications():
             "message": message
         }
     
-    return jsonify(result), 200
+    return success_response(result)
 
 
 @admission_bp.route("/analytics", methods=["GET"])
+@jwt_required()
 def get_analytics():
     """Admin analytics with dropout prediction and program demand trends."""
     user, error = get_current_user()
     if error:
-        return jsonify({"error": "Unauthorized", "message": error}), 401
+        return unauthorized(error)
     if user.role != "admin":
-        return jsonify({"error": "Forbidden"}), 403
+        return forbidden("Admin access required")
 
     from sqlalchemy import func, extract
 
@@ -844,7 +947,7 @@ def get_analytics():
         AdmissionApplication.session_of_study, func.count(AdmissionApplication.id)
     ).group_by(AdmissionApplication.session_of_study).all()
 
-    return jsonify({
+    return success_response({
         "summary": {
             "totalApplications": total,
             "byStatus": {s: c for s, c in by_status},
@@ -870,4 +973,281 @@ def get_analytics():
             "sessionDistribution": {s or "Not specified": c for s, c in session_distribution},
         },
         "generatedAt": datetime.utcnow().isoformat(),
-    }), 200
+    })
+
+
+# ---------------------------------------------------------------------------
+# Application Wizard API - Multi-step Application Submission
+# ---------------------------------------------------------------------------
+
+@admission_bp.route("/applications/wizard", methods=["POST"])
+@handle_kiu_error
+def create_application_wizard():
+    """
+    Create application from wizard data (all 6 steps combined)
+    Supports all NCHE qualification types: UACE, HEC, Diploma, National Certificate
+    """
+    user, error = get_current_user()
+    if error:
+        raise ValidationError(error)
+    if user.role not in ("applicant",):
+        raise ValidationError("Only applicants can submit admission applications")
+
+    data = request.get_json()
+    if not data:
+        raise ValidationError("Request body is required")
+
+    # Check for existing application
+    existing = AdmissionApplication.query.filter_by(user_id=user.id).first()
+    if existing:
+        raise ConflictError("You have already submitted an application")
+
+    # Validate required fields from all steps
+    required_fields = ["personalInfo", "contactInfo", "educationInfo", "programChoices"]
+    for field in required_fields:
+        if field not in data:
+            raise ValidationError(f"Missing required field: {field}")
+
+    # Extract data
+    personal_info = data["personalInfo"]
+    contact_info = data["contactInfo"]
+    education_info = data["educationInfo"]
+    program_choices = data["programChoices"]
+    documents = data.get("documents", {})
+
+    # Validate program choices
+    if not isinstance(program_choices, list) or len(program_choices) == 0:
+        raise ValidationError("At least one program must be selected")
+    if len(program_choices) > 3:
+        raise ValidationError("Maximum 3 program choices allowed")
+
+    programs = []
+    for pid in program_choices:
+        prog = db.session.get(Program, pid)
+        if not prog:
+            raise NotFoundError(f"Program ID {pid} not found")
+        programs.append(prog)
+
+    first_program = programs[0]
+
+    # Validate and normalize qualification type
+    qualification_type_raw = education_info.get("qualificationType", "").lower().strip()
+    # Reject ambiguous 'certificate' - force users to be explicit
+    if qualification_type_raw == "certificate":
+        raise ValidationError(
+            "Ambiguous qualification type 'certificate'. Please use one of:\n"
+            "• 'national_certificate' - if you hold a 2-year vocational/technical qualification\n"
+            "• 'uce' or 'uace' - if you're referring to your O-Level/A-Level certificate\n"
+            "Do not use 'certificate' alone as it is unclear."
+        )
+    # Normalize aliases: olevel = uce, alevel = uace
+    qualification_map = {
+        "uace": "uace", "alevel": "uace", "a_level": "uace",
+        "uce": "uce", "olevel": "uce", "o_level": "uce",
+        "hec": "hec",
+        "diploma": "diploma",
+        "national_certificate": "national_certificate",
+        "bachelors": "bachelors", "bachelor": "bachelors", "degree": "bachelors",
+        "masters": "masters", "master": "masters"
+    }
+    qualification_type = qualification_map.get(qualification_type_raw, qualification_type_raw)
+    valid_qualifications = ("uace", "uce", "hec", "diploma", "national_certificate", "bachelors", "masters")
+    if qualification_type not in valid_qualifications:
+        raise ValidationError(f"Invalid qualification type. Must be one of: {', '.join(valid_qualifications)}")
+
+    # Validate based on qualification type
+    if qualification_type == "uace":
+        uace_data = education_info.get("uace", {})
+        if not uace_data.get("subjects") or len(uace_data.get("subjects", [])) < 2:
+            raise ValidationError("UACE requires at least 2 principal subjects")
+        
+        uce_data = education_info.get("uce", {})
+        if not uce_data.get("subjects") or len(uce_data.get("subjects", [])) < 5:
+            raise ValidationError("UCE requires at least 5 subjects")
+
+    elif qualification_type == "uce":
+        # UCE-only entry for Certificate/Diploma programs
+        uce_data = education_info.get("uce", {})
+        if not uce_data.get("subjects") or len(uce_data.get("subjects", [])) < 5:
+            raise ValidationError("UCE requires at least 5 subjects for admission")
+        
+        # UCE-only applicants can only enter Certificate or Diploma programs
+        if first_program.level in ("degree", "masters", "phd"):
+            raise ValidationError("UCE alone only qualifies for Certificate or Diploma programs. Degree programs require UACE, HEC, or Diploma.")
+
+    elif qualification_type == "hec":
+        hec_track = education_info.get("hecTrack")
+        if hec_track not in ("arts", "biological", "physical"):
+            raise ValidationError("HEC track must be 'arts', 'biological', or 'physical'")
+
+    elif qualification_type == "national_certificate":
+        # National Certificate - 2-year vocational qualification from technical institute
+        nat_cert_info = education_info.get("nationalCertificate", {})
+        if not nat_cert_info.get("institution"):
+            raise ValidationError("National Certificate institution is required (e.g., technical institute name)")
+        if not nat_cert_info.get("field"):
+            raise ValidationError("National Certificate field is required (e.g., 'Automotive Engineering')")
+        # National Certificate holders can only enter Certificate or Diploma programs (NOT Bachelor's directly)
+        if first_program.level in ("degree", "masters", "phd"):
+            raise ValidationError("National Certificate holders can only enter Certificate or Diploma programs. To enter Bachelor's, you must first complete a Diploma program.")
+        elif first_program.level == "diploma":
+            # National Certificate → Diploma is valid progression
+            pass
+        elif first_program.level == "certificate":
+            # National Certificate → Certificate program is also valid
+            pass
+
+    elif qualification_type == "diploma":
+        # Diploma - university/college qualification
+        diploma_info = education_info.get("diploma", {})
+        if not diploma_info.get("institution"):
+            raise ValidationError("Diploma institution is required (e.g., university or college name)")
+        if not diploma_info.get("program"):
+            raise ValidationError("Diploma program name is required")
+
+    # Generate application number
+    app_number = generate_application_number()
+    while AdmissionApplication.query.filter_by(application_number=app_number).first():
+        app_number = generate_application_number()
+
+    # Parse date of birth
+    try:
+        dob = date.fromisoformat(personal_info.get("dateOfBirth")) if personal_info.get("dateOfBirth") else None
+    except (ValueError, TypeError):
+        dob = None
+
+    # Build UNEB grades structure if applicable
+    uneb_grades = {}
+    if qualification_type == "uace":
+        uace_data = education_info.get("uace", {})
+        uce_data = education_info.get("uce", {})
+        uneb_grades = {
+            "olevel": uce_data.get("subjects", []),
+            "alevel": uace_data.get("subjects", [])
+        }
+    elif qualification_type == "uce":
+        # UCE-only applicants
+        uce_data = education_info.get("uce", {})
+        uneb_grades = {
+            "olevel": uce_data.get("subjects", []),
+            "alevel": []
+        }
+
+    # Create application
+    application = AdmissionApplication(
+        application_number=app_number,
+        user_id=user.id,
+        program_id=first_program.id,
+        program_choices=program_choices,
+        exam_level=qualification_type,
+        exam_year=education_info.get("examYear", datetime.now().year),
+        index_number=education_info.get("indexNumber", ""),
+        uneb_grades=uneb_grades,
+        personal_statement=personal_info.get("personalStatement", "")[:2000],
+        date_of_birth=dob,
+        gender=personal_info.get("gender", ""),
+        nationality=sanitize_input(personal_info.get("nationality", "Ugandan")),
+        district=sanitize_input(contact_info.get("district", "")),
+        session_of_study=contact_info.get("sessionOfStudy"),
+        
+        # HEC tracking
+        hec_track=education_info.get("hecTrack") if qualification_type == "hec" else None,
+        hec_institution=education_info.get("hecInstitution") if qualification_type == "hec" else None,
+        hec_completion_year=education_info.get("hecCompletionYear") if qualification_type == "hec" else None,
+        hec_gpa=education_info.get("hecGpa") if qualification_type == "hec" else None,
+        
+        # National Certificate tracking (vocational qualification from technical institute)
+        national_certificate_institution=education_info.get("nationalCertificate", {}).get("institution") if qualification_type == "national_certificate" else None,
+        national_certificate_field=education_info.get("nationalCertificate", {}).get("field") if qualification_type == "national_certificate" else None,
+        national_certificate_completion_year=education_info.get("nationalCertificate", {}).get("completionYear") if qualification_type == "national_certificate" else None,
+        
+        # Diploma tracking (university/college qualification)
+        diploma_institution=education_info.get("diploma", {}).get("institution") if qualification_type == "diploma" else None,
+        diploma_program=education_info.get("diploma", {}).get("program") if qualification_type == "diploma" else None,
+        diploma_completion_year=education_info.get("diploma", {}).get("completionYear") if qualification_type == "diploma" else None,
+        diploma_class=education_info.get("diploma", {}).get("class") if qualification_type == "diploma" else None,
+        
+        # Previous degree tracking (for postgraduate)
+        previous_degree_type="bachelors" if qualification_type == "bachelors" else ("masters" if qualification_type == "masters" else None),
+        previous_degree_institution=education_info.get("previousDegree", {}).get("institution") if qualification_type in ("bachelors", "masters") else None,
+        previous_degree_program=education_info.get("previousDegree", {}).get("program") if qualification_type in ("bachelors", "masters") else None,
+        previous_degree_year=education_info.get("previousDegree", {}).get("year") if qualification_type in ("bachelors", "masters") else None,
+        previous_degree_gpa=education_info.get("previousDegree", {}).get("gpa") if qualification_type in ("bachelors", "masters") else None,
+        
+        # Next of kin
+        next_of_kin_name=sanitize_input(contact_info.get("nextOfKinName", "")),
+        next_of_kin_phone=sanitize_input(contact_info.get("nextOfKinPhone", "")),
+        next_of_kin_relationship=sanitize_input(contact_info.get("nextOfKinRelationship", "")),
+        
+        status="pending"
+    )
+
+    try:
+        db.session.add(application)
+        db.session.commit()
+        
+        # Log application creation
+        log_application_action(
+            action="created_via_wizard",
+            application_id=application.id,
+            user_id=user.id,
+            details={
+                "program_ids": program_choices,
+                "qualification_type": qualification_type,
+                "application_number": app_number
+            }
+        )
+        
+        return created(application.to_dict(), message="Application submitted successfully")
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Failed to create wizard application: {str(e)}", exc_info=True)
+        raise ValidationError(f"Failed to save application: {str(e)}")
+
+
+@admission_bp.route("/applications/wizard/save-draft", methods=["POST"])
+@handle_kiu_error
+def save_application_draft():
+    """
+    Save draft application data (for auto-save feature)
+    Does not validate completeness - just stores current progress
+    """
+    user, error = get_current_user()
+    if error:
+        raise ValidationError(error)
+    if user.role not in ("applicant",):
+        raise ValidationError("Only applicants can save drafts")
+
+    data = request.get_json()
+    if not data:
+        raise ValidationError("Request body is required")
+
+    # Store draft in cache/session (simplified - in production use Redis/sessions)
+    draft_key = f"application_draft:{user.id}"
+    cache_manager.set(draft_key, data, ttl=3600 * 24 * 7)  # 7 days
+    
+    return success_response({"savedAt": datetime.utcnow().isoformat()}, message="Draft saved")
+
+
+@admission_bp.route("/applications/wizard/draft", methods=["GET"])
+@handle_kiu_error
+def get_application_draft():
+    """Retrieve saved draft application data"""
+    user, error = get_current_user()
+    if error:
+        raise ValidationError(error)
+
+    draft_key = f"application_draft:{user.id}"
+    draft = cache_manager.get(draft_key)
+    
+    if not draft:
+        return success_response({"draft": None})
+    
+    return success_response({
+        "draft": draft,
+        "retrievedAt": datetime.utcnow().isoformat()
+    })
+
+
+# Payment system removed - application fees not required per original proposal

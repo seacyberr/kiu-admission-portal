@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from models import db, User, AdmissionApplication
 from routes.auth import get_current_user
 from datetime import datetime
+from utils.api_response import success_response, paginated_response, bad_request, unauthorized, forbidden, not_found, no_content
 
 users_bp = Blueprint("users", __name__)
 
@@ -10,9 +11,9 @@ def check_admin_access():
     """Verify user is admin"""
     user, error = get_current_user()
     if error:
-        return None, (jsonify({"error": "Unauthorized", "message": error}), 401)
+        return None, unauthorized(error)
     if user.role != "admin":
-        return None, (jsonify({"error": "Forbidden", "message": "Admin access required"}), 403)
+        return None, forbidden("Admin access required")
     return user, None
 
 
@@ -45,13 +46,13 @@ def list_users():
         page=page, per_page=per_page, error_out=False
     )
 
-    return jsonify({
-        "users": [u.to_dict() for u in paginated.items],
-        "total": paginated.total,
-        "page": page,
-        "perPage": per_page,
-        "pages": paginated.pages
-    }), 200
+    return paginated_response(
+        items=[u.to_dict() for u in paginated.items],
+        total=paginated.total,
+        page=page,
+        per_page=per_page,
+        data_key="users"
+    )
 
 
 @users_bp.route("/<int:user_id>", methods=["GET"])
@@ -70,7 +71,7 @@ def get_user(user_id):
     user_data["applications"] = [app.to_dict() for app in applications]
     user_data["applications_count"] = len(applications)
 
-    return jsonify(user_data), 200
+    return success_response(user_data)
 
 
 @users_bp.route("/<int:user_id>/role", methods=["PATCH"])
@@ -87,26 +88,17 @@ def update_user_role(user_id):
     valid_roles = ["applicant", "admin", "staff", "reviewer"]
 
     if new_role not in valid_roles:
-        return jsonify({
-            "error": "Invalid role",
-            "message": f"Role must be one of: {', '.join(valid_roles)}"
-        }), 400
+        return bad_request(f"Role must be one of: {', '.join(valid_roles)}", errors={"role": "Invalid"})
 
     # Prevent self-demotion from admin
     if target_user.id == admin_user.id and new_role != "admin":
-        return jsonify({
-            "error": "Forbidden",
-            "message": "Cannot change your own admin role"
-        }), 403
+        return forbidden("Cannot change your own admin role")
 
     target_user.role = new_role
     target_user.updated_at = datetime.utcnow()
     db.session.commit()
 
-    return jsonify({
-        "message": f"User role updated to {new_role}",
-        "user": target_user.to_dict()
-    }), 200
+    return success_response(target_user.to_dict(), message=f"User role updated to {new_role}")
 
 
 @users_bp.route("/<int:user_id>/status", methods=["PATCH"])
@@ -121,17 +113,14 @@ def update_user_status(user_id):
 
     is_verified = data.get("isVerified")
     if is_verified is None:
-        return jsonify({"error": "Missing field", "message": "isVerified is required"}), 400
+        return bad_request("isVerified is required", errors={"isVerified": "Required"})
 
     target_user.is_verified = bool(is_verified)
     target_user.updated_at = datetime.utcnow()
     db.session.commit()
 
     status = "verified" if target_user.is_verified else "unverified"
-    return jsonify({
-        "message": f"User marked as {status}",
-        "user": target_user.to_dict()
-    }), 200
+    return success_response(target_user.to_dict(), message=f"User marked as {status}")
 
 
 @users_bp.route("/<int:user_id>", methods=["DELETE"])
@@ -145,10 +134,7 @@ def delete_user(user_id):
 
     # Prevent self-deletion
     if target_user.id == admin_user.id:
-        return jsonify({
-            "error": "Forbidden",
-            "message": "Cannot delete your own account"
-        }), 403
+        return forbidden("Cannot delete your own account")
 
     # Check if user has applications
     applications_count = AdmissionApplication.query.filter_by(user_id=user_id).count()
@@ -156,10 +142,7 @@ def delete_user(user_id):
     db.session.delete(target_user)
     db.session.commit()
 
-    return jsonify({
-        "message": "User deleted successfully",
-        "deleted_applications": applications_count
-    }), 200
+    return success_response({"deleted_applications": applications_count}, message="User deleted successfully")
 
 
 # ============================================================================
@@ -177,7 +160,7 @@ def bulk_verify_users():
     user_ids = data.get("user_ids", [])
 
     if not user_ids or not isinstance(user_ids, list):
-        return jsonify({"error": "Missing field", "message": "user_ids array is required"}), 400
+        return bad_request("user_ids array is required", errors={"user_ids": "Required array"})
 
     updated_count = 0
     not_found = []
@@ -193,11 +176,10 @@ def bulk_verify_users():
 
     db.session.commit()
 
-    return jsonify({
-        "message": f"{updated_count} users verified successfully",
+    return success_response({
         "updated_count": updated_count,
         "not_found": not_found
-    }), 200
+    }, message=f"{updated_count} users verified successfully")
 
 
 @users_bp.route("/bulk/role", methods=["POST"])
@@ -213,20 +195,14 @@ def bulk_update_role():
 
     valid_roles = ["applicant", "admin", "staff", "reviewer"]
     if new_role not in valid_roles:
-        return jsonify({
-            "error": "Invalid role",
-            "message": f"Role must be one of: {', '.join(valid_roles)}"
-        }), 400
+        return bad_request(f"Role must be one of: {', '.join(valid_roles)}", errors={"role": "Invalid"})
 
     if not user_ids or not isinstance(user_ids, list):
-        return jsonify({"error": "Missing field", "message": "user_ids array is required"}), 400
+        return bad_request("user_ids array is required", errors={"user_ids": "Required array"})
 
     # Prevent changing own role through bulk
     if admin_user.id in user_ids:
-        return jsonify({
-            "error": "Forbidden",
-            "message": "Cannot change your own role through bulk operation"
-        }), 403
+        return forbidden("Cannot change your own role through bulk operation")
 
     updated_count = 0
     not_found = []
@@ -242,11 +218,10 @@ def bulk_update_role():
 
     db.session.commit()
 
-    return jsonify({
-        "message": f"{updated_count} users updated to role: {new_role}",
+    return success_response({
         "updated_count": updated_count,
         "not_found": not_found
-    }), 200
+    }, message=f"{updated_count} users updated to role: {new_role}")
 
 
 @users_bp.route("/bulk/delete", methods=["POST"])
@@ -260,14 +235,11 @@ def bulk_delete_users():
     user_ids = data.get("user_ids", [])
 
     if not user_ids or not isinstance(user_ids, list):
-        return jsonify({"error": "Missing field", "message": "user_ids array is required"}), 400
+        return bad_request("user_ids array is required", errors={"user_ids": "Required array"})
 
     # Prevent self-deletion
     if admin_user.id in user_ids:
-        return jsonify({
-            "error": "Forbidden",
-            "message": "Cannot delete your own account through bulk operation"
-        }), 403
+        return forbidden("Cannot delete your own account through bulk operation")
 
     deleted_count = 0
     not_found = []
@@ -282,11 +254,10 @@ def bulk_delete_users():
 
     db.session.commit()
 
-    return jsonify({
-        "message": f"{deleted_count} users deleted successfully",
+    return success_response({
         "deleted_count": deleted_count,
         "not_found": not_found
-    }), 200
+    }, message=f"{deleted_count} users deleted successfully")
 
 
 @users_bp.route("/bulk/export", methods=["POST"])

@@ -14,6 +14,20 @@ from flask import Blueprint, request, jsonify
 import logging
 from datetime import datetime
 from typing import Dict, List, Tuple
+import sys
+import os
+from utils.api_response import success_response, bad_request, not_found
+
+# Add parent directory to path to import data
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'data'))
+from data import (
+    BACHELORS_PROGRAMS,
+    DIPLOMA_PROGRAMS,
+    CERTIFICATE_PROGRAMS,
+    HEC_PROGRAMS,
+    get_programs_by_requirement,
+    search_programs
+)
 
 recommendations_bp = Blueprint("recommendations", __name__)
 log = logging.getLogger(__name__)
@@ -43,93 +57,323 @@ NCHE_SUBJECT_COMBINATIONS = {
         "minimum_principal_passes": 2,
         "uce_requirement": "Division 1 or 2 with credit in Biology, Chemistry, English, Mathematics"
     },
+    "engineering": {
+        "essential": ["Mathematics", "Physics"],
+        "relevant": ["Chemistry", "Technical Drawing", "Economics", "Computer Studies"],
+        "desirable": ["Biology", "Agriculture", "Further Mathematics"],
+        "minimum_points": 8,
+        "minimum_principal_passes": 2,
+        "uce_requirement": "UCE with 5 passes including English, Mathematics and Physics at Credit level"
+    },
     "engineering_technology": {
         "essential": ["Mathematics", "Physics"],
-        "relevant": ["Chemistry", "Technical Drawing", "Economics"],
-        "desirable": ["Computer Studies", "Geography"],
-        "minimum_points": 12,
+        "relevant": ["Chemistry", "Technical Drawing", "Economics", "Computer Studies"],
+        "desirable": ["Biology", "Agriculture", "Further Mathematics"],
+        "minimum_points": 8,
         "minimum_principal_passes": 2,
-        "uce_requirement": "Division 1 or 2 with credit in Mathematics, Physics, Chemistry, English"
+        "uce_requirement": "UCE with 5 passes including English, Mathematics and Physics at Credit level"
     },
-    "information_technology": {
-        "essential": ["Mathematics"],
-        "relevant": ["Physics", "Computer Studies", "Economics"],
-        "desirable": ["English", "Geography"],
-        "minimum_points": 10,
+    "health_sciences_veterinary": {
+        "essential": ["Biology", "Chemistry"],
+        "relevant": ["Agriculture", "Mathematics", "Physics"],
+        "desirable": ["Human Biology", "Geography"],
+        "minimum_points": 6,
         "minimum_principal_passes": 2,
-        "uce_requirement": "Division 1 or 2 with credit in Mathematics, English"
+        "uce_requirement": "UCE with 5 passes including English, Mathematics, Biology and Chemistry at Credit level"
     },
     "business_management": {
         "essential": [],
-        "relevant": ["Economics", "Mathematics", "Accounting", "Business Studies"],
-        "desirable": ["English", "Geography", "History"],
-        "minimum_points": 8,
-        "minimum_principal_passes": 2,
-        "uce_requirement": "Division 1, 2, or 3 with credit in English and Mathematics"
+        "relevant": ["Economics", "Mathematics", "Accounting", "Business Studies", "Entrepreneurship"],
+        "desirable": ["English", "Geography", "History", "Government"],
+        "minimum_points": 4,
+        "minimum_principal_passes": 1,
+        "uce_requirement": "UCE with 5 passes including English and Mathematics (Credit level preferred)"
     },
     "social_sciences_humanities": {
         "essential": [],
-        "relevant": ["History", "Geography", "Economics", "Literature", "Divinity"],
-        "desirable": ["English", "Mathematics", "Government"],
-        "minimum_points": 8,
-        "minimum_principal_passes": 2,
-        "uce_requirement": "Division 1, 2, or 3 with credit in English"
+        "relevant": ["History", "Geography", "Economics", "Literature", "Divinity", "Luganda", "Kiswahili", "French"],
+        "desirable": ["English", "Mathematics", "Government", "Christian Religious Education"],
+        "minimum_points": 4,
+        "minimum_principal_passes": 1,
+        "uce_requirement": "UCE with 5 passes including English Language at Credit level"
     },
     "education": {
         "essential": [],
-        "relevant": ["Any two teaching subjects"],
-        "desirable": ["English", "Mathematics"],
-        "minimum_points": 8,
-        "minimum_principal_passes": 2,
-        "uce_requirement": "Division 1, 2, or 3 with credit in English and two teaching subjects"
+        "relevant": ["Mathematics", "Biology", "Chemistry", "Physics", "History", "Geography", "Literature", "Economics"],
+        "desirable": ["English", "Kiswahili", "Luganda", "Christian Religious Education", "Islamic Religious Education"],
+        "minimum_points": 4,
+        "minimum_principal_passes": 1,
+        "uce_requirement": "UCE with 5 passes including English Language; preference for candidates with teaching subjects"
     },
     "law": {
         "essential": [],
-        "relevant": ["History", "Literature", "Geography", "Economics", "Divinity"],
-        "desirable": ["English", "Government"],
+        "relevant": ["History", "Literature", "Divinity", "Christian Religious Education", "Economics", "Government"],
+        "desirable": ["English", "Kiswahili", "French", "Luganda"],
+        "minimum_points": 6,
+        "minimum_principal_passes": 2,
+        "uce_requirement": "UCE with 5 passes including English Language at Credit level; strong Arts background preferred"
+    },
+    "computer_science": {
+        "essential": ["Mathematics"],
+        "relevant": ["Physics", "Computer Studies", "Economics", "Chemistry"],
+        "desirable": ["Further Mathematics", "Technical Drawing", "Biology"],
+        "minimum_points": 6,
+        "minimum_principal_passes": 2,
+        "uce_requirement": "UCE with 5 passes including English and Mathematics at Credit level"
+    },
+    "information_technology": {
+        "essential": ["Mathematics"],
+        "relevant": ["Physics", "Computer Studies", "Economics", "Chemistry", "Geography"],
+        "desirable": ["Further Mathematics", "Technical Drawing", "Biology"],
+        "minimum_points": 4,
+        "minimum_principal_passes": 1,
+        "uce_requirement": "UCE with 5 passes including English and Mathematics at Credit level"
+    },
+    "cyber_security": {
+        "essential": ["Mathematics"],
+        "relevant": ["Physics", "Computer Studies", "Economics", "Chemistry"],
+        "desirable": ["Further Mathematics", "Technical Drawing", "Biology"],
+        "minimum_points": 6,
+        "minimum_principal_passes": 2,
+        "uce_requirement": "UCE with 5 passes including English and Mathematics at Credit level"
+    },
+    "pharmacy": {
+        "essential": ["Chemistry"],
+        "relevant": ["Biology", "Mathematics", "Physics"],
+        "desirable": ["Human Biology", "Agriculture", "Food and Nutrition"],
         "minimum_points": 10,
         "minimum_principal_passes": 2,
-        "uce_requirement": "Division 1 or 2 with credit in English"
+        "uce_requirement": "UCE with 5 passes including English, Mathematics, Biology and Chemistry at Credit level"
+    },
+    "dentistry": {
+        "essential": ["Biology", "Chemistry"],
+        "relevant": ["Mathematics", "Physics"],
+        "desirable": ["Human Biology", "Agriculture", "Food and Nutrition"],
+        "minimum_points": 10,
+        "minimum_principal_passes": 2,
+        "uce_requirement": "UCE with 5 passes including English, Mathematics, Biology and Chemistry at Credit level"
+    },
+    "optometry": {
+        "essential": ["Biology", "Physics"],
+        "relevant": ["Chemistry", "Mathematics"],
+        "desirable": ["Human Biology", "Agriculture", "Food and Nutrition"],
+        "minimum_points": 8,
+        "minimum_principal_passes": 2,
+        "uce_requirement": "UCE with 5 passes including English, Mathematics, Biology and Physics at Credit level"
     }
 }
 
-# NCHE Diploma Equivalence Standards
+# NCHE Diploma Equivalence Standards (KIU Direct Entry Policy)
+# Source: KIU Admission Brochure 2025/2026
 NCHE_DIPLOMA_EQUIVALENCE = {
-    "diploma_in_civil_engineering": {
-        "equivalent_to": "A-Level Mathematics + Physics",
-        "points_awarded": 12,
-        "principal_passes": 2,
-        "work_experience_required": 2
-    },
-    "diploma_in_electrical_engineering": {
-        "equivalent_to": "A-Level Mathematics + Physics",
-        "points_awarded": 12,
-        "principal_passes": 2,
-        "work_experience_required": 2
-    },
-    "diploma_in_computer_science": {
-        "equivalent_to": "A-Level Mathematics + Computer Studies",
-        "points_awarded": 10,
-        "principal_passes": 2,
-        "work_experience_required": 1
-    },
-    "diploma_in_business_administration": {
-        "equivalent_to": "A-Level Economics + Mathematics",
-        "points_awarded": 8,
-        "principal_passes": 2,
-        "work_experience_required": 1
-    },
+    # HEALTH SCIENCES DIPLOMAS
     "diploma_in_nursing": {
-        "equivalent_to": "A-Level Biology + Chemistry",
-        "points_awarded": 10,
-        "principal_passes": 2,
-        "work_experience_required": 1
+        "equivalent_to": "UACE with 1 Principal Pass in Biology + 2 Subsidiary",
+        "points_awarded": 4,  # 1 principal pass
+        "principal_passes": 1,
+        "entry_requirements": "Certificate in Nursing (Direct Entry) with minimum 50% aggregate",
+        "progression": "Diploma in Nursing Year 2 / Bachelor of Nursing Year 2",
+        "duration": "2 years after Certificate (3 semesters total)"
+    },
+    "diploma_in_midwifery": {
+        "equivalent_to": "UACE with 1 Principal Pass in Biology + 2 Subsidiary",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "entry_requirements": "Certificate in Midwifery (Direct Entry) with minimum 50% aggregate",
+        "progression": "Diploma in Midwifery Year 2 / Bachelor of Midwifery Year 2",
+        "duration": "2 years after Certificate (4 semesters total)"
     },
     "diploma_in_medical_laboratory": {
-        "equivalent_to": "A-Level Biology + Chemistry",
-        "points_awarded": 10,
-        "principal_passes": 2,
-        "work_experience_required": 1
+        "equivalent_to": "UACE with 1 Principal Pass in Biology/Chemistry + 2 Subsidiary",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "entry_requirements": "Certificate in Medical Laboratory Techniques with minimum 50% aggregate",
+        "progression": "Bachelor of Medical Laboratory Sciences Year 3",
+        "duration": "2 years after Certificate (4 semesters total)"
+    },
+    "diploma_in_pharmacy": {
+        "equivalent_to": "UACE with 1 Principal Pass in Chemistry + 2 Subsidiary (Biology required)",
+        "points_awarded": 5,  # Chemistry principal + Biology subsidiary
+        "principal_passes": 1,
+        "entry_requirements": "Certificate in Pharmacy with minimum 50% aggregate",
+        "progression": "Bachelor of Pharmacy Year 3",
+        "duration": "2 years after Certificate (4 semesters total)"
+    },
+    "diploma_in_clinical_medicine": {
+        "equivalent_to": "UACE with 1 Principal Pass in Biology + 2 Subsidiary",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "entry_requirements": "Certificate in Clinical Medicine with minimum 50% aggregate",
+        "progression": "Bachelor of Clinical Medicine and Community Health Year 3",
+        "duration": "3 years after Certificate (6 semesters total)"
+    },
+    "diploma_in_public_health": {
+        "equivalent_to": "UACE with 1 Principal Pass in Biology + 2 Subsidiary",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "entry_requirements": "Certificate in Public Health with minimum 50% aggregate",
+        "progression": "Bachelor of Public Health Year 2",
+        "duration": "2 years after Certificate (4 semesters total)"
+    },
+    
+    # TECHNICAL & ENGINEERING DIPLOMAS
+    "diploma_in_civil_engineering": {
+        "equivalent_to": "UACE with 1 Principal in Mathematics/Physics + 2 Subsidiary",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "entry_requirements": "UCE with 5 credits including Mathematics and Physics",
+        "progression": "Bachelor of Civil Engineering Year 2",
+        "duration": "2 years after relevant qualification (4 semesters total)"
+    },
+    "diploma_in_electrical_engineering": {
+        "equivalent_to": "UACE with 1 Principal in Mathematics/Physics + 2 Subsidiary",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "entry_requirements": "UCE with 5 credits including Mathematics and Physics",
+        "progression": "Bachelor of Electrical Engineering Year 2",
+        "duration": "2 years (4 semesters)"
+    },
+    "diploma_in_mechanical_engineering": {
+        "equivalent_to": "UACE with 1 Principal in Mathematics/Physics + 2 Subsidiary",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "entry_requirements": "UCE with 5 credits including Mathematics and Physics",
+        "progression": "Bachelor of Mechanical Engineering Year 2",
+        "duration": "2 years (4 semesters)"
+    },
+    
+    # COMPUTING & IT DIPLOMAS
+    "diploma_in_computer_science": {
+        "equivalent_to": "UACE with 1 Principal in Mathematics/Physics + 2 Subsidiary",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "entry_requirements": "UCE with 5 credits including Mathematics and English",
+        "progression": "Bachelor of Computer Science Year 2",
+        "duration": "2 years (4 semesters)"
+    },
+    "diploma_in_information_technology": {
+        "equivalent_to": "UACE with 1 Principal in Mathematics/Physics + 2 Subsidiary",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "entry_requirements": "UCE with 5 credits including Mathematics and English",
+        "progression": "Bachelor of Information Technology Year 2",
+        "duration": "2 years (4 semesters)"
+    },
+    
+    # BUSINESS & MANAGEMENT DIPLOMAS
+    "diploma_in_business_administration": {
+        "equivalent_to": "UACE with 1 Principal + 2 Subsidiary passes",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "entry_requirements": "UCE with 5 credits including English and Mathematics",
+        "progression": "Bachelor of Business Administration Year 2",
+        "duration": "2 years (4 semesters)"
+    },
+    "diploma_in_accounting_and_finance": {
+        "equivalent_to": "UACE with 1 Principal in Economics/Mathematics + 2 Subsidiary",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "entry_requirements": "UCE with 5 credits including Mathematics and English",
+        "progression": "Bachelor of Commerce Year 2",
+        "duration": "2 years (4 semesters)"
+    },
+    "diploma_in_human_resource_management": {
+        "equivalent_to": "UACE with 1 Principal + 2 Subsidiary passes",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "entry_requirements": "UCE with 5 credits including English",
+        "progression": "Bachelor of Human Resource Management Year 2",
+        "duration": "2 years (4 semesters)"
+    }
+}
+
+# NCHE Higher Education Certificate (HEC) Equivalence Standards
+# HEC is the 4th avenue of admission approved by NCHE
+NCHE_HEC_EQUIVALENCE = {
+    "hec_arts": {
+        "track": "Arts/Humanities",
+        "equivalent_to": "UACE with 1 Principal Pass + 2 Subsidiary",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "recommended_programs": [
+            "Law", "Social Work", "Public Administration", "Business Administration",
+            "Arts with Education", "Development Studies", "International Relations"
+        ],
+        "entry_requirements": "UCE with 3 passes, no specific subject requirements",
+        "progression": "Direct entry to Year 1 of Arts/Humanities programs",
+        "duration": "1 year HEC program, then 3-4 year Bachelor's"
+    },
+    "hec_physical": {
+        "track": "Physical Sciences",
+        "equivalent_to": "UACE with 1 Principal in Mathematics/Physics + 2 Subsidiary",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "recommended_programs": [
+            "Computer Science", "Information Technology", "Engineering programs",
+            "Mathematics", "Physics", "Chemistry"
+        ],
+        "entry_requirements": "UCE with passes in Mathematics and any science subject",
+        "progression": "Direct entry to Year 1 of Science/Technical programs",
+        "duration": "1 year HEC program, then 3-4 year Bachelor's"
+    },
+    "hec_biological": {
+        "track": "Biological Sciences",
+        "equivalent_to": "UACE with 1 Principal in Biology + 2 Subsidiary",
+        "points_awarded": 4,
+        "principal_passes": 1,
+        "recommended_programs": [
+            "Nursing", "Public Health", "Environmental Health", "Agriculture",
+            "Biology", "Medicine", "Pharmacy", "Laboratory Sciences"
+        ],
+        "entry_requirements": "UCE with passes in Biology and any other science",
+        "progression": "Direct entry to Year 1 of Health/Agriculture programs",
+        "duration": "1 year HEC program, then 3-5 year Bachelor's"
+    }
+}
+
+# NCHE National Certificate (Vocational) Equivalence Standards
+NCHE_NATIONAL_CERTIFICATE_EQUIVALENCE = {
+    "national_certificate_nursing": {
+        "field": "Health Sciences",
+        "equivalent_to": "UCE with 5 passes including Biology",
+        "recommended_programs": ["Diploma in Nursing", "Certificate in Midwifery"],
+        "entry_level": "Certificate/Diploma",
+        "progression": "Direct entry to Certificate or Diploma programs"
+    },
+    "national_certificate_medical_lab": {
+        "field": "Health Sciences",
+        "equivalent_to": "UCE with 5 passes including Biology and Chemistry",
+        "recommended_programs": ["Diploma in Medical Laboratory Sciences", "Certificate in Laboratory Techniques"],
+        "entry_level": "Certificate/Diploma",
+        "progression": "Direct entry to Certificate or Diploma programs"
+    },
+    "national_certificate_pharmacy": {
+        "field": "Health Sciences",
+        "equivalent_to": "UCE with 5 passes including Chemistry and Biology",
+        "recommended_programs": ["Diploma in Pharmacy", "Certificate in Pharmacy"],
+        "entry_level": "Certificate/Diploma",
+        "progression": "Direct entry to Certificate or Diploma programs"
+    },
+    "national_certificate_business": {
+        "field": "Business & Management",
+        "equivalent_to": "UCE with 5 passes including English and Mathematics",
+        "recommended_programs": ["Diploma in Business Administration", "Diploma in Accounting", "Certificate in Business"],
+        "entry_level": "Certificate/Diploma",
+        "progression": "Direct entry to Certificate or Diploma programs"
+    },
+    "national_certificate_ict": {
+        "field": "Computing & IT",
+        "equivalent_to": "UCE with 5 passes including Mathematics",
+        "recommended_programs": ["Diploma in Computer Science", "Diploma in IT", "Certificate in IT"],
+        "entry_level": "Certificate/Diploma",
+        "progression": "Direct entry to Certificate or Diploma programs"
+    },
+    "national_certificate_education": {
+        "field": "Education",
+        "equivalent_to": "UCE with 5 passes",
+        "recommended_programs": ["Diploma in Education", "Certificate in Education"],
+        "entry_level": "Certificate/Diploma",
+        "progression": "Direct entry to Certificate or Diploma programs"
     }
 }
 
@@ -679,6 +923,168 @@ KIU_NCHE_PROGRAMMES = [
 ]
 
 # ---------------------------------------------------------------------------
+# NCHE Assessment Functions for Alternative Qualifications
+# ---------------------------------------------------------------------------
+
+def assess_hec_eligibility(heq_type: str, programme: Dict) -> Dict:
+    """Assess eligibility for HEC (Higher Education Certificate) holders
+    
+    HEC is NCHE's 4th avenue of admission for applicants who don't meet
+    standard UACE requirements but have UCE passes.
+    """
+    assessment = {
+        "eligible": False,
+        "reasons": [],
+        "hec_track": heq_type,
+        "entry_level": "Year 1",
+        "meets_nche_minimum": False,
+        "points_calculation": {
+            "equivalent_to": "UACE with 1 Principal + 2 Subsidiary",
+            "points_awarded": 4,
+            "principal_passes": 1
+        }
+    }
+    
+    if heq_type in NCHE_HEC_EQUIVALENCE:
+        hec_data = NCHE_HEC_EQUIVALENCE[heq_type]
+        programme_name = programme.get("name", "").lower()
+        
+        # Check if programme matches HEC track recommendations
+        recommended_programs = hec_data.get("recommended_programs", [])
+        programme_matches = any(
+            prog.lower() in programme_name or programme_name in prog.lower()
+            for prog in recommended_programs
+        )
+        
+        if programme_matches:
+            assessment["eligible"] = True
+            assessment["meets_nche_minimum"] = True
+            assessment["reasons"].append(f"HEC {hec_data['track']} qualifies for this programme")
+            assessment["entry_level"] = "Year 1 (Direct Entry)"
+        elif programme.get("nche_category") in ["arts_humanities", "social_sciences", "business_management"] and heq_type == "hec_arts":
+            assessment["eligible"] = True
+            assessment["meets_nche_minimum"] = True
+            assessment["reasons"].append("HEC Arts track qualifies for Arts/Humanities/Business programmes")
+        elif programme.get("nche_category") in ["science_technology", "engineering"] and heq_type == "hec_physical":
+            assessment["eligible"] = True
+            assessment["meets_nche_minimum"] = True
+            assessment["reasons"].append("HEC Physical Sciences track qualifies for Science/Engineering programmes")
+        elif programme.get("nche_category") in ["medicine_health_sciences", "agriculture"] and heq_type == "hec_biological":
+            assessment["eligible"] = True
+            assessment["meets_nche_minimum"] = True
+            assessment["reasons"].append("HEC Biological Sciences track qualifies for Health/Agriculture programmes")
+        else:
+            assessment["reasons"].append(f"HEC {hec_data['track']} may not be ideal for this programme. Consider related programmes.")
+            
+    return assessment
+
+
+def assess_national_certificate_eligibility(certificate_type: str, programme: Dict) -> Dict:
+    """Assess eligibility for National Certificate (Vocational) holders
+    
+    National Certificates are 2-year vocational qualifications that
+    can lead to Diploma or Certificate programs.
+    """
+    assessment = {
+        "eligible": False,
+        "reasons": [],
+        "entry_level": None,
+        "meets_nche_minimum": False,
+        "recommended_entry": None
+    }
+    
+    if certificate_type in NCHE_NATIONAL_CERTIFICATE_EQUIVALENCE:
+        cert_data = NCHE_NATIONAL_CERTIFICATE_EQUIVALENCE[certificate_type]
+        programme_level = programme.get("nche_accreditation", {}).get("programme_level", "")
+        programme_category = programme.get("nche_category", "")
+        
+        # National Certificates typically qualify for Certificate or Diploma programs
+        if programme_level == "Certificate" or programme_level == "Diploma":
+            # Check field alignment
+            cert_field = cert_data.get("field", "").lower()
+            prog_category = programme_category.lower()
+            
+            if ("health" in cert_field and "health" in prog_category) or \
+               ("business" in cert_field and ("business" in prog_category or "commerce" in prog_category)) or \
+               ("computing" in cert_field and ("computing" in prog_category or "technology" in prog_category)) or \
+               ("education" in cert_field and "education" in prog_category):
+                assessment["eligible"] = True
+                assessment["meets_nche_minimum"] = True
+                assessment["entry_level"] = "Direct Entry"
+                assessment["reasons"].append(f"National Certificate in {cert_field} qualifies for this {programme_level} programme")
+            else:
+                assessment["reasons"].append(f"Consider programmes in {cert_field} for better alignment with your National Certificate")
+        elif programme_level == "Undergraduate":
+            assessment["reasons"].append("National Certificate holders should apply for Diploma or Certificate programmes first, then progress to Bachelor's")
+            assessment["recommended_entry"] = "Diploma (then progress to Bachelor's)"
+        else:
+            assessment["reasons"].append(f"Entry level {programme_level} may require additional qualifications")
+            
+    return assessment
+
+
+def assess_diploma_eligibility(diploma_type: str, diploma_class: str, programme: Dict) -> Dict:
+    """Assess eligibility for Diploma holders (Direct Entry to Year 2/3)
+    
+    Diploma holders with Credit/Distinction can enter Bachelor's programs
+    at Year 2 or Year 3 depending on diploma relevance.
+    """
+    assessment = {
+        "eligible": False,
+        "reasons": [],
+        "entry_level": None,
+        "meets_nche_minimum": False,
+        "points_calculation": None,
+        "progression_year": None
+    }
+    
+    # Check diploma class - minimum Pass (50%) required for direct entry
+    if diploma_class.lower() not in ["credit", "distinction", "second class", "2nd class"]:
+        assessment["reasons"].append("Diploma class below Credit. Minimum Credit/Distinction required for direct entry to Bachelor's")
+        assessment["recommended_entry"] = "Certificate program or repeat Diploma"
+        return assessment
+    
+    if diploma_type in NCHE_DIPLOMA_EQUIVALENCE:
+        dip_data = NCHE_DIPLOMA_EQUIVALENCE[diploma_type]
+        programme_name = programme.get("name", "").lower()
+        
+        # Calculate equivalent UACE points
+        points_awarded = dip_data.get("points_awarded", 4)
+        principal_passes = dip_data.get("principal_passes", 1)
+        
+        assessment["points_calculation"] = {
+            "total_points": points_awarded,
+            "principal_passes": principal_passes,
+            "equivalent_to": dip_data.get("equivalent_to", "UACE with 1 Principal + 2 Subsidiary"),
+            "source": "Diploma equivalence"
+        }
+        
+        # Check if diploma progression matches programme
+        progression = dip_data.get("progression", "").lower()
+        
+        if programme_name in progression or any(word in programme_name for word in progression.split() if len(word) > 3):
+            assessment["eligible"] = True
+            assessment["meets_nche_minimum"] = True
+            assessment["entry_level"] = "Direct Entry"
+            
+            # Determine entry year based on diploma duration
+            duration = dip_data.get("duration", "")
+            if "year 3" in progression:
+                assessment["progression_year"] = 3
+                assessment["reasons"].append(f"Diploma qualifies for Year 3 entry (advanced standing)")
+            elif "year 2" in progression:
+                assessment["progression_year"] = 2
+                assessment["reasons"].append(f"Diploma qualifies for Year 2 entry")
+            else:
+                assessment["progression_year"] = 1
+                assessment["reasons"].append(f"Diploma qualifies for Year 1 entry")
+        else:
+            assessment["reasons"].append(f"Diploma may not be directly relevant. Consider: {dip_data.get('progression', 'related programmes')}")
+            
+    return assessment
+
+
+# ---------------------------------------------------------------------------
 # NCHE Assessment Functions
 # ---------------------------------------------------------------------------
 def calculate_uace_points(subjects_grades: Dict[str, str]) -> Tuple[int, int]:
@@ -743,17 +1149,47 @@ def assess_nche_eligibility(programme: Dict, applicant: Dict) -> Dict:
                 essential_met = False
                 missing_essential.append(essential)
         
+        # Populate transparency
+        assessment["transparency"]["checked_criteria"].append("essential_subjects")
         if missing_essential:
             assessment["reasons_fail"].append(f"Missing essential NCHE subjects: {', '.join(missing_essential)}")
+            assessment["transparency"]["failed_criteria"].append({
+                "criterion": "essential_subjects",
+                "reason": f"Missing: {', '.join(missing_essential)}"
+            })
         else:
             assessment["reasons_pass"].append(f"Meets NCHE essential subjects requirement")
+            assessment["transparency"]["passed_criteria"].append({
+                "criterion": "essential_subjects",
+                "detail": "All essential subjects present"
+            })
         
         # Points and principal passes check
+        assessment["transparency"]["checked_criteria"].append("minimum_points_requirement")
         if total_points >= nche_req["minimum_points"] and principal_passes >= nche_req["minimum_principal_passes"]:
             assessment["meets_nche_minimum"] = True
             assessment["reasons_pass"].append(f"Meets NCHE minimum: {total_points} points, {principal_passes} principal passes")
+            assessment["transparency"]["passed_criteria"].append({
+                "criterion": "minimum_points_requirement",
+                "detail": f"Points: {total_points}, Principal passes: {principal_passes}"
+            })
+            assessment["transparency"]["meets_minimum_standards"] = True
         else:
             assessment["reasons_fail"].append(f"Below NCHE minimum: {total_points} < {nche_req['minimum_points']} points or {principal_passes} < {nche_req['minimum_principal_passes']} principal passes")
+            assessment["transparency"]["failed_criteria"].append({
+                "criterion": "minimum_points_requirement",
+                "reason": f"Insufficient points ({total_points}/{nche_req['minimum_points']}) or principal passes ({principal_passes}/{nche_req['minimum_principal_passes']})"
+            })
+            # Add actionable steps based on UACE performance
+            if principal_passes >= 1 and principal_passes < nche_req["minimum_principal_passes"]:
+                # Has at least 1 principal but not enough - HEC is a good option
+                assessment["transparency"]["actionable_steps"].append("Consider HEC (Higher Education Certificate) program - 1 year pathway to Bachelor's")
+            elif principal_passes >= 2 and total_points < nche_req["minimum_points"]:
+                # Has 2 principals but low grades - HEC could help upgrade
+                assessment["transparency"]["actionable_steps"].append("HEC program may strengthen your profile for competitive programs")
+            
+            assessment["transparency"]["actionable_steps"].append("Consider upgrading grades in weaker subjects through retakes")
+            assessment["transparency"]["actionable_steps"].append("Explore Diploma or National Certificate programs as alternative pathways")
         
         # Check against cut-off
         if "cut_off_points" in programme["admission_statistics_2024"]:
@@ -783,13 +1219,46 @@ def assess_nche_eligibility(programme: Dict, applicant: Dict) -> Dict:
         else:
             assessment["reasons_fail"].append(f"Weak UCE performance: {uce_division}")
     
-    # Diploma Assessment
+    # HEC Assessment
+    if "hec_type" in applicant:
+        hec_type = applicant["hec_type"]
+        hec_assessment = assess_hec_eligibility(hec_type, programme)
+        if hec_assessment["meets_nche_minimum"]:
+            assessment["meets_nche_minimum"] = True
+            assessment["entry_recommendation"] = hec_assessment["entry_level"]
+            assessment["reasons_pass"].extend(hec_assessment["reasons"])
+        else:
+            assessment["reasons_fail"].extend(hec_assessment["reasons"])
+        assessment["hec_assessment"] = hec_assessment
+    
+    # National Certificate Assessment
+    if "national_certificate_type" in applicant:
+        cert_type = applicant["national_certificate_type"]
+        cert_assessment = assess_national_certificate_eligibility(cert_type, programme)
+        if cert_assessment["meets_nche_minimum"]:
+            assessment["meets_nche_minimum"] = True
+            assessment["entry_recommendation"] = cert_assessment["entry_level"]
+            assessment["reasons_pass"].extend(cert_assessment["reasons"])
+        else:
+            assessment["reasons_fail"].extend(cert_assessment["reasons"])
+        assessment["national_certificate_assessment"] = cert_assessment
+    
+    # Diploma Assessment (enhanced)
     if "diploma_type" in applicant:
         diploma_type = applicant["diploma_type"]
-        if diploma_type in NCHE_DIPLOMA_EQUIVALENCE:
-            diploma_info = NCHE_DIPLOMA_EQUIVALENCE[diploma_type]
-            assessment["points_calculation"]["diploma_equivalent_points"] = diploma_info["points_awarded"]
-            assessment["reasons_pass"].append(f"NCHE diploma equivalence: {diploma_type}")
+        diploma_class = applicant.get("diploma_class", "")
+        diploma_assessment = assess_diploma_eligibility(diploma_type, diploma_class, programme)
+        if diploma_assessment["meets_nche_minimum"]:
+            assessment["meets_nche_minimum"] = True
+            assessment["entry_recommendation"] = diploma_assessment["entry_level"]
+            if diploma_assessment["progression_year"]:
+                assessment["direct_entry_year"] = diploma_assessment["progression_year"]
+            assessment["reasons_pass"].extend(diploma_assessment["reasons"])
+        else:
+            assessment["reasons_fail"].extend(diploma_assessment["reasons"])
+        if diploma_assessment["points_calculation"]:
+            assessment["points_calculation"]["diploma_equivalent"] = diploma_assessment["points_calculation"]
+            assessment["diploma_assessment"] = diploma_assessment
             assessment["meets_nche_minimum"] = True
         else:
             assessment["reasons_fail"].append(f"Diploma not NCHE-recognized: {diploma_type}")
@@ -867,11 +1336,11 @@ def list_nche_programmes():
     if category:
         programmes = [p for p in programmes if category in p["nche_category"].lower()]
     
-    return jsonify({
+    return success_response({
         "programmes": programmes,
         "nche_categories": list(set(p["nche_category"] for p in KIU_NCHE_PROGRAMMES)),
         "total": len(programmes),
-        "nche_compliance": "All programmes are fully NCHE accredited"
+        "filters": {"search": "", "level": "", "category": category}
     })
 
 @recommendations_bp.route("/v1/nche/assess", methods=["POST"])
@@ -880,24 +1349,23 @@ def nche_admission_assessment():
     try:
         applicant = request.get_json()
         if not applicant:
-            return jsonify({"error": "Please provide your academic details"}), 400
+            return bad_request("Please provide your academic details")
         
         recommendations = get_nche_recommendations(applicant)
         
-        return jsonify({
+        return success_response({
             "recommendations": recommendations,
             "total": len(recommendations),
             "nche_assessment_summary": {
-                "eligible_programs": len([r for r in recommendations if r["nche_assessment"]["eligible"]]),
-                "strong_candidates": len([r for r in recommendations if r["nche_assessment"]["strong_candidate"]]),
+                "assessed_at": datetime.now().isoformat(),
                 "nche_compliant": True,
-                "assessment_standard": "NCHE Uganda Minimum Standards for Higher Education"
+                "uganda_curriculum": "Both Old and New (2024+) supported"
             }
         })
         
     except Exception as e:
         log.error(f"Error in NCHE assessment: {e}")
-        return jsonify({"error": "Unable to complete NCHE assessment"}), 500
+        return bad_request(f"Unable to complete NCHE assessment: {str(e)}")
 
 @recommendations_bp.route("/v1/nche/programme/<programme_id>", methods=["GET"])
 def get_nche_programme_details(programme_id):
@@ -905,11 +1373,11 @@ def get_nche_programme_details(programme_id):
     programme = next((p for p in KIU_NCHE_PROGRAMMES if p["id"] == programme_id), None)
     
     if not programme:
-        return jsonify({"error": "NCHE programme not found"}), 404
+        return not_found("NCHE programme not found")
     
     programme["apply_url"] = f"/apply/{programme_id}"
     
-    return jsonify(programme)
+    return success_response(programme)
 
 @recommendations_bp.route("/v1/nche/eligibility-check", methods=["POST"])
 def nche_eligibility_check():
@@ -920,32 +1388,34 @@ def nche_eligibility_check():
         applicant = data.get("applicant", {})
         
         if not programme_id:
-            return jsonify({"error": "Programme ID required"}), 400
+            return bad_request("Programme ID required", errors={"programme_id": "Required"})
         
         programme = next((p for p in KIU_NCHE_PROGRAMMES if p["id"] == programme_id), None)
         if not programme:
-            return jsonify({"error": "NCHE programme not found"}), 404
+            return not_found("NCHE programme not found")
         
         assessment = assess_nche_eligibility(programme, applicant)
         
-        return jsonify({
+        return success_response({
             "programme": {
                 "id": programme["id"],
                 "name": programme["name"],
-                "nche_category": programme["nche_category"],
-                "nche_accreditation": programme["nche_accreditation"]
+                "nche_accredited": programme["nche_accredited"],
+                "nche_category": programme["nche_category"]
             },
-            "nche_assessment": assessment
+            "assessment": assessment,
+            "eligible": assessment["eligible"],
+            "next_steps": assessment.get("next_steps", [])
         })
         
     except Exception as e:
         log.error(f"Error in NCHE eligibility check: {e}")
-        return jsonify({"error": "Unable to check NCHE eligibility"}), 500
+        return bad_request(f"Unable to check NCHE eligibility: {str(e)}")
 
 @recommendations_bp.route("/v1/nche/standards", methods=["GET"])
 def get_nche_standards():
     """Get NCHE Uganda admission standards"""
-    return jsonify({
+    return success_response({
         "nche_uace_grading": NCHE_UACE_GRADE_POINTS,
         "nche_uce_grading": NCHE_UCE_DIVISION_POINTS,
         "nche_subject_combinations": NCHE_SUBJECT_COMBINATIONS,

@@ -133,8 +133,8 @@ const NCHE_DIPLOMAS = [
 ];
 
 export default function NCHERecommendationsPage() {
-  const [step, setStep] = useState<"qualification" | "uace" | "uce" | "diploma" | "bachelors" | "results">("qualification");
-  const [qualificationType, setQualificationType] = useState<"uce" | "uace" | "diploma" | "bachelors">("uce");
+  const [step, setStep] = useState<"qualification" | "uace" | "uce" | "hec" | "national_certificate" | "diploma" | "bachelors" | "results">("qualification");
+  const [qualificationType, setQualificationType] = useState<"uce" | "uace" | "hec" | "national_certificate" | "diploma" | "bachelors">("uce");
   const [uaceCurriculum, setUaceCurriculum] = useState<"old" | "new">("new");
   const [uceCurriculum, setUceCurriculum] = useState<"old" | "new">("new");
   const [uaceSubjects, setUaceSubjects] = useState<NCHESubject[]>([]);
@@ -142,8 +142,20 @@ export default function NCHERecommendationsPage() {
   const [uceCredits, setUceCredits] = useState<string[]>([]);
   const [diplomaType, setDiplomaType] = useState<string>("");
   const [diplomaClass, setDiplomaClass] = useState<string>("");
+  const [diplomaInstitution, setDiplomaInstitution] = useState<string>("");
   const [workExperience, setWorkExperience] = useState<number>(0);
   const [bachelorGpa, setBachelorGpa] = useState<number>(3.0);
+  
+  // UCE subjects state
+  const [uceSubjects, setUceSubjects] = useState<NCHESubject[]>([]);
+  
+  // HEC track state
+  const [hecTrack, setHecTrack] = useState<"arts" | "physical" | "biological" | "">("");
+  
+  // National Certificate state
+  const [nationalCertificateType, setNationalCertificateType] = useState<string>("");
+  const [nationalCertificateInstitution, setNationalCertificateInstitution] = useState<string>("");
+  
   const [recommendations, setRecommendations] = useState<NCHEProgramme[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -185,9 +197,26 @@ export default function NCHERecommendationsPage() {
         applicantData.principal_passes = getPrincipalPasses();
         applicantData.uce_division = uceDivision;
         applicantData.uce_credits = uceCredits;
+      } else if (qualificationType === "uce") {
+        // UCE-only for Certificate/Diploma entry
+        applicantData.uce_subjects = uceSubjects.map(s => s.name);
+        applicantData.uce_grades = Object.fromEntries(uceSubjects.map(s => [s.name, s.grade]));
+        applicantData.uce_division = uceDivision;
+        applicantData.uce_credits = uceCredits;
+        applicantData.entry_level = "certificate_diploma";
+      } else if (qualificationType === "hec") {
+        // HEC track determines the programs available
+        applicantData.hec_track = hecTrack;
+      } else if (qualificationType === "national_certificate") {
+        // User holds a National Certificate (vocational qualification)
+        applicantData.national_certificate_field = nationalCertificateType;  // e.g., "Automotive", "Electrical"
+        applicantData.national_certificate_institution = nationalCertificateInstitution;
+        applicantData.work_experience = workExperience;
       } else if (qualificationType === "diploma") {
+        // User holds a Diploma (university qualification)
         applicantData.diploma_type = diplomaType;
         applicantData.diploma_class = diplomaClass;
+        applicantData.diploma_institution = diplomaInstitution;
         applicantData.work_experience = workExperience;
       } else if (qualificationType === "bachelors") {
         applicantData.bachelor_gpa = bachelorGpa;
@@ -257,13 +286,95 @@ export default function NCHERecommendationsPage() {
             />
             <div>
               <h3 className="font-semibold">UACE (A-Level)</h3>
-              <p className="text-sm text-gray-600">Direct university admission</p>
+              <p className="text-sm text-gray-600">Uganda Advanced Certificate of Education</p>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mt-1">
+                NCHE Recommendation Engine
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Diploma / Certificate */}
+        {/* UCE - Certificate Programs & Diploma Programs Entry */}
         <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
+             onClick={() => { setQualificationType("uce"); setStep("uce"); }}>
+          <div className="flex items-center space-x-3">
+            <input
+              type="radio"
+              name="qualification"
+              checked={qualificationType === "uce"}
+              onChange={() => setQualificationType("uce")}
+              className="w-4 h-4"
+            />
+            <div>
+              <h3 className="font-semibold">UCE (O-Level)</h3>
+              <p className="text-sm text-gray-600">Uganda Certificate of Education</p>
+              <div className="flex flex-wrap gap-1 mt-1">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                  NCHE Engine
+                </span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                  Certificate Programs (1-2.5 yrs)
+                </span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                  Diploma Programs (2-3 yrs)
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* HEC Certificate - NCHE 4th Avenue */}
+        <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
+             onClick={() => { setQualificationType("hec"); setStep("hec"); }}>
+          <div className="flex items-center space-x-3">
+            <input
+              type="radio"
+              name="qualification"
+              checked={qualificationType === "hec"}
+              onChange={() => setQualificationType("hec")}
+              className="w-4 h-4"
+            />
+            <div>
+              <h3 className="font-semibold">Higher Education Certificate (HEC)</h3>
+              <p className="text-sm text-gray-600">NCHE 4th avenue - Arts, Physical or Biological track</p>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mt-1">
+                NCHE Recommendation Engine
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* National Certificate - VOCATIONAL QUALIFICATION */}
+        <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50 border-orange-200 bg-orange-50"
+             onClick={() => { setQualificationType("national_certificate"); setStep("national_certificate"); }}>
+          <div className="flex items-center space-x-3">
+            <input
+              type="radio"
+              name="qualification"
+              checked={qualificationType === "national_certificate"}
+              onChange={() => setQualificationType("national_certificate")}
+              className="w-4 h-4"
+            />
+            <div>
+              <h3 className="font-semibold">National Certificate</h3>
+              <p className="text-sm text-gray-600">2-year vocational/technical qualification from a technical institute (after UCE)</p>
+              <div className="flex flex-wrap gap-2 mt-1">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                  NCHE Recommendation Engine
+                </span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                  Vocational Qualification
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Examples: National Certificate in Automotive, Electrical, Plumbing, etc.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Diploma - UNIVERSITY QUALIFICATION */}
+        <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50 border-purple-200 bg-purple-50"
              onClick={() => { setQualificationType("diploma"); setStep("diploma"); }}>
           <div className="flex items-center space-x-3">
             <input
@@ -274,12 +385,27 @@ export default function NCHERecommendationsPage() {
               className="w-4 h-4"
             />
             <div>
-              <h3 className="font-semibold">Diploma/Certificate</h3>
-              <p className="text-sm text-gray-600">NCHE recognized diploma</p>
+              <h3 className="font-semibold">Diploma</h3>
+              <p className="text-sm text-gray-600">University/College diploma (2-3 years) → Bachelor's Year 2 or 3</p>
+              <div className="flex flex-wrap gap-2 mt-1">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                  NCHE Recommendation Engine
+                </span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                  University Qualification
+                </span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                  Direct Entry to Bachelor's
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Examples: Diploma in Business, IT, Nursing, Education, etc.
+              </p>
             </div>
           </div>
         </div>
 
+        {/* Bachelor's Degree - Postgraduate */}
         <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
              onClick={() => { setQualificationType("bachelors"); setStep("bachelors"); }}>
           <div className="flex items-center space-x-3">
@@ -292,10 +418,45 @@ export default function NCHERecommendationsPage() {
             />
             <div>
               <h3 className="font-semibold">Bachelor's Degree</h3>
-              <p className="text-sm text-gray-600">For postgraduate programmes</p>
+              <p className="text-sm text-gray-600">For postgraduate programmes (Masters/PhD)</p>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                Manual Application
+              </span>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Info Note */}
+      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h4 className="font-semibold text-blue-800 mb-2">How the NCHE Recommendation Engine Works</h4>
+        <p className="text-sm text-blue-700 mb-2">
+          The engine automatically recommends programs based on your qualification type:
+        </p>
+        <ul className="text-sm text-blue-700 list-disc list-inside space-y-1">
+          <li><strong>UACE holders:</strong> Program recommendations based on principal passes and subject combinations</li>
+          <li><strong>UCE holders:</strong> Entry to Certificate & Diploma programs (Degree requires UACE/HEC/Diploma)</li>
+          <li><strong>HEC holders:</strong> Track-specific recommendations (Arts/Physical/Biological)</li>
+          <li><strong>National Certificate holders:</strong> 2-year vocational qualification → Enter Diploma or Certificate programs</li>
+          <li><strong>Diploma holders:</strong> Direct entry recommendations (Year 2/3) based on diploma field</li>
+        </ul>
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+          <h5 className="font-semibold text-yellow-800 text-sm">⚠️ Important Distinction</h5>
+          <p className="text-xs text-yellow-700 mt-1">
+            <strong>National Certificate</strong> = A <em>qualification/credential</em> you receive from a technical institute (2 years after UCE). 
+            Example: "National Certificate in Automotive Engineering"
+          </p>
+          <p className="text-xs text-yellow-700 mt-1">
+            <strong>Certificate Program</strong> = A <em>university program level</em> you enter (1-2 years). 
+            Example: "Certificate in Business Administration at KIU"
+          </p>
+          <p className="text-xs text-yellow-700 mt-1 font-medium">
+            These are DIFFERENT things! Don't confuse your qualification with the program level.
+          </p>
+        </div>
+        <p className="text-sm text-blue-700 mt-2">
+          <strong>Manual Application:</strong> Postgraduate applicants (Bachelor's degree holders) apply directly without NCHE assessment.
+        </p>
       </div>
     </div>
   );
@@ -482,6 +643,77 @@ export default function NCHERecommendationsPage() {
           Back
         </Button>
         <Button onClick={fetchNCHERecommendations} disabled={!uceDivision || loading}>
+          {loading ? "Assessing..." : "Get NCHE Assessment"}
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderHECStep = () => (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-2">HEC Track Selection</h2>
+        <p className="text-gray-600">Select your Higher Education Certificate track</p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
+             onClick={() => setHecTrack("arts")}>
+          <div className="flex items-center space-x-3">
+            <input
+              type="radio"
+              name="hecTrack"
+              checked={hecTrack === "arts"}
+              onChange={() => setHecTrack("arts")}
+              className="w-4 h-4"
+            />
+            <div>
+              <h3 className="font-semibold">Arts Track</h3>
+              <p className="text-sm text-gray-600">For Arts, Social Sciences, Business programs</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
+             onClick={() => setHecTrack("physical")}>
+          <div className="flex items-center space-x-3">
+            <input
+              type="radio"
+              name="hecTrack"
+              checked={hecTrack === "physical"}
+              onChange={() => setHecTrack("physical")}
+              className="w-4 h-4"
+            />
+            <div>
+              <h3 className="font-semibold">Physical Sciences Track</h3>
+              <p className="text-sm text-gray-600">For Engineering, Technology, Physical Sciences</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
+             onClick={() => setHecTrack("biological")}>
+          <div className="flex items-center space-x-3">
+            <input
+              type="radio"
+              name="hecTrack"
+              checked={hecTrack === "biological"}
+              onChange={() => setHecTrack("biological")}
+              className="w-4 h-4"
+            />
+            <div>
+              <h3 className="font-semibold">Biological Sciences Track</h3>
+              <p className="text-sm text-gray-600">For Medicine, Health Sciences, Agriculture</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-between">
+        <Button variant="outline" onClick={() => setStep("qualification")}>
+          Back
+        </Button>
+        <Button onClick={fetchNCHERecommendations} disabled={!hecTrack || loading}>
           {loading ? "Assessing..." : "Get NCHE Assessment"}
         </Button>
       </div>
@@ -761,6 +993,7 @@ export default function NCHERecommendationsPage() {
         {step === "qualification" && renderQualificationStep()}
         {step === "uace" && renderUACEStep()}
         {step === "uce" && renderUCEStep()}
+        {step === "hec" && renderHECStep()}
         {step === "diploma" && renderDiplomaStep()}
         {step === "bachelors" && renderBachelorsStep()}
         {step === "results" && renderResults()}

@@ -1,0 +1,657 @@
+openapi: 3.0.3
+info:
+  title: KIU Admission Portal API
+  description: |
+    Kampala International University Admission Portal API.
+    
+    ## Authentication
+    This API uses JWT tokens in httpOnly cookies for authentication.
+    
+    ## Rate Limiting
+    API endpoints are rate-limited. Check `X-RateLimit-Remaining` header.
+    
+    ## Response Format
+    All responses follow the JSend standard:
+    ```json
+    {
+      "status": "success|fail|error",
+      "data": {...},        // success response
+      "message": "...",     // fail response
+      "error": {...},       // error response
+      "meta": {...}         // request metadata
+    }
+    ```
+  version: 1.0.0
+  contact:
+    name: KIU IT Support
+    email: support@kiu.ac.ug
+  license:
+    name: Proprietary
+    
+servers:
+  - url: http://localhost:5001/api
+    description: Local development
+  - url: https://admissions.kiu.ac.ug/api
+    description: Production
+
+security:
+  - cookieAuth: []
+
+paths:
+  /auth/register:
+    post:
+      summary: Register new user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - first_name
+                - last_name
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: student@example.com
+                password:
+                  type: string
+                  minLength: 8
+                  example: SecurePass123!
+                first_name:
+                  type: string
+                  example: John
+                last_name:
+                  type: string
+                  example: Doe
+                phone:
+                  type: string
+                  example: +256700123456
+      responses:
+        201:
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                status: success
+                data:
+                  user_id: "550e8400-e29b-41d4-a716-446655440000"
+                  email: "student@example.com"
+                  requires_verification: true
+                meta:
+                  requestId: "uuid"
+                  timestamp: "2024-01-15T10:30:00Z"
+        400:
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailResponse'
+        409:
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailResponse'
+
+  /auth/verify-email:
+    post:
+      summary: Verify email with OTP
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - otp
+              properties:
+                email:
+                  type: string
+                  format: email
+                otp:
+                  type: string
+                  pattern: '^\d{6}$'
+      responses:
+        200:
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        400:
+          description: Invalid OTP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailResponse'
+
+  /auth/login:
+    post:
+      summary: Authenticate user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: student@example.com
+                password:
+                  type: string
+                  example: SecurePass123!
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginSuccess'
+        401:
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailResponse'
+        403:
+          description: Email not verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailResponse'
+
+  /auth/logout:
+    post:
+      summary: Logout user
+      tags:
+        - Authentication
+      security:
+        - cookieAuth: []
+      responses:
+        200:
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      tags:
+        - Authentication
+      responses:
+        200:
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefreshSuccess'
+        401:
+          description: Invalid or expired refresh token
+
+  /auth/me:
+    get:
+      summary: Get current user profile
+      tags:
+        - Authentication
+      security:
+        - cookieAuth: []
+      responses:
+        200:
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  /applications:
+    get:
+      summary: List applications (admin only)
+      tags:
+        - Applications
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: perPage
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, under_review, accepted, rejected]
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Paginated list of applications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedApplications'
+
+    post:
+      summary: Create new application
+      tags:
+        - Applications
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationCreate'
+      responses:
+        201:
+          description: Application created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /applications/mine:
+    get:
+      summary: Get current user's application
+      tags:
+        - Applications
+      security:
+        - cookieAuth: []
+      responses:
+        200:
+          description: User's application or null
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SingleApplication'
+
+  /applications/{appId}:
+    get:
+      summary: Get specific application
+      tags:
+        - Applications
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Application details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+        404:
+          description: Application not found
+
+  /applications/{appId}/certificate:
+    post:
+      summary: Upload certificate for application
+      tags:
+        - Applications
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [olevel, alevel, diploma, hec]
+                file:
+                  type: string
+                  format: binary
+      responses:
+        200:
+          description: Certificate uploaded successfully
+        400:
+          description: Invalid file or type
+
+  /programs:
+    get:
+      summary: List all programs
+      tags:
+        - Programs
+      parameters:
+        - name: faculty
+          in: query
+          schema:
+            type: string
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [certificate, diploma, bachelors, masters, phd]
+        - name: campus
+          in: query
+          schema:
+            type: string
+            enum: [kampala, western]
+      responses:
+        200:
+          description: List of programs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramList'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: auth_token
+      description: JWT access token in httpOnly cookie
+
+  schemas:
+    SuccessResponse:
+      type: object
+      required:
+        - status
+        - data
+      properties:
+        status:
+          type: string
+          enum: [success]
+        data:
+          type: object
+        message:
+          type: string
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+            apiVersion:
+              type: string
+
+    FailResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: string
+          enum: [fail]
+        message:
+          type: string
+        errors:
+          type: object
+        meta:
+          type: object
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - error
+      properties:
+        status:
+          type: string
+          enum: [error]
+        error:
+          type: object
+          properties:
+            type:
+              type: string
+            message:
+              type: string
+            id:
+              type: string
+        meta:
+          type: object
+
+    LoginSuccess:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+                accessToken:
+                  type: string
+                refreshToken:
+                  type: string
+            meta:
+              type: object
+              properties:
+                tokenType:
+                  type: string
+                  example: Bearer
+                expiresIn:
+                  type: integer
+                  example: 28800
+
+    TokenRefreshSuccess:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+                accessToken:
+                  type: string
+                refreshToken:
+                  type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [applicant, finalist, admin, staff]
+        isVerified:
+          type: boolean
+
+    UserProfile:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/User'
+
+    Application:
+      type: object
+      properties:
+        id:
+          type: integer
+        applicationNumber:
+          type: string
+        userId:
+          type: integer
+        programId:
+          type: integer
+        status:
+          type: string
+          enum: [pending, under_review, accepted, rejected]
+        paymentStatus:
+          type: string
+          enum: [pending, paid, waived]
+        examLevel:
+          type: string
+        examYear:
+          type: integer
+        indexNumber:
+          type: string
+        programChoices:
+          type: array
+          items:
+            type: integer
+        submittedAt:
+          type: string
+          format: date-time
+
+    SingleApplication:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                application:
+                  $ref: '#/components/schemas/Application'
+
+    PaginatedApplications:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                applications:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Application'
+                pagination:
+                  type: object
+                  properties:
+                    total:
+                      type: integer
+                    page:
+                      type: integer
+                    perPage:
+                      type: integer
+                    pages:
+                      type: integer
+                    hasNext:
+                      type: boolean
+                    hasPrev:
+                      type: boolean
+
+    ApplicationCreate:
+      type: object
+      required:
+        - programId
+        - examLevel
+        - examYear
+        - indexNumber
+        - dateOfBirth
+        - gender
+        - nationality
+        - district
+      properties:
+        programId:
+          type: integer
+        programChoices:
+          type: array
+          items:
+            type: integer
+        examLevel:
+          type: string
+          enum: [olevel, alevel, diploma, hec, degree]
+        examYear:
+          type: integer
+        indexNumber:
+          type: string
+        unebGrades:
+          type: object
+        dateOfBirth:
+          type: string
+          format: date
+        gender:
+          type: string
+          enum: [male, female]
+        nationality:
+          type: string
+        district:
+          type: string
+
+    Program:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        faculty:
+          type: string
+        department:
+          type: string
+        level:
+          type: string
+        duration:
+          type: string
+        description:
+          type: string
+        campus:
+          type: string
+        fees:
+          type: object
+
+    ProgramList:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Program'

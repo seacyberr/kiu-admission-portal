@@ -3,7 +3,6 @@ import logging
 import os
 import sys
 import uuid
-import secrets
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Sentry for error monitoring
@@ -32,9 +31,9 @@ except ModuleNotFoundError:
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_caching import Cache
+from flask_jwt_extended import JWTManager
 from models import db, bcrypt
 from config import get_config
-from migrations import run_migrations
 from seed import seed_database
 
 
@@ -84,14 +83,36 @@ def create_app():
     app.config.from_object(config)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 
-    # JWT secret configuration
+    # JWT secret configuration - ALWAYS require explicit configuration
     jwt_secret = config.JWT_SECRET
     if not jwt_secret or jwt_secret == "change-me-to-a-random-secret-key":
-        if os.environ.get("FLASK_ENV", "").lower() == "production":
-            raise RuntimeError("JWT_SECRET (or SECRET_KEY) must be set in production")
-        jwt_secret = secrets.token_hex(32)
-        log.warning("JWT_SECRET not set — using auto-generated key")
+        # Always require explicit JWT secret - no auto-generation
+        raise RuntimeError(
+            "JWT_SECRET (or SECRET_KEY) environment variable must be set. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
     app.config["SECRET_KEY"] = jwt_secret
+    
+    # Flask-JWT-Extended configuration
+    app.config["JWT_SECRET_KEY"] = jwt_secret
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 8 * 3600  # 8 hours
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = 7 * 24 * 3600  # 7 days
+    app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
+    app.config["JWT_COOKIE_SECURE"] = os.environ.get("FLASK_ENV", "").lower() == "production"
+    app.config["JWT_COOKIE_SAMESITE"] = "Strict"
+    app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Disable for simplicity, enable in production
+    app.config["JWT_ERROR_MESSAGE_KEY"] = "error"
+    
+    jwt = JWTManager(app)
+    
+    # JWT token blocklist loader (for logout)
+    @jwt.token_in_blocklist_loader
+    def check_if_token_revoked(jwt_header, jwt_payload):
+        from utils.caching import cache_manager
+        jti = jwt_payload.get("jti")
+        if jti:
+            return cache_manager.get(f"jwt_blacklist:{jti}", False)
+        return False
 
     # Create upload directories
     os.makedirs(config.UPLOAD_FOLDER, exist_ok=True)
@@ -201,12 +222,15 @@ def create_app():
     from routes.notifications import notifications_bp
     from routes.nche_recommendations import recommendations_bp
     from routes.certificate_verification import certificate_verification_bp
-    from routes.payments import payments_bp
     from routes.reports import reports_bp
     from routes.audit import audit_bp
     from routes.recommendations_v2 import recommendations_v2_bp
+    from routes.admin import admin_bp
+    from routes.finalist import finalist_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
+    app.register_blueprint(admin_bp, url_prefix="/api/admin")
+    app.register_blueprint(finalist_bp, url_prefix="/api/finalist")
     app.register_blueprint(admission_bp, url_prefix="/api/admission")
     app.register_blueprint(career_bp, url_prefix="/api/career")
     app.register_blueprint(opportunities_bp, url_prefix="/api/opportunities")
@@ -214,7 +238,6 @@ def create_app():
     app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
     app.register_blueprint(docs_bp, url_prefix="/api/docs")
     app.register_blueprint(certificate_verification_bp, url_prefix="/api/certificate-verification")
-    app.register_blueprint(payments_bp, url_prefix="/api/payments")
     app.register_blueprint(reports_bp, url_prefix="/api/reports")
     app.register_blueprint(audit_bp, url_prefix="/api/audit")
 
@@ -237,12 +260,50 @@ def create_app():
     @app.route("/api/readyz")
     def readyz():
         from sqlalchemy import text
+        from utils.caching import cache_manager
+        
+        health_data = {"status": "ok"}
+        
+        # Check database
         try:
             db.session.execute(text("SELECT 1"))
+            health_data["database"] = db.engine.dialect.name
         except Exception as exc:
-            log.exception("Readiness check failed: %s", exc)
-            return jsonify({"status": "unavailable", "database": "error", "message": "Database unreachable"}), 503
-        return jsonify({"status": "ok", "database": db.engine.dialect.name}), 200
+            log.exception("Database check failed: %s", exc)
+            return jsonify({
+                "status": "unavailable",
+                "database": "error",
+                "message": "Database unreachable"
+            }), 503
+        
+        # Check cache
+        cache_health = cache_manager.health_check()
+        health_data["cache"] = cache_health
+        
+        return jsonify(health_data), 200
+
+    @app.route("/api/cache/stats")
+    def cache_stats():
+        """Get cache statistics (admin only)"""
+        from utils.caching import cache_manager
+        from flask_jwt_extended import jwt_required, get_jwt_identity
+        
+        # Simple auth check - verify JWT and role
+        try:
+            jwt_required()(lambda: None)()  # Apply jwt_required
+            user_id = get_jwt_identity()
+            from models import User
+            user = User.query.get(user_id)
+            if not user or user.role != "admin":
+                return jsonify({"error": "Forbidden", "message": "Admin access required"}), 403
+        except:
+            return jsonify({"error": "Unauthorized", "message": "Valid admin token required"}), 401
+        
+        stats = cache_manager.get_stats()
+        return jsonify({
+            "status": "success",
+            "data": stats
+        }), 200
 
     # Certificate file serving
     @app.route("/api/uploads/certificates/<path:filename>")
@@ -293,14 +354,16 @@ def create_app():
             return jsonify({"error": "Internal server error", "message": "An unexpected error occurred"}), 500
         return jsonify({"error": "Internal server error", "message": str(e)}), 500
 
-    # Initialize database and seed data
+    # Database initialization is handled via CLI commands (alembic upgrade head)
+    # Do NOT auto-create tables or run migrations on startup
+    # This prevents accidental schema changes in production
     with app.app_context():
-        db.create_all()
-        run_migrations()
-        seed_database(
-            replace_programs=config.REPLACE_PROGRAMS,
-            seed_enabled=config.SEED_DATABASE,
-        )
+        # Only seed data if explicitly enabled (for initial setup only)
+        if config.SEED_DATABASE:
+            seed_database(
+                replace_programs=config.REPLACE_PROGRAMS,
+                seed_enabled=True,
+            )
 
     return app
 

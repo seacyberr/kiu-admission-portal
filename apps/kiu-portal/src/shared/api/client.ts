@@ -43,17 +43,13 @@ class ApiClient {
       ...((fetchConfig.headers as Record<string, string>) || {}),
     };
 
-    // Add auth token
-    if (!skipAuth) {
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-    }
+    // Auth is handled via httpOnly cookies - credentials:include sends them automatically
+    // No need to manually add Authorization header
 
     try {
       const response = await fetch(url, {
         ...fetchConfig,
+        credentials: 'include',  // Send httpOnly cookies with every request
         headers,
       });
 
@@ -115,33 +111,24 @@ class ApiClient {
 
   private async refreshToken(): Promise<boolean> {
     try {
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (!refreshToken) return false;
-
+      // Refresh token is in httpOnly cookie - sent automatically with credentials:include
       const response = await fetch(`${this.baseURL}/auth/refresh`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ refresh_token: refreshToken }),
       });
 
-      if (!response.ok) return false;
-
-      const data = await response.json();
-      localStorage.setItem('access_token', data.data.access_token);
-      if (data.data.refresh_token) {
-        localStorage.setItem('refresh_token', data.data.refresh_token);
-      }
-      return true;
+      return response.ok;
     } catch {
       return false;
     }
   }
 
   private handleAuthError() {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    // Clear any local user data - auth tokens are in httpOnly cookies (cleared by backend logout)
+    localStorage.removeItem('kiu_user');
     window.location.href = '/login?expired=true';
   }
 
@@ -218,11 +205,9 @@ class ApiClient {
       });
 
       xhr.open('POST', `${this.baseURL}${endpoint}`);
-      
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      }
+      // Note: XMLHttpRequest doesn't support withCredentials for FormData the same way fetch does
+      // The browser will send cookies automatically for same-origin requests
+      // For cross-origin, this would need additional configuration
 
       xhr.send(formData);
     });
