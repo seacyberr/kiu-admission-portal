@@ -21,6 +21,7 @@ redis==5.0.1
 limits==3.13.0
 
 # Authentication & Security
+flask-jwt-extended==4.6.0
 PyJWT==2.10.0
 cryptography==44.0.0
 bcrypt==4.2.1

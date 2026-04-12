@@ -15,7 +15,11 @@ def seed_database(replace_programs=False, seed_enabled=True):
     if not seed_enabled:
         return
 
-    programs_count = Program.query.count()
+    try:
+        programs_count = Program.query.count()
+    except Exception as e:
+        log.warning(f"Could not query programs (tables may not exist yet): {e}")
+        return
     seed_programs_path = os.path.join(os.path.dirname(__file__), "data", "seed-programs.json")
 
     # If programs already exist and we are not replacing them, still add missing ones
@@ -78,8 +82,8 @@ def _load_programs_from_json(filepath):
             min_olevel_points=p.get("minOlevelPoints"),
             min_alevel_points=p.get("minAlevelPoints"),
             available_slots=p.get("availableSlots", 100) or 100,
-            fees_local=p.get("feesLocal"),
-            fees_international=p.get("feesInternational"),
+            fees_local_per_semester=p.get("feesLocalPerSemester") or p.get("feesLocal"),
+            fees_international_per_semester=p.get("feesInternationalPerSemester") or p.get("feesInternational"),
             functional_fees_local=p.get("functionalFeesLocal"),
             functional_fees_international=p.get("functionalFeesInternational"),
         )
