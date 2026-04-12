@@ -647,31 +647,3 @@ def test_otp(app, test_user_email, test_user):
         db.session.add(otp)
         db.session.commit()
         return otp
-
-
-@pytest.fixture
-def auth_headers(client, verified_user_email, verified_user):
-    """Get auth headers for verified user."""
-    # Ensure user exists in database
-    _ = verified_user
-    response = client.post("/api/auth/login", json={
-        "email": verified_user_email,
-        "password": "TestPass123",
-    })
-    data = response.get_json()
-    token = data["data"]["accessToken"]
-    return {"Authorization": f"Bearer {token}"}
-
-
-@pytest.fixture
-def admin_headers(client, admin_user_email, admin_user):
-    """Get auth headers for admin user."""
-    # Ensure user exists in database
-    _ = admin_user
-    response = client.post("/api/auth/login", json={
-        "email": admin_user_email,
-        "password": "AdminPass123",
-    })
-    data = response.get_json()
-    token = data["data"]["accessToken"]
-    return {"Authorization": f"Bearer {token}"}
