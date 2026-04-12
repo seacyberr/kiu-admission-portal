@@ -135,3 +135,12 @@ export function apiPatch<T>(endpoint: string, body: unknown): Promise<T> {
 export function apiDelete<T>(endpoint: string): Promise<T> {
   return apiFetch<T>(endpoint, { method: 'DELETE' });
 }
+
+// Export api object for backward compatibility
+export const api = {
+  get: apiGet,
+  post: apiPost,
+  patch: apiPatch,
+  delete: apiDelete,
+  fetch: apiFetch,
+};

@@ -83,7 +83,7 @@ services:
 
   # Frontend Development Server
   frontend:
-    image: node:20-alpine
+    image: node:20-slim
     container_name: kiu-frontend-dev
     working_dir: /workspace/apps/kiu-portal
     environment:
