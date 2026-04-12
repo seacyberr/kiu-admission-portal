@@ -61,7 +61,7 @@ class TestOpportunities:
         response = client.get("/api/opportunities/99999")
         assert response.status_code == 404
 
-    def test_create_opportunity_admin(self, client, admin_headers):
+    def test_create_opportunity_admin(self, client, admin_auth_headers):
         """Test creating opportunity as admin."""
         response = client.post("/api/opportunities", json={
             "title": "New Job",
@@ -70,7 +70,7 @@ class TestOpportunities:
             "description": "New description",
             "requirements": "New requirements",
             "applicationDeadline": "2026-12-31",
-        }, headers=admin_headers)
+        }, headers=admin_auth_headers)
         # May return 200 or 201
         assert response.status_code in [200, 201]
         data = response.get_json()

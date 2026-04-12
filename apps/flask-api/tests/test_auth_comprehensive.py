@@ -180,14 +180,15 @@ class TestUserRoles:
         data = response.get_json()
         assert data['data']['role'] == 'applicant'
     
-    def test_admin_role_access(self, client, admin_user):
+    def test_admin_role_access(self, client, admin_user, app):
         """Test admin role permissions"""
-        # Use our custom JWT token generation
-        from routes.auth import get_current_user
-        from services.auth_service import AuthService
+        from flask_jwt_extended import create_access_token
         
-        with client.application.app_context():
-            token = AuthService.generate_token(admin_user.id, 'admin')
+        with app.app_context():
+            token = create_access_token(
+                identity=str(admin_user.id),
+                additional_claims={'role': admin_user.role, 'email': admin_user.email}
+            )
         
         response = client.get(
             '/api/auth/me',
@@ -198,13 +199,15 @@ class TestUserRoles:
         data = response.get_json()
         assert data['data']['role'] == 'admin'
     
-    def test_finalist_role_access(self, client, finalist_user):
+    def test_finalist_role_access(self, client, finalist_user, app):
         """Test finalist role permissions"""
-        # Use our custom JWT token generation
-        from services.auth_service import AuthService
+        from flask_jwt_extended import create_access_token
         
-        with client.application.app_context():
-            token = AuthService.generate_token(finalist_user.id, 'finalist')
+        with app.app_context():
+            token = create_access_token(
+                identity=str(finalist_user.id),
+                additional_claims={'role': finalist_user.role, 'email': finalist_user.email}
+            )
         
         response = client.get(
             '/api/auth/me',

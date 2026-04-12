@@ -74,9 +74,9 @@ class TestApplications:
         assert data["status"] == "success"
         assert data["data"]["application"] is None
 
-    def test_list_applications_admin(self, client, admin_headers):
+    def test_list_applications_admin(self, client, admin_auth_headers):
         """Test listing applications as admin."""
-        response = client.get("/api/admission/applications", headers=admin_headers)
+        response = client.get("/api/admission/applications", headers=admin_auth_headers)
         assert response.status_code == 200
         data = response.get_json()
         # JSend format: data is in data["data"]
@@ -89,9 +89,9 @@ class TestApplications:
         # May get 403 (forbidden) or 400 (validation error)
         assert response.status_code in [403, 400]
 
-    def test_analytics_admin(self, client, admin_headers):
+    def test_analytics_admin(self, client, admin_auth_headers):
         """Test getting analytics as admin."""
-        response = client.get("/api/admission/analytics", headers=admin_headers)
+        response = client.get("/api/admission/analytics", headers=admin_auth_headers)
         assert response.status_code == 200
         data = response.get_json()
         # JSend format: data is in data["data"]

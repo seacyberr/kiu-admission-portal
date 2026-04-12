@@ -7,6 +7,7 @@ import os
 import json
 from datetime import datetime, timedelta
 from typing import Dict, Any, Generator
+from types import SimpleNamespace
 
 # Test environment configuration
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
@@ -190,7 +191,15 @@ def create_user(app_context, user_data):
         user.set_password(data["password"])
         db.session.add(user)
         db.session.commit()
-        return user
+        # Return a simple object with the data we need to avoid session issues
+        return SimpleNamespace(
+            id=user.id,
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            role=user.role,
+            is_verified=user.is_verified
+        )
     return _create_user
 
 
@@ -223,48 +232,54 @@ def unverified_user(create_user):
 # ============================================================================
 
 @pytest.fixture
-def auth_headers(app_context, applicant_user) -> Dict[str, str]:
+def auth_headers(app, applicant_user) -> Dict[str, str]:
     """Generate valid JWT authorization headers for authenticated requests."""
     from flask_jwt_extended import create_access_token
     
-    token = create_access_token(
-        identity=applicant_user.id,
-        additional_claims={"role": applicant_user.role, "email": applicant_user.email}
-    )
-    return {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
+    with app.app_context():
+        # Use user data directly - no need to query again
+        token = create_access_token(
+            identity=str(applicant_user.id),
+            additional_claims={"role": applicant_user.role, "email": applicant_user.email}
+        )
+        return {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
 
 
 @pytest.fixture
-def admin_auth_headers(app_context, admin_user) -> Dict[str, str]:
+def admin_auth_headers(app, admin_user) -> Dict[str, str]:
     """Generate admin JWT authorization headers."""
     from flask_jwt_extended import create_access_token
     
-    token = create_access_token(
-        identity=admin_user.id,
-        additional_claims={"role": admin_user.role, "email": admin_user.email}
-    )
-    return {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
+    with app.app_context():
+        # Use user data directly - no need to query again
+        token = create_access_token(
+            identity=str(admin_user.id),
+            additional_claims={"role": admin_user.role, "email": admin_user.email}
+        )
+        return {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
 
 
 @pytest.fixture
-def finalist_auth_headers(app_context, finalist_user) -> Dict[str, str]:
+def finalist_auth_headers(app, finalist_user) -> Dict[str, str]:
     """Generate finalist JWT authorization headers for career portal tests."""
     from flask_jwt_extended import create_access_token
     
-    token = create_access_token(
-        identity=finalist_user.id,
-        additional_claims={"role": finalist_user.role, "email": finalist_user.email}
-    )
-    return {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
+    with app.app_context():
+        # Use user data directly - no need to query again
+        token = create_access_token(
+            identity=str(finalist_user.id),
+            additional_claims={"role": finalist_user.role, "email": finalist_user.email}
+        )
+        return {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
 
 
 # ============================================================================
@@ -589,48 +604,6 @@ def cleanup_uploads():
 
 
 @pytest.fixture
-def verified_user_email():
-    return "verified@example.com"
-
-@pytest.fixture
-def verified_user(app, verified_user_email):
-    """Create a verified test user."""
-    with app.app_context():
-        user = User(
-            email=verified_user_email,
-            first_name="Verified",
-            last_name="User",
-            role="applicant",
-            is_verified=True,
-        )
-        user.set_password("TestPass123")
-        db.session.add(user)
-        db.session.commit()
-        return user
-
-
-@pytest.fixture
-def admin_user_email():
-    return "admin@example.com"
-
-@pytest.fixture
-def admin_user(app, admin_user_email):
-    """Create an admin user."""
-    with app.app_context():
-        user = User(
-            email=admin_user_email,
-            first_name="Admin",
-            last_name="User",
-            role="admin",
-            is_verified=True,
-        )
-        user.set_password("AdminPass123")
-        db.session.add(user)
-        db.session.commit()
-        return user
-
-
-@pytest.fixture
 def test_otp(app, test_user_email, test_user):
     """Create a test OTP."""
     # Ensure user exists
@@ -647,3 +620,33 @@ def test_otp(app, test_user_email, test_user):
         db.session.add(otp)
         db.session.commit()
         return otp
+
+
+@pytest.fixture
+def verified_user_email():
+    return "verified@example.com"
+
+
+@pytest.fixture
+def verified_user(app, verified_user_email):
+    """Create a verified test user."""
+    with app.app_context():
+        user = User(
+            email=verified_user_email,
+            first_name="Verified",
+            last_name="User",
+            role="applicant",
+            is_verified=True,
+        )
+        user.set_password("TestPass123")
+        db.session.add(user)
+        db.session.commit()
+        # Return SimpleNamespace to avoid detached instance issues
+        return SimpleNamespace(
+            id=user.id,
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            role=user.role,
+            is_verified=user.is_verified
+        )
