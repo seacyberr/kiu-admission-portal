@@ -18,7 +18,7 @@ if (!basePath.endsWith("/")) basePath += "/";
  * CORRECTION from previous patch: was incorrectly set to 5000.
  */
 const apiProxyTarget =
-  process.env.VITE_API_PROXY_TARGET ?? "http://127.0.0.1:5001";
+  process.env.VITE_API_PROXY_TARGET ?? "http://host.docker.internal:5001";
 
 /**
  * FIX: Vite proxy strips/mangles httpOnly cookie attributes (Secure, SameSite)
