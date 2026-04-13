@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, useSearch } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useLocation, useSearch, Link } from "wouter";
 import { Button, Card, Input, Label } from "@/components/ui/shared";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Lock, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
+import { apiPost, ApiError } from '@/services/api';
 
 const resetSchema = z.object({
   code: z.string().min(6, "Code must be 6 digits").max(6, "Code must be 6 digits"),
@@ -56,37 +57,31 @@ export default function ResetPassword() {
   const onSubmit = async (data: ResetForm) => {
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email,
-          code: data.code,
-          password: data.password,
-        }),
+      await apiPost('/auth/reset-password', {
+        email: email,
+        code: data.code,
+        password: data.password,
       });
 
-      const result = await response.json();
-
-      if (response.ok) {
-        setResetSuccess(true);
+      setResetSuccess(true);
+      toast({
+        title: "Password reset successful",
+        description: "You can now login with your new password.",
+      });
+    } catch (err) {
+      if (err instanceof ApiError) {
         toast({
-          title: "Password reset successful",
-          description: "You can now login with your new password.",
+          title: "Error",
+          description: err.message || "Failed to reset password",
+          variant: "destructive",
         });
       } else {
         toast({
           title: "Error",
-          description: result.message || "Failed to reset password",
+          description: "Network error. Please try again.",
           variant: "destructive",
         });
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Network error. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setIsSubmitting(false);
     }

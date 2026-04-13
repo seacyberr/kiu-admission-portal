@@ -1,11 +1,29 @@
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/shared';
 import { motion } from 'framer-motion';
-import { ArrowRight, GraduationCap, Briefcase, BookOpen, ChevronRight, Award, LineChart } from 'lucide-react';
+import { GraduationCap, BookOpen, ChevronRight, Award, LineChart } from 'lucide-react';
 
 export default function Home() {
   return (
     <div className="w-full">
+      {/* Top Navigation Bar - Fixed on top right */}
+      <div className="fixed top-0 left-0 right-0 z-50 flex justify-end items-center p-4 gap-3 pointer-events-none">
+        <div className="pointer-events-auto flex gap-3">
+        <Link
+          href="/login"
+          className="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-primary/90 hover:bg-primary rounded-lg transition-colors backdrop-blur-sm"
+        >
+          Sign In
+        </Link>
+        <Link
+          href="/register"
+          className="inline-flex items-center px-4 py-2 text-sm font-semibold text-primary bg-white hover:bg-white/90 rounded-lg transition-colors shadow-sm"
+        >
+          Register
+        </Link>
+        </div>
+      </div>
+
       {/* Hero Section */}
       <section className="relative w-full h-[85vh] min-h-[600px] flex items-center overflow-hidden">
         <div className="absolute inset-0 z-0">

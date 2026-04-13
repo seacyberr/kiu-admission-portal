@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Save, AlertCircle } from "lucide-react";
 
@@ -135,31 +134,6 @@ export default function ApplicationWizard() {
     }
   }, []);
 
-  // Auto-save to localStorage
-  const saveToStorage = useCallback((data: ApplicationData) => {
-    // Files can't be serialized, so we exclude them from auto-save
-    const serializable = {
-      ...data,
-      documents: data.documents
-        ? { ...data.documents, files: {} }
-        : undefined,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable));
-    setLastSaved(new Date());
-  }, []);
-
-  // Update data and auto-save
-  const updateData = useCallback(
-    (step: keyof ApplicationData, data: any) => {
-      setApplicationData((prev) => {
-        const updated = { ...prev, [step]: data };
-        saveToStorage(updated);
-        return updated;
-      });
-    },
-    [saveToStorage]
-  );
-
   // Navigation handlers
   const goToNext = useCallback(() => {
     if (currentStep < 6) {
@@ -183,54 +157,55 @@ export default function ApplicationWizard() {
 
   // Step completion handlers
   const handlePersonalComplete = (data: ApplicationData["personal"]) => {
-    updateData("personal", data);
+    updateDataAndSave("personal", data);
     goToNext();
   };
 
   const handleContactComplete = (data: ApplicationData["contact"]) => {
-    updateData("contact", data);
+    updateDataAndSave("contact", data);
     goToNext();
   };
 
-  const handleEducationComplete = (data: ApplicationData["education"]) => {
-    updateData("education", data);
+  const handleEducationComplete = (data: any) => {
+    updateDataAndSave("education", data);
     goToNext();
   };
 
   const handleProgramComplete = (data: ApplicationData["program"]) => {
-    updateData("program", data);
+    updateDataAndSave("program", data);
     goToNext();
   };
 
   const handleDocumentsComplete = (data: ApplicationData["documents"]) => {
-    updateData("documents", data);
+    updateDataAndSave("documents", data);
     goToNext();
   };
 
   // Auto-save draft to backend
   const saveDraftToBackend = useCallback(async (data: ApplicationData) => {
     try {
-      const response = await fetch("/api/v1/applications/wizard/save-draft", {
+      const response = await fetch("/api/admission/applications/draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(data),
       });
       
-      if (!response.ok) {
-        console.warn("Failed to save draft to backend");
+      if (response.ok) {
+        setLastSaved(new Date());
       }
     } catch (error) {
-      // Silent fail - we still have localStorage backup
       console.warn("Draft save error:", error);
     }
   }, []);
 
   // Enhanced updateData that also saves to backend
   const updateDataAndSave = useCallback((step: keyof ApplicationData, data: any) => {
-    updateData(step, data);
-    // Also save draft to backend (debounced in production)
     const updatedData = { ...applicationData, [step]: data };
+    setApplicationData(updatedData);
+    // Save to localStorage for backup
+    localStorage.setItem('kiu_application_draft', JSON.stringify(updatedData));
+    // Also save to backend
     saveDraftToBackend(updatedData);
   }, [applicationData, saveDraftToBackend]);
 
@@ -239,71 +214,12 @@ export default function ApplicationWizard() {
     setIsSubmitting(true);
     
     try {
-      // Prepare data for backend API
-      const apiData = {
-        personalInfo: {
-          firstName: applicationData.personal?.firstName,
-          lastName: applicationData.personal?.lastName,
-          dateOfBirth: applicationData.personal?.dateOfBirth,
-          gender: applicationData.personal?.gender,
-          nationality: applicationData.personal?.nationality,
-          nationalId: applicationData.personal?.nationalId,
-          passportNumber: applicationData.personal?.passportNumber,
-          personalStatement: applicationData.personal?.personalStatement,
-        },
-        contactInfo: {
-          email: applicationData.contact?.email,
-          phoneNumber: applicationData.contact?.phoneNumber,
-          address: applicationData.contact?.address,
-          district: applicationData.contact?.district,
-          country: applicationData.contact?.country,
-          sessionOfStudy: applicationData.contact?.sessionOfStudy,
-          sponsorshipType: applicationData.contact?.sponsorshipType,
-          nextOfKinName: applicationData.contact?.nextOfKin?.name,
-          nextOfKinPhone: applicationData.contact?.nextOfKin?.phone,
-          nextOfKinRelationship: applicationData.contact?.nextOfKin?.relationship,
-        },
-        educationInfo: {
-          qualificationType: applicationData.education?.qualificationType || "uace",
-          // UACE data
-          uace: applicationData.education?.uace,
-          uce: applicationData.education?.uce,
-          examYear: applicationData.education?.uace?.year || applicationData.education?.uce?.year,
-          indexNumber: applicationData.education?.uace?.indexNumber || applicationData.education?.uce?.indexNumber,
-          // HEC data
-          hecTrack: applicationData.education?.hecTrack,
-          hecInstitution: applicationData.education?.hecInstitution,
-          hecCompletionYear: applicationData.education?.hecCompletionYear,
-          hecGpa: applicationData.education?.hecGpa,
-          // National Certificate data (vocational qualification)
-          nationalCertificate: {
-            institution: applicationData.education?.nationalCertificateInstitution,
-            field: applicationData.education?.nationalCertificateField,
-            completionYear: applicationData.education?.nationalCertificateCompletionYear,
-          },
-          // Diploma data (university qualification)
-          diploma: {
-            institution: applicationData.education?.diplomaInstitution,
-            program: applicationData.education?.diplomaProgram,
-            class: applicationData.education?.diplomaClass,
-          },
-          // Previous degree (for postgraduate)
-          previousDegree: {
-            institution: applicationData.education?.previousDegreeInstitution,
-            program: applicationData.education?.previousDegreeProgram,
-            gpa: applicationData.education?.previousDegreeGpa,
-          },
-        },
-        programChoices: applicationData.program?.choices?.map((p: any) => p.id) || [],
-        documents: applicationData.documents,
-      };
-
-      // Submit application to backend
-      const response = await fetch("/api/v1/applications/wizard", {
+      // Submit application to backend with raw data
+      const response = await fetch("/api/admission/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(apiData),
+        body: JSON.stringify(applicationData),
       });
 
       if (!response.ok) {
@@ -311,8 +227,6 @@ export default function ApplicationWizard() {
         throw new Error(errorData.message || "Failed to submit application");
       }
 
-      const result = await response.json();
-      
       // Clear saved drafts on successful submission
       localStorage.removeItem(STORAGE_KEY);
       
@@ -357,9 +271,6 @@ export default function ApplicationWizard() {
 
   // Render current step component
   const renderStep = () => {
-    const stepConfig = WIZARD_STEPS[currentStep - 1];
-    const Component = stepConfig.component;
-
     switch (currentStep) {
       case 1:
         return (
@@ -407,10 +318,11 @@ export default function ApplicationWizard() {
             onBack={goToBack}
             onSubmit={handleFinalSubmit}
             onEdit={goToStep}
+            isSubmitting={isSubmitting}
           />
         );
       default:
-        return null;
+        return <div>Invalid step</div>;
     }
   };
 
@@ -443,12 +355,14 @@ export default function ApplicationWizard() {
                 <div key={step.id} className="flex items-center">
                   {/* Step Circle */}
                   <div
-                    className={`flex items-center justify-center w-12 h-12 rounded-full text-lg font-semibold transition-all cursor-pointer ${
+                    className={`flex items-center justify-center w-12 h-12 rounded-full text-lg font-semibold transition-all ${
                       isCompleted
-                        ? "bg-green-500 text-white"
+                        ? "bg-green-500 text-white cursor-pointer"
                         : isCurrent
-                        ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
-                        : "bg-muted text-muted-foreground"
+                        ? "bg-primary text-primary-foreground ring-4 ring-primary/20 cursor-pointer"
+                        : isPending
+                        ? "bg-muted text-muted-foreground opacity-50"
+                        : "bg-muted text-muted-foreground cursor-pointer"
                     }`}
                     onClick={() => {
                       if (isCompleted || isCurrent) {

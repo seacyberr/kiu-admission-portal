@@ -5,9 +5,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button, Input, Label, Card } from '@/components/ui/shared';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Eye, EyeOff } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { apiPost, ApiError } from '@/services/api';
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -16,7 +17,7 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+// Using apiPost from services/api which handles JSend format properly
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -24,6 +25,7 @@ export default function Login() {
   const queryClient = useQueryClient();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   /**
    * BUG FIX — root cause of the navigation-logout loop.
@@ -66,16 +68,11 @@ export default function Login() {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${BASE}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
+      const responseData = await apiPost<{ user: { role: string; email: string }; needsVerification?: boolean }>('/auth/login', data);
 
-      if (res.status === 403 && json.needsVerification) {
-        localStorage.setItem("kiu_pending_email", json.email);
+      // Handle unverified account
+      if (responseData.needsVerification) {
+        localStorage.setItem("kiu_pending_email", responseData.user.email);
         toast({
           title: "Email not verified",
           description: "A new OTP has been sent. Please verify your account.",
@@ -85,31 +82,31 @@ export default function Login() {
         return;
       }
 
-      if (!res.ok) {
-        toast({
-          title: "Login failed",
-          description: json.message || "Invalid credentials",
-          variant: "destructive",
-        });
-        return;
-      }
-
       // Access token is now in httpOnly cookie set by the server.
       // Store user object for UI-only purposes (role, display name etc.)
-      localStorage.setItem("kiu_user", JSON.stringify(json.user));
-      queryClient.setQueryData(["me"], json.user);
+      const user = responseData.user;
+      localStorage.setItem("kiu_user", JSON.stringify(user));
+      queryClient.setQueryData(["me"], user);
       queryClient.invalidateQueries({ queryKey: ["me"] });
       toast({ title: "Welcome back!", description: "Logged in successfully." });
 
-      if (json.user.role === "admin") setLocation("/admin");
-      else if (json.user.role === "finalist") setLocation("/career");
+      if (user.role === "admin") setLocation("/admin");
+      else if (user.role === "finalist") setLocation("/career");
       else setLocation("/dashboard");
-    } catch {
-      toast({
-        title: "Network error",
-        description: "Could not connect to the server.",
-        variant: "destructive",
-      });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        toast({
+          title: "Login failed",
+          description: err.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Network error",
+          description: "Could not connect to the server.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -125,17 +122,11 @@ export default function Login() {
         />
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md relative z-10"
-      >
-        <Link
-          href="/"
-          className="inline-flex items-center text-sm font-semibold text-muted-foreground hover:text-primary mb-6 transition-colors"
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md relative z-10"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home
-        </Link>
 
         <Card className="p-8 shadow-2xl shadow-primary/10 border-white/50 bg-white/80 backdrop-blur-xl">
           <div className="text-center mb-8">
@@ -174,13 +165,22 @@ export default function Login() {
                   Forgot password?
                 </Link>
               </div>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                {...register("password")}
-                className={errors.password ? "border-destructive" : ""}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  {...register("password")}
+                  className={`${errors.password ? "border-destructive" : ""} pr-10`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-xs text-destructive">{errors.password.message}</p>
               )}
@@ -193,15 +193,21 @@ export default function Login() {
             </Button>
           </form>
 
-
-          <div className="mt-8 text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            Don't have an account?{' '}
             <Link href="/register" className="font-bold text-primary hover:underline">
               Register here
             </Link>
           </div>
+
+          <div className="mt-4 text-center">
+            <Link href="/" className="inline-flex items-center text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">
+              ← Back to Home
+            </Link>
+          </div>
+
         </Card>
-      </motion.div>
+        </motion.div>
     </div>
   );
 }

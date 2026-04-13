@@ -11,6 +11,52 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MapPin, ArrowLeft, ArrowRight, Home, Phone, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 
+// Country codes for phone input
+const COUNTRY_CODES = [
+  { code: "+256", country: "Uganda", flag: "🇺🇬" },
+  { code: "+254", country: "Kenya", flag: "🇰🇪" },
+  { code: "+255", country: "Tanzania", flag: "🇹🇿" },
+  { code: "+250", country: "Rwanda", flag: "🇷🇼" },
+  { code: "+257", country: "Burundi", flag: "🇧🇮" },
+  { code: "+243", country: "DR Congo", flag: "🇨🇩" },
+  { code: "+260", country: "Zambia", flag: "🇿🇲" },
+  { code: "+265", country: "Malawi", flag: "🇲🇼" },
+  { code: "+27", country: "South Africa", flag: "🇿🇦" },
+  { code: "+234", country: "Nigeria", flag: "🇳🇬" },
+  { code: "+233", country: "Ghana", flag: "🇬🇭" },
+  { code: "+44", country: "UK", flag: "🇬🇧" },
+  { code: "+1", country: "USA/Canada", flag: "🇺🇸" },
+  { code: "+91", country: "India", flag: "🇮🇳" },
+  { code: "+86", country: "China", flag: "🇨🇳" },
+  { code: "+971", country: "UAE", flag: "🇦🇪" },
+  { code: "+966", country: "Saudi Arabia", flag: "🇸🇦" },
+  { code: "+20", country: "Egypt", flag: "🇪🇬" },
+  { code: "+249", country: "Sudan", flag: "🇸🇩" },
+  { code: "+252", country: "Somalia", flag: "🇸🇴" },
+  { code: "+251", country: "Ethiopia", flag: "🇪🇹" },
+  { code: "+253", country: "Djibouti", flag: "🇩🇯" },
+  { code: "+225", country: "Côte d'Ivoire", flag: "🇨🇮" },
+  { code: "+221", country: "Senegal", flag: "🇸🇳" },
+  { code: "+220", country: "Gambia", flag: "🇬🇲" },
+  { code: "+232", country: "Sierra Leone", flag: "🇸🇱" },
+  { code: "+231", country: "Liberia", flag: "🇱🇷" },
+  { code: "+223", country: "Mali", flag: "🇲🇱" },
+  { code: "+227", country: "Niger", flag: "🇳🇪" },
+  { code: "+235", country: "Chad", flag: "🇹🇩" },
+  { code: "+237", country: "Cameroon", flag: "🇨🇲" },
+  { code: "+241", country: "Gabon", flag: "🇬🇦" },
+  { code: "+242", country: "Congo", flag: "🇨🇬" },
+  { code: "+244", country: "Angola", flag: "🇦🇴" },
+  { code: "+258", country: "Mozambique", flag: "🇲🇿" },
+  { code: "+263", country: "Zimbabwe", flag: "🇿🇼" },
+  { code: "+267", country: "Botswana", flag: "🇧🇼" },
+  { code: "+264", country: "Namibia", flag: "🇳🇦" },
+  { code: "+268", country: "Eswatini", flag: "🇸🇿" },
+  { code: "+266", country: "Lesotho", flag: "🇱🇸" },
+  { code: "+230", country: "Mauritius", flag: "🇲🇺" },
+  { code: "+262", country: "Réunion", flag: "🇷🇪" },
+];
+
 // All 135 Uganda districts as of 2024
 const UGANDA_DISTRICTS = [
   "Abim", "Adjumani", "Agago", "Alebtong", "Amolatar", "Amudat", "Amuria", "Amuru",
@@ -41,12 +87,14 @@ const step2Schema = z.object({
   postalAddress: z.string().optional(),
   emergencyContactName: z.string().min(2, "Emergency contact name is required"),
   emergencyRelationship: z.string().min(1, "Relationship is required"),
-  emergencyPhone: z.string().regex(/^(\+256|0)[0-9]{9}$/, "Invalid phone number format. Use +2567XX XXX XXX or 07XX XXX XXX"),
+  countryCode: z.string().default("+256"),
+  emergencyPhone: z.string().regex(/^[0-9]{9}$/, "Phone number must be 9 digits (e.g., 7XX XXX XXX)"),
   emergencyAddress: z.string().min(5, "Emergency contact address is required"),
   sponsorshipType: z.enum(["bursary", "private"], {
     required_error: "Please select a sponsorship type",
   }),
   sponsorshipSource: z.string().optional(), // Only for private sponsorship
+  sponsorName: z.string().optional(), // Only for private sponsorship
 });
 
 type Step2Data = z.infer<typeof step2Schema>;
@@ -83,6 +131,7 @@ export default function ContactLocation({ onNext, onBack, defaultValues }: Conta
       postalAddress: defaultValues?.postalAddress || "",
       emergencyContactName: defaultValues?.emergencyContactName || "",
       emergencyRelationship: defaultValues?.emergencyRelationship || "",
+      countryCode: defaultValues?.countryCode || "+256",
       emergencyPhone: defaultValues?.emergencyPhone || "",
       emergencyAddress: defaultValues?.emergencyAddress || "",
       sponsorshipType: defaultValues?.sponsorshipType || undefined,
@@ -92,6 +141,7 @@ export default function ContactLocation({ onNext, onBack, defaultValues }: Conta
 
   const district = watch("district");
   const emergencyRelationship = watch("emergencyRelationship");
+  const countryCode = watch("countryCode");
   const sponsorshipType = watch("sponsorshipType");
 
   return (
@@ -151,7 +201,7 @@ export default function ContactLocation({ onNext, onBack, defaultValues }: Conta
                   <Label>District *</Label>
                   <Select
                     value={district}
-                    onValueChange={(value) => setValue("district", value)}
+                    onValueChange={(value: string) => setValue("district", value)}
                   >
                     <SelectTrigger className={errors.district ? "border-destructive" : ""}>
                       <SelectValue placeholder="Select district" />
@@ -210,7 +260,7 @@ export default function ContactLocation({ onNext, onBack, defaultValues }: Conta
                   <Label>Relationship *</Label>
                   <Select
                     value={emergencyRelationship}
-                    onValueChange={(value) => setValue("emergencyRelationship", value)}
+                    onValueChange={(value: string) => setValue("emergencyRelationship", value)}
                   >
                     <SelectTrigger className={errors.emergencyRelationship ? "border-destructive" : ""}>
                       <SelectValue placeholder="Select relationship" />
@@ -232,12 +282,33 @@ export default function ContactLocation({ onNext, onBack, defaultValues }: Conta
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="emergencyPhone">Phone Number *</Label>
-                  <Input
-                    id="emergencyPhone"
-                    placeholder="e.g., +256 7XX XXX XXX"
-                    {...register("emergencyPhone")}
-                    className={errors.emergencyPhone ? "border-destructive" : ""}
-                  />
+                  <div className="flex gap-2">
+                    <Select
+                      value={countryCode}
+                      onValueChange={(value: string) => setValue("countryCode", value)}
+                    >
+                      <SelectTrigger className="w-[140px] shrink-0">
+                        <SelectValue placeholder="Code" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {COUNTRY_CODES.map((cc) => (
+                          <SelectItem key={cc.code} value={cc.code}>
+                            <span className="mr-2">{cc.flag}</span>
+                            {cc.code} ({cc.country})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      id="emergencyPhone"
+                      placeholder="7XX XXX XXX"
+                      {...register("emergencyPhone")}
+                      className={errors.emergencyPhone ? "border-destructive" : ""}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Selected: {countryCode || "+256"} {watch("emergencyPhone") || ""}
+                  </p>
                   {errors.emergencyPhone && (
                     <p className="text-xs text-destructive">{errors.emergencyPhone.message}</p>
                   )}
@@ -318,23 +389,15 @@ export default function ContactLocation({ onNext, onBack, defaultValues }: Conta
                   exit={{ opacity: 0, height: 0 }}
                   className="space-y-2"
                 >
-                  <Label htmlFor="sponsorshipSource">Sponsorship Source (Optional)</Label>
-                  <Select
-                    value={watch("sponsorshipSource")}
-                    onValueChange={(value) => setValue("sponsorshipSource", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select source (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Parent/Guardian">Parent/Guardian</SelectItem>
-                      <SelectItem value="Self">Self</SelectItem>
-                      <SelectItem value="Employer">Employer</SelectItem>
-                      <SelectItem value="NGO">NGO</SelectItem>
-                      <SelectItem value="Organization">Organization</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Sponsor Name *</Label>
+                  <Input
+                    placeholder="e.g., ABC Company Ltd"
+                    {...register("sponsorName")}
+                    className={errors.sponsorName ? "border-destructive" : ""}
+                  />
+                  {errors.sponsorName && (
+                    <p className="text-xs text-destructive">{errors.sponsorName.message}</p>
+                  )}
                 </motion.div>
               )}
             </div>

@@ -4,8 +4,7 @@ import { Button, Card } from '@/components/ui/shared';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, RefreshCw, ArrowLeft, Mail } from 'lucide-react';
-
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { apiPost, ApiError } from '@/services/api';
 
 export default function VerifyOtp() {
   const [, setLocation] = useLocation();
@@ -84,26 +83,7 @@ export default function VerifyOtp() {
 
     setIsLoading(true);
     try {
-      const res = await fetch(`${BASE}/api/auth/verify-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, code }),
-      });
-      const json = await res.json();
-
-      if (!res.ok) {
-        toast({
-          title: res.status === 410 ? "Code expired" : "Invalid code",
-          description: json.message || "Please try again.",
-          variant: "destructive",
-        });
-        if (res.status === 410) {
-          setDigits(Array(6).fill(""));
-          inputRefs.current[0]?.focus();
-        }
-        return;
-      }
+      await apiPost('/auth/verify-otp', { email, code });
 
       // Success - redirect to login page for user to sign in
       setSuccess(true);
@@ -112,8 +92,20 @@ export default function VerifyOtp() {
       setTimeout(() => {
         setLocation("/login");
       }, 1200);
-    } catch {
-      toast({ title: "Network error", description: "Could not connect to the server.", variant: "destructive" });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        toast({
+          title: err.status === 410 ? "Code expired" : "Invalid code",
+          description: err.message || "Please try again.",
+          variant: "destructive",
+        });
+        if (err.status === 410) {
+          setDigits(Array(6).fill(""));
+          inputRefs.current[0]?.focus();
+        }
+      } else {
+        toast({ title: "Network error", description: "Could not connect to the server.", variant: "destructive" });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -123,31 +115,21 @@ export default function VerifyOtp() {
     if (cooldown > 0) return;
     setIsResending(true);
     try {
-      const res = await fetch(`${BASE}/api/auth/resend-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email }),
-      });
-      const json = await res.json();
+      const response = await apiPost<{ retryAfter?: number }>('/auth/resend-otp', { email });
 
-      if (res.status === 429) {
-        startCooldown(json.retryAfter || 60);
-        toast({ title: "Please wait", description: json.message, variant: "destructive" });
-        return;
-      }
-
-      if (!res.ok) {
-        toast({ title: "Error", description: json.message || "Could not resend OTP.", variant: "destructive" });
-        return;
-      }
-
-      startCooldown(60);
+      startCooldown(response.retryAfter || 60);
       setDigits(Array(6).fill(""));
       inputRefs.current[0]?.focus();
       toast({ title: "Code resent!", description: "Check your email or the server terminal." });
-    } catch {
-      toast({ title: "Network error", description: "Could not connect.", variant: "destructive" });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 429) {
+          startCooldown(Number(err.errors?.retryAfter) || 60);
+        }
+        toast({ title: "Error", description: err.message || "Could not resend OTP.", variant: "destructive" });
+      } else {
+        toast({ title: "Network error", description: "Could not connect.", variant: "destructive" });
+      }
     } finally {
       setIsResending(false);
     }

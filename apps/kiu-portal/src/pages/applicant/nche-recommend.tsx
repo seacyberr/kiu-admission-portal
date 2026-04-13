@@ -142,19 +142,19 @@ export default function NCHERecommendationsPage() {
   const [uceCredits, setUceCredits] = useState<string[]>([]);
   const [diplomaType, setDiplomaType] = useState<string>("");
   const [diplomaClass, setDiplomaClass] = useState<string>("");
-  const [diplomaInstitution, setDiplomaInstitution] = useState<string>("");
+  const [diplomaInstitution, _setDiplomaInstitution] = useState<string>("");
   const [workExperience, setWorkExperience] = useState<number>(0);
   const [bachelorGpa, setBachelorGpa] = useState<number>(3.0);
   
   // UCE subjects state
-  const [uceSubjects, setUceSubjects] = useState<NCHESubject[]>([]);
+  const [uceSubjects, _setUceSubjects] = useState<NCHESubject[]>([]);
   
   // HEC track state
   const [hecTrack, setHecTrack] = useState<"arts" | "physical" | "biological" | "">("");
   
   // National Certificate state
-  const [nationalCertificateType, setNationalCertificateType] = useState<string>("");
-  const [nationalCertificateInstitution, setNationalCertificateInstitution] = useState<string>("");
+  const [nationalCertificateType, _setNationalCertificateType] = useState<string>("");
+  const [nationalCertificateInstitution, _setNationalCertificateInstitution] = useState<string>("");
   
   const [recommendations, setRecommendations] = useState<NCHEProgramme[]>([]);
   const [loading, setLoading] = useState(false);
@@ -255,24 +255,6 @@ export default function NCHERecommendationsPage() {
       </div>
 
       <div className="space-y-4">
-        {/* O-Level / UCE - Entry Level */}
-        <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50 bg-blue-50"
-             onClick={() => { setQualificationType("uce"); setStep("uce"); }}>
-          <div className="flex items-center space-x-3">
-            <input
-              type="radio"
-              name="qualification"
-              checked={qualificationType === "uce"}
-              onChange={() => setQualificationType("uce")}
-              className="w-4 h-4"
-            />
-            <div>
-              <h3 className="font-semibold text-blue-800">UCE (O-Level)</h3>
-              <p className="text-sm text-gray-600">Entry level: Certificate, HEC or Diploma</p>
-            </div>
-          </div>
-        </div>
-
         {/* A-Level / UACE */}
         <div className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
              onClick={() => { setQualificationType("uace"); setStep("uace"); }}>

@@ -34,7 +34,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { 
-  ArrowLeft, 
   ChevronLeft, 
   ChevronRight, 
   Search, 
@@ -70,14 +69,16 @@ const QUALIFICATION_TYPES = [
   { value: "masters", label: "Master's" },
 ];
 
-function statusVariant(s: string): "outline" | "destructive" | "secondary" {
+function statusVariant(s: string): "outline" | "danger" | "warning" | "success" {
   switch (s) {
     case "accepted":
-      return "outline"; // Use outline + custom classes for green
+      return "success";
     case "rejected":
-      return "destructive";
+      return "danger";
     case "under_review":
-      return "secondary";
+      return "warning";
+    case "pending":
+      return "outline";
     default:
       return "outline";
   }
@@ -219,8 +220,8 @@ export default function AdminAdmissionsPage() {
     toast({ title: "Export Complete", description: `${filteredApplications.length} applications exported` });
   };
 
-  // Bulk status update
-  const handleBulkAction = async (action: string, applicationIds: number[]) => {
+  // Bulk status update (reserved for future use)
+  const _handleBulkAction = async (action: string, applicationIds: number[]) => {
     // Implementation for bulk actions
     toast({ title: "Bulk Action", description: `${action} on ${applicationIds.length} applications` });
   };
@@ -425,7 +426,7 @@ export default function AdminAdmissionsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {format(new Date(app.createdAt), "MMM d, yyyy")}
+                    {app.createdAt ? format(new Date(app.createdAt), "MMM d, yyyy") : 'N/A'}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
@@ -478,7 +479,7 @@ export default function AdminAdmissionsPage() {
                   Application {selectedApplication.applicationNumber}
                 </DialogTitle>
                 <DialogDescription>
-                  Submitted on {format(new Date(selectedApplication.createdAt), "MMMM d, yyyy 'at' h:mm a")}
+                  Submitted on {selectedApplication.createdAt ? format(new Date(selectedApplication.createdAt), "MMMM d, yyyy 'at' h:mm a") : 'N/A'}
                 </DialogDescription>
               </DialogHeader>
               

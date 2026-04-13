@@ -6,7 +6,9 @@
 
 import type { ApiResponse } from '../types/api';
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+// In development: use '/api' to go through Vite proxy (avoids CORS)
+// In production: use full API URL if provided
+const API_BASE = import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_URL || '/api');
 
 interface RequestOptions {
   method?: string;

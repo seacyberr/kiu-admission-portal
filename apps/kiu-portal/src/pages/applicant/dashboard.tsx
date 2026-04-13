@@ -1,7 +1,7 @@
 import { Link } from 'wouter';
 import { useGetMyAdmissionApplication, useGetCurrentUser } from '@workspace/api-client-react';
 import { Card, Button, Badge } from '@/components/ui/shared';
-import { FileText, CheckCircle2, Clock, AlertCircle, Calendar } from 'lucide-react';
+import { FileText, Clock, AlertCircle, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function ApplicantDashboard() {
@@ -9,7 +9,28 @@ export default function ApplicantDashboard() {
   const { data: application, isLoading: appLoading, error } = useGetMyAdmissionApplication({ query: { retry: false } });
 
   if (userLoading || appLoading) {
-    return <div className="p-8 flex justify-center"><Clock className="animate-spin text-primary w-8 h-8" /></div>;
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+        <Clock className="animate-spin text-primary w-12 h-12" />
+        <p className="text-muted-foreground">Loading your dashboard...</p>
+      </div>
+    );
+  }
+
+  // Show error if API call failed
+  if (error) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-4">
+        <AlertCircle className="text-destructive w-12 h-12" />
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-bold text-destructive mb-2">Error Loading Dashboard</h2>
+          <p className="text-muted-foreground mb-4">
+            {error instanceof Error ? error.message : "Failed to load your application data"}
+          </p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
   }
 
   const hasApplication = !!application && !error;

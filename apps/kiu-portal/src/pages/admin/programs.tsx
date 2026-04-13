@@ -34,8 +34,7 @@ export default function AdminProgramsPage() {
   const { data, isLoading, error, refetch } = useQuery<ProgramsResponse>({
     queryKey: ["admin-programs", searchTerm, categoryFilter],
     queryFn: async () => {
-      const response = await api.get("/admin/programs");
-      return response.data;
+      return api.get<ProgramsResponse>("/admin/programs");
     },
   });
 

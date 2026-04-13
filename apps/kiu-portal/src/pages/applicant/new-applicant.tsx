@@ -13,7 +13,7 @@
 
 import { useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
-import { Button, Card, Badge } from '@/components/ui/shared';
+import { Button, Card } from '@/components/ui/shared';
 import {
   ArrowLeft,
   ArrowRight,

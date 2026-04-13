@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLocation, Link } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -5,7 +6,7 @@ import { z } from 'zod';
 import { useRegisterUser } from '@workspace/api-client-react';
 import { Button, Input, Label, Card } from '@/components/ui/shared';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, User, GraduationCap } from 'lucide-react';
+import { ArrowLeft, User, GraduationCap, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const registerSchema = z.object({
@@ -35,6 +36,8 @@ export default function Register() {
   });
 
   const selectedRole = watch('role');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Capitalize first letter of each word in a name
   const capitalizeName = (name: string): string => {
@@ -87,7 +90,7 @@ export default function Register() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-2xl relative z-10"
+        className="w-full max-w-md relative z-10"
       >
         <Link href="/" className="inline-flex items-center text-sm font-semibold text-muted-foreground hover:text-primary mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home
@@ -155,14 +158,32 @@ export default function Register() {
               </div>
               <div className="space-y-2">
                 <Label>Password</Label>
-                <Input type="password" autoComplete="new-password" {...register("password")} className={errors.password ? "border-destructive" : ""} />
+                <div className="relative">
+                  <Input type={showPassword ? "text" : "password"} autoComplete="new-password" {...register("password")} className={`${errors.password ? "border-destructive" : ""} pr-10`} />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Confirm Password</Label>
-              <Input type="password" autoComplete="new-password" {...register("confirmPassword")} className={errors.confirmPassword ? "border-destructive" : ""} />
+              <div className="relative">
+                <Input type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" {...register("confirmPassword")} className={`${errors.confirmPassword ? "border-destructive" : ""} pr-10`} />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
             </div>
 

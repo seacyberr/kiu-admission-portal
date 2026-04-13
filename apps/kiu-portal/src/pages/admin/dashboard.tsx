@@ -2,12 +2,21 @@
 // noUnusedLocals warnings and cluttered the bundle.
 import { useListAdmissionApplications, useListOpportunities } from '@workspace/api-client-react';
 import { Card } from '@/components/ui/shared';
-import { FileText, Briefcase } from 'lucide-react';
+import { FileText, Briefcase, Clock } from 'lucide-react';
 import { Link } from 'wouter';
 
 export default function AdminDashboard() {
-  const { data: admissions } = useListAdmissionApplications();
-  const { data: opportunities } = useListOpportunities();
+  const { data: admissions, isLoading: admissionsLoading } = useListAdmissionApplications();
+  const { data: opportunities, isLoading: opportunitiesLoading } = useListOpportunities();
+
+  if (admissionsLoading || opportunitiesLoading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+        <Clock className="animate-spin text-primary w-12 h-12" />
+        <p className="text-muted-foreground">Loading admin dashboard...</p>
+      </div>
+    );
+  }
 
   const pendingAdmissions =
     admissions?.applications.filter((a: any) => a.status === 'pending').length || 0;
@@ -34,7 +43,7 @@ export default function AdminDashboard() {
 
         <Card className="p-6 flex items-center gap-4 border-accent/30 bg-accent/5">
           <div className="w-12 h-12 rounded-full bg-accent/20 text-accent-foreground flex items-center justify-center">
-            <ClockIcon className="w-6 h-6" />
+            <Clock className="w-6 h-6" />
           </div>
           <div>
             <p className="text-muted-foreground font-semibold text-sm">Pending Review</p>
@@ -77,25 +86,5 @@ export default function AdminDashboard() {
         </Card>
       </div>
     </div>
-  );
-}
-
-function ClockIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
   );
 }

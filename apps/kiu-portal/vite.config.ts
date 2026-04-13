@@ -18,7 +18,7 @@ if (!basePath.endsWith("/")) basePath += "/";
  * CORRECTION from previous patch: was incorrectly set to 5000.
  */
 const apiProxyTarget =
-  process.env.VITE_API_PROXY_TARGET ?? "http://host.docker.internal:5001";
+  process.env.VITE_API_PROXY_TARGET ?? "http://kiu-api-dev:5001";
 
 /**
  * FIX: Vite proxy strips/mangles httpOnly cookie attributes (Secure, SameSite)
@@ -26,8 +26,10 @@ const apiProxyTarget =
  * browser to silently reject the auth cookie, requiring hard-reload to bypass
  * the cached 401 response.
  */
-function cookieProxyFix(proxy: import("http-proxy").Server) {
-  proxy.on("proxyRes", (proxyRes) => {
+import type { IncomingMessage } from "http";
+
+function cookieProxyFix(proxy: { on: (event: string, callback: (res: IncomingMessage) => void) => void }) {
+  proxy.on("proxyRes", (proxyRes: IncomingMessage) => {
     const sc = proxyRes.headers["set-cookie"];
     if (Array.isArray(sc)) {
       proxyRes.headers["set-cookie"] = sc.map((c) =>
@@ -96,8 +98,8 @@ export default defineConfig({
     allowedHosts: true,
     // Prevent browser from caching 401 responses between page loads
     headers: { "Cache-Control": "no-store" },
-    proxy: apiProxy,
     fs: { strict: true, deny: ["**/.*"] },
+    proxy: apiProxy,
   },
   preview: {
     port,

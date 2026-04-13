@@ -195,12 +195,9 @@ export type RecommendResult = {
 
 type QueryParams = Record<string, string | number | boolean | undefined | null>;
 
-function getBaseUrl(): string {
-  const env = (import.meta as any)?.env ?? {};
-  return String(env.BASE_URL ?? "").replace(/\/$/, "");
-}
-
-const BASE_URL = getBaseUrl();
+// Use empty base for relative API paths - goes through Vite proxy in dev
+// In production, the API is served from the same domain or proxied
+const BASE_URL = "";
 
 function toQueryString(params?: QueryParams): string {
   if (!params) return "";
@@ -225,7 +222,9 @@ async function fetchAuthMe(): Promise<User | null> {
     } catch { /* ignore */ }
     throw new Error(message);
   }
-  return (await res.json()) as User;
+  const json = await res.json();
+  // Extract JSend data field
+  return (json.data ?? json) as User;
 }
 
 // ---------------------------------------------------------------------------
@@ -308,7 +307,9 @@ async function apiFetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   if (res.status === 204) return undefined as T;
   const text = await res.text();
   if (!text) return undefined as T;
-  return JSON.parse(text) as T;
+  const json = JSON.parse(text);
+  // Handle JSend format: data is nested under 'data' key
+  return (json.data ?? json) as T;
 }
 
 type QueryOverrides<TData> = Partial<

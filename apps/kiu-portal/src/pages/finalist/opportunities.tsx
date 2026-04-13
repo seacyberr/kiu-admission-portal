@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useListOpportunities, useApplyForOpportunity } from '@workspace/api-client-react';
 import { Card, Button, Badge, Input, Textarea, Label } from '@/components/ui/shared';
 import { Link } from 'wouter';
-import { ArrowLeft, Briefcase, MapPin, Clock, Building2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';

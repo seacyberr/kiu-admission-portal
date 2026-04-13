@@ -99,7 +99,7 @@ def create_app():
     app.config["JWT_REFRESH_TOKEN_EXPIRES"] = 7 * 24 * 3600  # 7 days
     app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
     app.config["JWT_COOKIE_SECURE"] = os.environ.get("FLASK_ENV", "").lower() == "production"
-    app.config["JWT_COOKIE_SAMESITE"] = "Strict"
+    app.config["JWT_COOKIE_SAMESITE"] = "Lax"
     app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Disable for simplicity, enable in production
     app.config["JWT_ERROR_MESSAGE_KEY"] = "error"
     

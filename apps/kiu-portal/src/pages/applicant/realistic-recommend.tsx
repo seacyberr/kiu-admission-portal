@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, TrendingUp, AlertTriangle, CheckCircle, XCircle, Clock, Users, Target } from "lucide-react";
+import { AlertTriangle, CheckCircle, XCircle, Clock, Users, Target } from "lucide-react";
 
 interface Programme {
   id: string;

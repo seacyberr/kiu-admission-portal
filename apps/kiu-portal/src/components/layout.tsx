@@ -22,7 +22,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${base}/api/auth/logout`, { method: "POST", credentials: "include" });
+      await fetch(`/api/auth/logout`, { method: "POST", credentials: "include" });
     } catch {
       // still clear client state
     }
@@ -35,6 +35,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const getNavLinks = () => {
     if (!user) return [];
+    // Don't show app navigation on home page - home is a landing page
+    if (location === '/') return [];
     if (user.role === 'admin') {
       return [
         { label: 'Dashboard', path: '/admin' },
@@ -80,15 +82,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-4 pr-4">
-            {!isLoading && !user && (
-              <>
-                <Link href="/login" className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">Sign In</Link>
-                <Link href="/register">
-                  <Button variant="default" size="sm" className="rounded-full px-6 bg-blue-600 hover:bg-blue-700 text-white">Register</Button>
-                </Link>
-              </>
-            )}
+          <div className="hidden md:flex items-center gap-4 absolute right-4">
             {user && (
               <div className="flex items-center gap-4 border-l border-border pl-4">
                 <div className="flex flex-col text-right">

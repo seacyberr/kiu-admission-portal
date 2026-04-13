@@ -58,6 +58,7 @@ const COMPULSORY_UCE = [
 
 // Validation schema
 const step3Schema = z.object({
+  qualificationType: z.enum(["uace", "uce", "hec", "diploma", "national_certificate", "bachelors", "masters"]).default("uace"),
   // O-Level (UCE) - REQUIRED
   uceSchoolName: z.string().min(3, "School name is required"),
   uceIndexNumber: z.string().regex(/^U\d{4}\/\d{3}$/, "Invalid format. Use: UXXXX/XXX (e.g., U2023/001)"),
@@ -114,6 +115,7 @@ export default function EducationBackground({ onNext, onBack, defaultValues }: E
   } = useForm<Step3Data>({
     resolver: zodResolver(step3Schema),
     defaultValues: {
+      qualificationType: defaultValues?.qualificationType || "uace",
       uceSchoolName: defaultValues?.uceSchoolName || "",
       uceIndexNumber: defaultValues?.uceIndexNumber || "",
       uceYear: defaultValues?.uceYear || "",
@@ -130,6 +132,7 @@ export default function EducationBackground({ onNext, onBack, defaultValues }: E
     },
   });
 
+  const qualificationType = watch("qualificationType");
   const hasUACE = watch("hasUACE");
   const hasOtherQualifications = watch("hasOtherQualifications");
   const uceSubjects = watch("uceSubjects") || [];
@@ -216,6 +219,41 @@ export default function EducationBackground({ onNext, onBack, defaultValues }: E
         </div>
 
         <form onSubmit={handleSubmit(onNext)} className="space-y-8">
+          {/* Qualification Type Selector */}
+          <div className="p-6 border rounded-lg bg-muted/30">
+            <div className="flex items-center gap-2 mb-4">
+              <GraduationCap className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold">Qualification Type</h2>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="qualificationType">Select Your Highest Education Level *</Label>
+              <Select
+                value={qualificationType}
+                onValueChange={(value: string) => setValue("qualificationType", value as any)}
+              >
+                <SelectTrigger className={errors.qualificationType ? "border-destructive" : ""}>
+                  <SelectValue placeholder="Select your qualification type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="uace">UACE (A-Level)</SelectItem>
+                  <SelectItem value="uce">UCE (O-Level only)</SelectItem>
+                  <SelectItem value="hec">Higher Education Certificate (HEC)</SelectItem>
+                  <SelectItem value="diploma">Diploma/Certificate</SelectItem>
+                  <SelectItem value="national_certificate">National Certificate</SelectItem>
+                  <SelectItem value="bachelors">Bachelor's Degree</SelectItem>
+                  <SelectItem value="masters">Master's Degree</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.qualificationType && (
+                <p className="text-xs text-destructive">{errors.qualificationType.message}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                This determines which sections you'll need to complete below.
+              </p>
+            </div>
+          </div>
+
           {/* O-Level (UCE) Section - REQUIRED */}
           <div className="p-6 border-2 rounded-lg border-primary/20 bg-primary/5">
             <div className="flex items-center gap-2 mb-4">
@@ -294,7 +332,7 @@ export default function EducationBackground({ onNext, onBack, defaultValues }: E
                   >
                     <Select
                       value={field.subject}
-                      onValueChange={(value) => {
+                      onValueChange={(value: string) => {
                         const newSubjects = [...uceSubjects];
                         newSubjects[index] = { ...newSubjects[index], subject: value };
                         setValue("uceSubjects", newSubjects);
@@ -314,7 +352,7 @@ export default function EducationBackground({ onNext, onBack, defaultValues }: E
 
                     <Select
                       value={field.grade}
-                      onValueChange={(value) => {
+                      onValueChange={(value: string) => {
                         const newSubjects = [...uceSubjects];
                         newSubjects[index] = { ...newSubjects[index], grade: value };
                         setValue("uceSubjects", newSubjects);
@@ -477,7 +515,7 @@ export default function EducationBackground({ onNext, onBack, defaultValues }: E
                       <div key={field.id} className="flex items-center gap-2">
                         <Select
                           value={field.subject}
-                          onValueChange={(value) => {
+                          onValueChange={(value: string) => {
                             const newSubjects = [...uacePrincipalSubjects];
                             newSubjects[index] = { ...newSubjects[index], subject: value };
                             setValue("uacePrincipalSubjects", newSubjects);
@@ -497,7 +535,7 @@ export default function EducationBackground({ onNext, onBack, defaultValues }: E
 
                         <Select
                           value={field.grade}
-                          onValueChange={(value) => {
+                          onValueChange={(value: string) => {
                             const newSubjects = [...uacePrincipalSubjects];
                             newSubjects[index] = { ...newSubjects[index], grade: value };
                             setValue("uacePrincipalSubjects", newSubjects);
@@ -545,7 +583,7 @@ export default function EducationBackground({ onNext, onBack, defaultValues }: E
                       <div key={field.id} className="flex items-center gap-2">
                         <Select
                           value={field.subject}
-                          onValueChange={(value) => {
+                          onValueChange={(value: string) => {
                             const newSubjects = [...uaceSubsidiarySubjects];
                             newSubjects[index] = { ...newSubjects[index], subject: value };
                             setValue("uaceSubsidiarySubjects", newSubjects);
@@ -563,7 +601,7 @@ export default function EducationBackground({ onNext, onBack, defaultValues }: E
 
                         <Select
                           value={field.grade}
-                          onValueChange={(value) => {
+                          onValueChange={(value: string) => {
                             const newSubjects = [...uaceSubsidiarySubjects];
                             newSubjects[index] = { ...newSubjects[index], grade: value };
                             setValue("uaceSubsidiarySubjects", newSubjects);

@@ -6,7 +6,7 @@ import { Link } from 'wouter';
 import { toast } from 'sonner';
 
 export default function FinalistProfileEdit() {
-  const { data: user } = useGetCurrentUser();
+  const { data: _user } = useGetCurrentUser();
   const { data: profile } = useGetFinalistProfile({ query: { retry: false } });
   const updateProfile = useUpdateFinalistProfile();
 
@@ -41,7 +41,7 @@ export default function FinalistProfileEdit() {
     formData.append('cv', cvFile);
 
     try {
-      const response = await fetch('/api/v1/finalist/profile/upload-cv', {
+      const response = await fetch('/api/finalist/profile/upload-cv', {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -66,8 +66,8 @@ export default function FinalistProfileEdit() {
 
     updateProfile.mutate({
       studentNumber: formData.studentNumber,
-      programId: formData.programId ? parseInt(formData.programId) : undefined,
-      gpa: formData.gpa ? parseFloat(formData.gpa) : undefined,
+      programId: formData.programId ? parseInt(String(formData.programId)) : undefined,
+      gpa: formData.gpa ? parseFloat(String(formData.gpa)) : undefined,
       graduationYear: formData.graduationYear,
       skills: formData.skills.split(',').map(s => s.trim()).filter(Boolean),
       cvUrl: formData.cvUrl,

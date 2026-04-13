@@ -89,7 +89,7 @@ export interface MultiSelectProps {
   options: SelectOption[];
   value: string[];
   onChange: (value: string[]) => void;
-  placeholder?: string;
+  _placeholder?: string;
   fullWidth?: boolean;
   disabled?: boolean;
 }
@@ -101,7 +101,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   options,
   value,
   onChange,
-  placeholder = 'Select options',
+  _placeholder = 'Select options',
   fullWidth = true,
   disabled
 }) => {

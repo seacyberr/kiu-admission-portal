@@ -23,6 +23,7 @@ import ApplicationStart from "@/pages/applicant/application-start";
 import CertificateDetails from "@/pages/applicant/certificate-details";
 import PersonalInfo from "@/pages/applicant/personal-info";
 import ReviewSubmit from "@/pages/applicant/review-submit";
+import ApplicantProfile from "@/pages/applicant/profile";
 import FinalistDashboard from "@/pages/finalist/dashboard";
 import CareerPaths from "@/pages/finalist/career-paths";
 import Opportunities from "@/pages/finalist/opportunities";
@@ -61,6 +62,13 @@ function Router() {
           {() => (
             <RoleGuard roles={["applicant"]}>
               <NewApplicant />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/profile">
+          {() => (
+            <RoleGuard roles={["applicant"]}>
+              <ApplicantProfile />
             </RoleGuard>
           )}
         </Route>

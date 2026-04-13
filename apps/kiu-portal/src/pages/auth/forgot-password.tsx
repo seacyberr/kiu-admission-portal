@@ -4,8 +4,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button, Card, Input, Label } from "@/components/ui/shared";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Mail, Clock } from "lucide-react";
+import { apiPost, ApiError } from '@/services/api';
 
 const forgotSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -14,7 +15,7 @@ const forgotSchema = z.object({
 type ForgotForm = z.infer<typeof forgotSchema>;
 
 export default function ForgotPassword() {
-  const [, navigate] = useLocation();
+  const [, _navigate] = useLocation();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -31,34 +32,28 @@ export default function ForgotPassword() {
   const onSubmit = async (data: ForgotForm) => {
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: data.email }),
+      await apiPost('/auth/forgot-password', { email: data.email });
+
+      setEmailSent(true);
+      setSentEmail(data.email);
+      toast({
+        title: "Reset code sent",
+        description: "Check your email for the password reset code.",
       });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        setEmailSent(true);
-        setSentEmail(data.email);
+    } catch (err) {
+      if (err instanceof ApiError) {
         toast({
-          title: "Reset code sent",
-          description: "Check your email for the password reset code.",
+          title: "Error",
+          description: err.message || "Failed to send reset code",
+          variant: "destructive",
         });
       } else {
         toast({
           title: "Error",
-          description: result.message || "Failed to send reset code",
+          description: "Network error. Please try again.",
           variant: "destructive",
         });
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Network error. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setIsSubmitting(false);
     }

@@ -1,14 +1,19 @@
 import { Link } from 'wouter';
 import { useGetFinalistProfile, useGetCurrentUser } from '@workspace/api-client-react';
 import { Card, Button, Badge } from '@/components/ui/shared';
-import { UserCircle, Briefcase, MapPin, Map, Award, Clock } from 'lucide-react';
+import { UserCircle, Briefcase, Map, Award, Clock } from 'lucide-react';
 
 export default function FinalistDashboard() {
   const { data: user } = useGetCurrentUser();
   const { data: profile, isLoading, error } = useGetFinalistProfile({ query: { retry: false } });
 
   if (isLoading) {
-    return <div className="p-8 flex justify-center"><Clock className="animate-spin text-primary w-8 h-8" /></div>;
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+        <Clock className="animate-spin text-primary w-12 h-12" />
+        <p className="text-muted-foreground">Loading your profile...</p>
+      </div>
+    );
   }
 
   const needsProfile = !profile || error;

@@ -8,9 +8,10 @@ interface ReviewSubmitProps {
   onBack: () => void;
   onSubmit: () => void;
   onEdit?: (step: number) => void;
+  isSubmitting?: boolean;
 }
 
-const ReviewSubmit = ({ data, onBack, onSubmit, onEdit }: ReviewSubmitProps) => {
+const ReviewSubmit = ({ data, onBack, onSubmit, onEdit, isSubmitting }: ReviewSubmitProps) => {
   const handleSubmit = () => {
     toast.success("Application submitted successfully!");
     onSubmit();
@@ -29,7 +30,14 @@ const ReviewSubmit = ({ data, onBack, onSubmit, onEdit }: ReviewSubmitProps) => 
       <h1 className="text-2xl font-bold text-green-700 mb-6">Review & Submit</h1>
       
       <Card className="p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Application Summary</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Application Summary</h2>
+          {onEdit && (
+            <Button variant="outline" size="sm" onClick={() => onEdit(1)}>
+              Edit
+            </Button>
+          )}
+        </div>
         
         <div className="space-y-3">
           <div className="flex justify-between py-2 border-b border-gray-100">
@@ -63,8 +71,9 @@ const ReviewSubmit = ({ data, onBack, onSubmit, onEdit }: ReviewSubmitProps) => 
         <Button 
           onClick={handleSubmit}
           className="bg-green-700 hover:bg-green-800"
+          disabled={isSubmitting}
         >
-          Submit Application
+          {isSubmitting ? "Submitting..." : "Submit Application"}
         </Button>
       </div>
     </div>

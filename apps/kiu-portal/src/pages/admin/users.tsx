@@ -36,15 +36,13 @@ export default function AdminUsersPage() {
   const { data, isLoading, error, refetch } = useQuery<UsersResponse>({
     queryKey: ["admin-users", page, searchTerm, roleFilter],
     queryFn: async () => {
-      const response = await api.get("/admin/users", {
-        params: {
-          page,
-          perPage: 20,
-          search: searchTerm,
-          role: roleFilter,
-        },
-      });
-      return response.data;
+      const params = new URLSearchParams();
+      if (page) params.append("page", String(page));
+      params.append("perPage", "20");
+      if (searchTerm) params.append("search", searchTerm);
+      if (roleFilter) params.append("role", roleFilter);
+      const queryString = params.toString();
+      return api.get<UsersResponse>(`/admin/users${queryString ? `?${queryString}` : ""}`);
     },
   });
 

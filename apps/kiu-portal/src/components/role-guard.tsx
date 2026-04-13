@@ -58,7 +58,15 @@ export function RoleGuard({ roles, children }: RoleGuardProps) {
   }, [setLocation]);
 
   useEffect(() => {
-    if (isLoading || hasRedirected.current) return;
+    // Only process redirect after loading is complete
+    if (isLoading) return;
+    
+    // Reset redirect flag when user changes (e.g., after login)
+    if (user && hasRedirected.current) {
+      hasRedirected.current = false;
+    }
+    
+    if (hasRedirected.current) return;
 
     const abortController = new AbortController();
     

@@ -309,7 +309,7 @@ export default function PersonalInformation({ onNext, defaultValues }: PersonalI
               <Label>Nationality *</Label>
               <Select
                 value={nationality}
-                onValueChange={(value) => setValue("nationality", value)}
+                onValueChange={(value: string) => setValue("nationality", value)}
               >
                 <SelectTrigger className={errors.nationality ? "border-destructive" : ""}>
                   <SelectValue placeholder="Select nationality" />
@@ -347,7 +347,7 @@ export default function PersonalInformation({ onNext, defaultValues }: PersonalI
               <Label>Marital Status *</Label>
               <Select
                 value={maritalStatus}
-                onValueChange={(value) => setValue("maritalStatus", value as any)}
+                onValueChange={(value: string) => setValue("maritalStatus", value as any)}
               >
                 <SelectTrigger className={errors.maritalStatus ? "border-destructive" : ""}>
                   <SelectValue placeholder="Select status" />
@@ -368,7 +368,7 @@ export default function PersonalInformation({ onNext, defaultValues }: PersonalI
               <Label>Religion *</Label>
               <Select
                 value={religion}
-                onValueChange={(value) => setValue("religion", value as any)}
+                onValueChange={(value: string) => setValue("religion", value as any)}
               >
                 <SelectTrigger className={errors.religion ? "border-destructive" : ""}>
                   <SelectValue placeholder="Select religion" />

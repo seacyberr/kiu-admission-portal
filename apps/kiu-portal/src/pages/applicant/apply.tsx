@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useListPrograms } from '@workspace/api-client-react';
@@ -283,27 +283,13 @@ const applySchema = z
   });
 
 type ApplyForm = z.infer<typeof applySchema>;
-
 type Step = "program" | "olevel" | "alevel" | "cert" | "masters" | "phd" | "personal" | "upload" | "review";
-
-const STEPS: { key: Step; label: string }[] = [
-  { key: "program", label: "Program" },
-  { key: "olevel", label: "O-Level Results" },
-  { key: "alevel", label: "A-Level Results" },
-  { key: "cert", label: "Certificate Details" },
-  { key: "masters", label: "Master's Details" },
-  { key: "phd", label: "PhD Details" },
-  { key: "personal", label: "Personal Info" },
-  { key: "upload", label: "Certificates" },
-  { key: "review", label: "Review & Submit" },
-];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 type ApplyTarget = "degree" | "diploma" | "hec" | "masters" | "phd";
 type DegreeQualification = "a_level" | "diploma" | "hec";
 type ExamLevel = "o_level" | "a_level" | "diploma" | "hec" | "masters" | "phd";
-type Campus = "kampala" | "western";
 
 function readDegreeQualificationFromUrl(): DegreeQualification {
   if (typeof window === "undefined") return "a_level";
@@ -329,13 +315,13 @@ export default function Apply({ target }: { target: ApplyTarget }) {
   const [step, setStep] = useState<Step>("program");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [applicationId, setApplicationId] = useState<number | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [_isSaving, setIsSaving] = useState(false);
+  const [_validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [olevelFile, setOlevelFile] = useState<File | null>(null);
   const [alevelFile, setAlevelFile] = useState<File | null>(null);
   const [diplomaFile, setDiplomaFile] = useState<File | null>(null);
   const [hecFile, setHecFile] = useState<File | null>(null);
-  const [uploadingCerts, setUploadingCerts] = useState(false);
+  const [uploadingCerts, _setUploadingCerts] = useState(false);
   const olevelInputRef = useRef<HTMLInputElement>(null);
   const alevelInputRef = useRef<HTMLInputElement>(null);
   const diplomaInputRef = useRef<HTMLInputElement>(null);
@@ -349,9 +335,9 @@ export default function Apply({ target }: { target: ApplyTarget }) {
   const examLevel: ExamLevel = target === "degree" ? degreeQualification : target;
   const shouldShowALevel = examLevel === "a_level";
   const shouldShowOlevel = (examLevel as string) === "o_level";
-  const shouldShowCert = examLevel === "diploma" || examLevel === "hec";
-  const shouldShowMasters = examLevel === "masters";
-  const shouldShowPhd = examLevel === "phd";
+  const _shouldShowCert = examLevel === "diploma" || examLevel === "hec";
+  const _shouldShowMasters = examLevel === "masters";
+  const _shouldShowPhd = examLevel === "phd";
 
   const { register, control, handleSubmit, watch, setValue, getValues, formState: { errors } } = useForm<ApplyForm>({
     resolver: zodResolver(applySchema),
@@ -383,7 +369,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allPrograms, step]);
 
-  const watchExamLevel = watch("examLevel");
+  const _watchExamLevel = watch("examLevel");
   const watchProgramIds = watch("programIds") || [];
   const watchCurriculum = watch("oLevelCurriculum");
 
@@ -566,7 +552,6 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
   // ── O-Level grade entry helper ─────────────────────────────────────────────
   function OLevelRow({ index }: { index: number }) {
-    const g = watch(`oLevelGrades.${index}.grade`);
     return (
       <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
         <div className="space-y-1">
@@ -757,65 +742,17 @@ export default function Apply({ target }: { target: ApplyTarget }) {
     }
   };
 
-  // ── Certificate upload ─────────────────────────────────────────────────────
+  // Certificate upload handler (placeholder for future implementation)
   const uploadCertificates = async () => {
-
-    const indexNumber =
-      examLevel === "a_level"
-        ? data.aLevelIndexNumber || data.oLevelIndexNumber
-        : (examLevel as string) === "o_level"
-          ? data.oLevelIndexNumber
-          : data.certIndexNumber;
-
-    const payload = {
-      programIds: data.programIds,
-      examLevel,
-      examYear,
-      indexNumber,
-      unebGrades,
-      dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString().split('T')[0] : undefined,
-      gender: data.gender,
-      nationality: data.nationality,
-      district: data.district,
-      sessionOfStudy: data.sessionOfStudy,
-      nextOfKinName: data.nextOfKinName,
-      nextOfKinPhone: data.nextOfKinPhone,
-      nextOfKinRelationship: data.nextOfKinRelationship,
-    };
-
-    const res = await fetch(`${BASE}/api/admission/applications`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(payload),
+    toast({
+      title: "Not Implemented",
+      description: "Certificate upload functionality is coming soon",
     });
-    
-    // Check if response is HTML (error page) instead of JSON
-    const contentType = res.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      const text = await res.text();
-      console.error("Server returned non-JSON response:", {
-        status: res.status,
-        statusText: res.statusText,
-        contentType,
-        responseText: text.substring(0, 500)
-      });
-      if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
-        throw new Error(`Server error (${res.status}): The server encountered an error. Please check your form data and try again.`);
-      }
-      throw new Error(`Unexpected response format (${res.status}): ${text.substring(0, 100)}...`);
-    }
-    
-    const json = await res.json();
-    console.log("Server response:", { status: res.status, data: json });
-    if (!res.ok) {
-      console.error("Server error response:", json);
-      throw new Error(json.message || `Submission failed (${res.status})`);
-    }
-
-    setApplicationId(json.id);
-    setStep("upload");
   };
+
+  // Define visible steps and progress
+  const visibleSteps = stepOrder.map((s: string) => ({ key: s, label: s.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase()) }));
+  const stepProgress = ((currentIdx + 1) / stepOrder.length) * 100;
 
   // Render
   return (

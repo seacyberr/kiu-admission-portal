@@ -75,7 +75,7 @@ export default function ProgramSelection({ onNext, onBack, defaultValues }: Prog
   const [selectedCampus, setSelectedCampus] = useState("All");
   const [selectedLevel, setSelectedLevel] = useState("All");
   
-  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<Step4Data>({
+  const { handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<Step4Data>({
     resolver: zodResolver(step4Schema),
     defaultValues: {
       applicationType: defaultValues?.applicationType || undefined,

@@ -1,5 +1,3 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -7,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, ArrowRight, FileText, Upload, X, Check, AlertCircle, FileCheck } from "lucide-react";
 import { motion } from "framer-motion";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 // Document types with requirements
 const REQUIRED_DOCUMENTS = [
@@ -98,7 +96,22 @@ interface UploadFile {
 
 export default function DocumentUpload({ onNext, onBack, defaultValues }: DocumentUploadProps) {
   const [files, setFiles] = useState<Record<string, UploadFile>>({});
-  const [declaration, setDeclaration] = useState(false);
+  const [declaration, setDeclaration] = useState(defaultValues?.declaration || false);
+
+  // Initialize from defaultValues
+  useEffect(() => {
+    if (defaultValues?.documents) {
+      const initialFiles: Record<string, UploadFile> = {};
+      Object.entries(defaultValues.documents).forEach(([key, doc]) => {
+        initialFiles[key] = {
+          file: doc.file || null,
+          error: null,
+          uploaded: doc.uploaded || false,
+        };
+      });
+      setFiles(initialFiles);
+    }
+  }, [defaultValues]);
 
   // Initialize files state
   const handleFileChange = useCallback((docId: string, file: File | null) => {
@@ -186,8 +199,17 @@ export default function DocumentUpload({ onNext, onBack, defaultValues }: Docume
       }
     });
 
+    // Transform files to match DocumentData schema (remove error field)
+    const documentFiles: Record<string, { uploaded: boolean; file?: File }> = {};
+    Object.entries(files).forEach(([key, fileData]) => {
+      documentFiles[key] = {
+        uploaded: fileData.uploaded,
+        ...(fileData.file && { file: fileData.file }),
+      };
+    });
+
     onNext({
-      documents: files,
+      documents: documentFiles,
       declaration,
       files: uploadedFiles,
     });
