@@ -15,7 +15,7 @@ import ResetPassword from "@/pages/auth/reset-password";
 import ApplicantDashboard from "@/pages/applicant/dashboard";
 import ApplyForm from "@/pages/applicant/apply";
 import NewApplicant from "@/pages/applicant/new-applicant";
-import RecommendRedirect from "@/pages/applicant/recommend-redirect";
+// Note: Legacy recommendation routes now use NCHERecommend directly
 import NCHERecommend from "@/pages/applicant/nche-recommend";
 import SimpleRecommend from "@/pages/applicant/recommend-simple";
 import RealisticRecommend from "@/pages/applicant/realistic-recommend";
@@ -73,74 +73,74 @@ function Router() {
           )}
         </Route>
 
-        {/* LEGACY RECOMMENDATION ROUTES - Redirect to NCHE System */}
+        {/* LEGACY RECOMMENDATION ROUTES - All redirect to NCHE System */}
         <Route path="/recommend">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <RecommendRedirect />
+              <NCHERecommend />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/o-level">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <RecommendRedirect />
+              <NCHERecommend />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/a-level">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <RecommendRedirect />
+              <NCHERecommend />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/diploma">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <RecommendRedirect />
+              <NCHERecommend />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/hec">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <RecommendRedirect />
+              <NCHERecommend />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/national-cert">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <RecommendRedirect />
+              <NCHERecommend />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/bachelors">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <RecommendRedirect />
+              <NCHERecommend />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/masters">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <RecommendRedirect />
+              <NCHERecommend />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/phd">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <RecommendRedirect />
+              <NCHERecommend />
             </RoleGuard>
           )}
         </Route>
         <Route path="/recommend/tool">
           {() => (
             <RoleGuard roles={["applicant"]}>
-              <RecommendRedirect />
+              <NCHERecommend />
             </RoleGuard>
           )}
         </Route>

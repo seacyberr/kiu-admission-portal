@@ -12,8 +12,8 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, message: error.message };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("React error boundary:", error, info.componentStack);
+  componentDidCatch(_error: Error, _info: ErrorInfo) {
+    // Error logging removed for production - could integrate with error tracking service
   }
 
   render() {

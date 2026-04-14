@@ -57,11 +57,15 @@ const UGANDA_DISTRICTS = [
 
 // ── UNEB Subject lists ────────────────────────────────────────────────────────
 
-// UNEB UCE (O-Level) Subjects - Official UNEB List
-// Structure: 8 Compulsory + 2 Optional = 10 Total Subjects
+// =============================================================================
+// UNEB UCE (O-Level) Subjects - From Official 2023 & 2025 Timetables
+// =============================================================================
+// NOTE: UCE has TWO different curriculums with DIFFERENT subject structures:
+// 1. OLD CURRICULUM (Pre-2024): 8 Compulsory + 2 Optional = 10 subjects
+// 2. NEW CBC CURRICULUM (2024+): 10 subjects (all are "learning areas")
 
+// OLD CURRICULUM (Pre-2024) - 8 Compulsory Subjects
 const OLEVEL_COMPULSORY_SUBJECTS = [
-  // 8 Compulsory Subjects (All students must take these)
   "English Language",
   "Mathematics",
   "Biology",
@@ -69,49 +73,71 @@ const OLEVEL_COMPULSORY_SUBJECTS = [
   "Physics",
   "History",
   "Geography",
-  "Christian Religious Education (CRE)",
-  // Note: IRE can substitute CRE for Muslim students
+  "Christian Religious Education (CRE) / Islamic Religious Education (IRE)"
 ];
 
+// OLD CURRICULUM (Pre-2024) - Optional Subjects (Choose 2)
 const OLEVEL_OPTIONAL_SUBJECTS = [
-  // Optional Subjects (Choose 2 from this list)
+  // Sciences
+  "Agriculture",
+  "Computer Studies",
+  "Technical Drawing",
+  "Food and Nutrition",
+  // Commerce/Business
+  "Commerce",
+  "Accounting",
+  "Economics",
+  "Entrepreneurship",
+  // Technical/Vocational
+  "Woodwork",
+  "Metalwork",
+  "Building Construction",
+  "Home Management",
+  // Arts
+  "Art and Design",
+  "Music",
+  "Performing Arts",
   // Languages
   "Literature in English",
   "French",
   "German",
   "Latin",
-  "Kiswahili",
   "Arabic",
   "Luganda",
-  // Sciences & Agriculture
+  "Kiswahili"
+];
+
+// NEW CBC CURRICULUM (2024+) - All 10 Subjects (Learning Areas)
+// Under CBC, all subjects are treated equally (no compulsory/optional distinction)
+const OLEVEL_NEW_CURRICULUM_SUBJECTS = [
+  // Core Learning Areas (All students take these)
+  "English Language",
+  "Mathematics",
+  "Biology",
+  "Chemistry",
+  "Physics",
+  "History and Political Education",
+  "Geography and Environment",
+  "Religious Education (CRE/IRE)",
+  // Elective Learning Areas (Choose based on pathway)
   "Agriculture",
-  "General Science",
-  // Technical & Creative Arts
+  "Computer Studies / ICT",
   "Technical Drawing",
-  "Metalwork",
-  "Woodwork",
-  "Building Construction",
-  "Electricity & Electronics",
-  "Power & Energy",
-  "Fine Art",
-  "Music",
-  "Dance",
-  "Drama",
-  "Physical Education",
-  "Islamic Religious Education (IRE)",
-  "Divinity",
-  // Business & ICT
+  "Food and Nutrition",
   "Commerce",
-  "Entrepreneurship Education",
-  "Principles of Accounts",
-  "Computer Studies",
-  "Information & Communication Technology (ICT)",
-  // Home Economics
-  "Home Economics",
-  "Food & Nutrition",
-  "Clothing & Textiles",
-  // Additional Mathematics
-  "Additional Mathematics",
+  "Accounting",
+  "Economics",
+  "Entrepreneurship",
+  "Woodwork",
+  "Metalwork",
+  "Building Construction",
+  "Art and Design",
+  "Music",
+  "Performing Arts",
+  "Literature in English",
+  "Foreign Languages (French/German/Arabic)",
+  "Local Languages (Luganda/Kiswahili)",
+  "Additional Mathematics"
 ];
 
 // Combined list for backward compatibility
@@ -143,54 +169,20 @@ const OLEVEL_GRADES_NEW = [
   { label: "F – Fail", value: "F", points: 9 },
 ];
 
+// UNEB UACE Principal Subjects (from Official 2023 & 2025 Timetables)
 const ALEVEL_PRINCIPAL_SUBJECTS = [
-  // Sciences (Group 1)
-  "Mathematics",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "Agriculture",
-  "Technical Drawing",
-  "Food and Nutrition",
-  "Human Biology",
-  "Botany",
-  "Zoology",
-  "Geology",
-  "Computer Studies",
-  // Arts & Humanities (Group 2)
-  "History",
-  "Geography",
-  "Economics",
-  "Divinity",
-  "Islamic Religious Education",
-  "Christian Religious Education",
-  "Art",
-  "Literature in English",
-  "Kiswahili",
-  "Luganda",
-  "Arabic",
-  "French",
-  "German",
-  "Latin",
-  "Music",
-  "History of Art",
-  "Archaeology",
-  "Political Education",
-  // Commercial (Group 3)
-  "Principles of Accounts",
-  "Commerce",
-  "Entrepreneurship",
-  "Financial Accounting",
-  "Economics",
-  // Technical (Group 4)
-  "Metalwork",
-  "Woodwork",
-  "Building Construction",
-  "Power and Energy",
-  "Electronics",
-  "Electricity",
-  "Automobile Mechanics",
-  "Aviation Technology",
+  // Sciences Group
+  "Biology", "Chemistry", "Physics", "Pure Mathematics",
+  // Technical/Applied Sciences
+  "Agriculture", "Food and Nutrition", "Technical Drawing",
+  // Languages Group
+  "Literature in English", "French", "German", "Latin", "Arabic", "Luganda",
+  // Religious Studies
+  "Islamic Religious Education (IRE)", "Divinity",
+  // Arts/Humanities Group
+  "History", "Geography", "Economics", "Entrepreneurship",
+  // Creative Arts
+  "Music", "Fine Art"
 ];
 
 // Note: A-Level students must select:
@@ -198,14 +190,9 @@ const ALEVEL_PRINCIPAL_SUBJECTS = [
 // - 2 Subsidiary Subjects (General Paper is compulsory + 1 other)
 
 const ALEVEL_SUBSIDIARY_SUBJECTS = [
-  // Subsidiary Subjects (2 required)
-  // General Paper is compulsory for all A-Level students
-  "General Paper",
-  // Choose 1 additional subsidiary subject:
-  "Subsidiary ICT",
-  "Subsidiary Mathematics",
-  "General Studies",
-  "Sub-Math",
+  "General Paper (Mandatory)",
+  "Sub-Mathematics",
+  "ICT (Subsidiary)"
 ];
 
 // UNEB UACE Subject Requirements:
@@ -335,9 +322,6 @@ export default function Apply({ target }: { target: ApplyTarget }) {
   const examLevel: ExamLevel = target === "degree" ? degreeQualification : target;
   const shouldShowALevel = examLevel === "a_level";
   const shouldShowOlevel = (examLevel as string) === "o_level";
-  const _shouldShowCert = examLevel === "diploma" || examLevel === "hec";
-  const _shouldShowMasters = examLevel === "masters";
-  const _shouldShowPhd = examLevel === "phd";
 
   const { register, control, handleSubmit, watch, setValue, getValues, formState: { errors } } = useForm<ApplyForm>({
     resolver: zodResolver(applySchema),
@@ -369,7 +353,6 @@ export default function Apply({ target }: { target: ApplyTarget }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allPrograms, step]);
 
-  const _watchExamLevel = watch("examLevel");
   const watchProgramIds = watch("programIds") || [];
   const watchCurriculum = watch("oLevelCurriculum");
 
@@ -552,13 +535,15 @@ export default function Apply({ target }: { target: ApplyTarget }) {
 
   // ── O-Level grade entry helper ─────────────────────────────────────────────
   function OLevelRow({ index }: { index: number }) {
+    const curriculum = watch("oLevelCurriculum") || "old";
+    const subjects = curriculum === "old" ? OLEVEL_SUBJECTS : OLEVEL_NEW_CURRICULUM_SUBJECTS;
     return (
       <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
         <div className="space-y-1">
           {index === 0 && <Label className="text-xs">Subject</Label>}
           <select {...register(`oLevelGrades.${index}.subject`)} className="w-full h-10 px-3 rounded-lg border border-border bg-white text-sm">
             <option value="">Select subject…</option>
-            {OLEVEL_SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
+            {subjects.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div className="space-y-1">
@@ -711,12 +696,6 @@ export default function Apply({ target }: { target: ApplyTarget }) {
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         const text = await res.text();
-        console.error("Server returned non-JSON response:", {
-          status: res.status,
-          statusText: res.statusText,
-          contentType,
-          responseText: text.substring(0, 500)
-        });
         if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
           throw new Error(`Server error (${res.status}): The server encountered an error. Please check your form data and try again.`);
         }
@@ -724,16 +703,13 @@ export default function Apply({ target }: { target: ApplyTarget }) {
       }
       
       const json = await res.json();
-      console.log("Server response:", { status: res.status, data: json });
       if (!res.ok) {
-        console.error("Server error response:", json);
         throw new Error(json.message || `Submission failed (${res.status})`);
       }
 
       setApplicationId(json.id);
       setStep("upload");
     } catch (err: any) {
-      console.error("Application save failed:", err);
       toast({ title: "Application failed", description: err.message || "Unknown error", variant: "destructive" });
       setValidationErrors({ submit: err.message || "Failed to save application" });
     } finally {

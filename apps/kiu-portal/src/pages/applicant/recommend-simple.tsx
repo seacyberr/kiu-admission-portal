@@ -90,11 +90,9 @@ export default function SimpleRecommendationsPage() {
         const data = await response.json();
         setRecommendations(data.recommendations);
         setStep("results");
-      } else {
-        console.error("Failed to get recommendations");
       }
     } catch (error) {
-      console.error("Error:", error);
+      // Silent fail - user feedback handled by UI state
     } finally {
       setLoading(false);
     }

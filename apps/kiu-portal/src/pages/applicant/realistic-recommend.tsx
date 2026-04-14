@@ -60,10 +60,28 @@ interface Programme {
   apply_url?: string;
 }
 
+// =============================================================================
+// UNEB UACE (Advanced Level) Subjects - From Official 2023 & 2025 Timetables
+// =============================================================================
+// Structure: 3 Principal + 2 Subsidiary (General Paper + 1 Subsidiary)
+// UACE structure is the SAME for both Old and New curriculum
+
 const UACE_SUBJECTS = [
-  "Mathematics", "Physics", "Chemistry", "Biology", "Geography", "History",
-  "Economics", "Literature", "Divinity", "Entrepreneurship", "Computer Studies",
-  "Technical Drawing", "Art", "Music", "Agriculture", "General Paper"
+  // PRINCIPAL SUBJECTS (Max 3)
+  // Sciences Group
+  "Biology", "Chemistry", "Physics", "Pure Mathematics",
+  // Technical/Applied Sciences
+  "Agriculture", "Food and Nutrition", "Technical Drawing",
+  // Languages Group
+  "Literature in English", "French", "German", "Latin", "Arabic", "Luganda",
+  // Religious Studies
+  "Islamic Religious Education (IRE)", "Divinity",
+  // Arts/Humanities Group
+  "History", "Geography", "Economics", "Entrepreneurship",
+  // Creative Arts
+  "Music", "Fine Art",
+  // SUBSIDIARY SUBJECTS (Must take General Paper + 1 optional)
+  "General Paper (Mandatory)", "Sub-Mathematics", "ICT (Subsidiary)"
 ];
 
 const UACE_GRADES = ["A", "B", "C", "D", "E", "O", "F"];
@@ -144,7 +162,7 @@ export default function RealisticRecommendationsPage() {
         setStep("results");
       }
     } catch (error) {
-      console.error("Error:", error);
+      // Silent fail - user feedback handled by UI state
     } finally {
       setLoading(false);
     }

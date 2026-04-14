@@ -85,27 +85,37 @@ interface NCHEProgramme {
   nche_compliant?: boolean;
 }
 
-// NCHE UACE Principal Subjects (actual UNEB subjects)
+// NCHE UACE Principal Subjects (from Official UNEB 2023 & 2025 Timetables)
+// Structure: 3 Principal + 2 Subsidiary (General Paper + 1 Subsidiary)
 const NCHE_UACE_SUBJECTS = [
-  // Sciences
-  "Mathematics", "Physics", "Chemistry", "Biology", "Agriculture",
-  "Technical Drawing", "Foods and Nutrition",
-  // Arts & Humanities
-  "History", "Geography", "Economics", "Entrepreneurship",
-  "Art and Design", "Fine Art", "Music", "Drama", "Performing Arts",
-  // Languages
-  "Literature in English", "Luganda", "French", "German", "Arabic",
-  "Latin", "Kiswahili",
+  // Sciences Group
+  "Biology", "Chemistry", "Physics", "Pure Mathematics",
+  // Technical/Applied Sciences
+  "Agriculture", "Food and Nutrition", "Technical Drawing",
+  // Languages Group
+  "Literature in English", "French", "German", "Latin", "Arabic", "Luganda",
   // Religious Studies
-  "Christian Religious Education", "Islamic Religious Education",
-  "Divinity",
-  // Commercial
-  "Commerce", "Principles of Accounts",
-  // Technical
-  "Metalwork", "Woodwork", "Building Construction",
-  "Power and Energy", "Electronics"
+  "Islamic Religious Education (IRE)", "Divinity",
+  // Arts/Humanities Group
+  "History", "Geography", "Economics", "Entrepreneurship",
+  // Creative Arts
+  "Music", "Fine Art"
 ];
 
+// =============================================================================
+// UNEB UCE (O-Level) Subjects - From Official 2023 & 2025 Timetables
+// =============================================================================
+// OLD CURRICULUM (Pre-2024): 8 Compulsory + 2 Optional = 10 subjects
+// NEW CBC CURRICULUM (2024+): 10 subjects (all learning areas)
+
+const NCHE_UCE_SUBJECTS_OLD = [
+  // Compulsory (8 subjects)
+  "English Language", "Mathematics", "Biology", "Chemistry", "Physics",
+  "History", "Geography", "Christian Religious Education (CRE) / Islamic Religious Education (IRE)",
+  // Optional (choose 2)
+  "Agriculture", "Computer Studies", "Technical Drawing", "Food and Nutrition",
+  "Commerce", "Accounting", "Economics", "Entrepreneurship"
+];
 
 // NCHE UACE Grades (UNEB grading system)
 const NCHE_UACE_GRADES = ["A", "B", "C", "D", "E", "O", "F"];
@@ -158,6 +168,7 @@ export default function NCHERecommendationsPage() {
   
   const [recommendations, setRecommendations] = useState<NCHEProgramme[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const calculateNCHEPoints = () => {
     const gradePoints: Record<string, number> = { "A": 6, "B": 5, "C": 4, "D": 3, "E": 2, "O": 1, "F": 0 };
@@ -186,6 +197,7 @@ export default function NCHERecommendationsPage() {
 
   const fetchNCHERecommendations = async () => {
     setLoading(true);
+    setError(null);
     try {
       const applicantData: any = {
         qualification_type: qualificationType
@@ -209,7 +221,7 @@ export default function NCHERecommendationsPage() {
         applicantData.hec_track = hecTrack;
       } else if (qualificationType === "national_certificate") {
         // User holds a National Certificate (vocational qualification)
-        applicantData.national_certificate_field = nationalCertificateType;  // e.g., "Automotive", "Electrical"
+        applicantData.national_certificate_field = nationalCertificateType;  // e.g. "Automotive", "Electrical"
         applicantData.national_certificate_institution = nationalCertificateInstitution;
         applicantData.work_experience = workExperience;
       } else if (qualificationType === "diploma") {
@@ -223,7 +235,7 @@ export default function NCHERecommendationsPage() {
         applicantData.work_experience = workExperience;
       }
 
-      const response = await fetch("/api/v1/nche/assess", {
+      const response = await fetch("/api/recommendations/assess", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(applicantData)
@@ -233,9 +245,12 @@ export default function NCHERecommendationsPage() {
         const data = await response.json();
         setRecommendations(data.recommendations);
         setStep("results");
+      } else {
+        // Handle non-OK responses
+        setError(`Assessment failed: ${response.status === 404 ? 'Service not available (404)' : response.statusText}. Please try again later or contact support.`);
       }
     } catch (error) {
-      console.error("Error:", error);
+      setError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your connection and try again.`);
     } finally {
       setLoading(false);
     }
@@ -598,7 +613,7 @@ export default function NCHERecommendationsPage() {
         <div>
           <Label>UCE Credits (Optional)</Label>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {["Mathematics", "English", "Biology", "Chemistry", "Physics", "Geography", "History", "Economics"].map(subject => (
+            {NCHE_UCE_SUBJECTS_OLD.slice(0, 8).map(subject => (
               <div key={subject} className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -971,6 +986,18 @@ export default function NCHERecommendationsPage() {
             Official NCHE Uganda compliant programme recommendation and direct application system
           </p>
         </div>
+
+        {error && (
+          <div className="max-w-2xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <XCircle className="w-5 h-5 text-red-600 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-red-900">Assessment Error</h3>
+                <p className="text-red-800">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {step === "qualification" && renderQualificationStep()}
         {step === "uace" && renderUACEStep()}

@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }
         }
       } catch (error) {
-        console.error('Failed to fetch current user:', error);
+        // Silent fail - user not authenticated
       } finally {
         setLoading(false);
       }
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         credentials: 'include',
       });
     } catch (error) {
-      console.error('Logout error:', error);
+      // Silent fail - logout best effort
     } finally {
       setUser(null);
     }

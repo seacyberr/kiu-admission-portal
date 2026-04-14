@@ -195,7 +195,7 @@ export default function ApplicationWizard() {
         setLastSaved(new Date());
       }
     } catch (error) {
-      console.warn("Draft save error:", error);
+      // Silent fail - localStorage is primary backup
     }
   }, []);
 
@@ -237,7 +237,6 @@ export default function ApplicationWizard() {
         window.location.href = "/applicant/dashboard";
       }, 2000);
     } catch (error) {
-      console.error("Application submission error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to submit application. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -257,12 +256,10 @@ export default function ApplicationWizard() {
           if (draft && !localStorage.getItem(STORAGE_KEY)) {
             // Only use backend draft if no localStorage data
             // Merge carefully to avoid overwriting local changes
-            console.log("Loaded draft from backend");
           }
         }
       } catch (error) {
         // Silent fail - localStorage is primary
-        console.warn("Failed to load backend draft:", error);
       }
     };
     

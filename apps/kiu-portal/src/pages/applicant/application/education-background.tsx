@@ -12,31 +12,128 @@ import { ArrowLeft, ArrowRight, GraduationCap, BookOpen, Upload, Plus, Trash2 } 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
-// UNEB UACE Subjects
-const UACE_SUBJECTS = [
-  // Sciences
-  "Biology", "Chemistry", "Physics", "Mathematics", "Agriculture", "Technical Drawing",
-  // Arts
-  "History", "Geography", "Economics", "Entrepreneurship", "Art", "Music",
-  // Languages
-  "English Language", "Literature in English", "French", "German", "Arabic", "Latin",
-  // Humanities
-  "Christian Religious Education", "Islamic Religious Education", "Divinity",
-  // Technical
-  "Food and Nutrition", "Home Management", "Woodwork", "Metalwork", "Building Construction",
-  // ICT
-  "Computer Studies", "Information Technology"
+// =============================================================================
+// UNEB UACE (Advanced Level) Subjects - From Official 2023 & 2025 Timetables
+// =============================================================================
+// Structure for BOTH Old and New Curriculum: 3 Principal + 2 Subsidiary
+// Note: UACE structure remains the same for both curriculums
+
+const UACE_SUBJECTS = {
+  // PRINCIPAL SUBJECTS (Max 3) - Same for Old and New Curriculum
+  principal: [
+    // Sciences Group
+    "Biology", "Chemistry", "Physics", "Pure Mathematics",
+    // Technical/Applied Sciences
+    "Agriculture", "Food and Nutrition", "Technical Drawing",
+    // Languages Group
+    "Literature in English", "French", "German", "Latin", "Arabic", "Luganda",
+    // Religious Studies
+    "Islamic Religious Education (IRE)", "Divinity",
+    // Arts/Humanities Group
+    "History", "Geography", "Economics", "Entrepreneurship",
+    // Creative Arts
+    "Music", "Fine Art"
+  ],
+  // SUBSIDIARY SUBJECTS (Must take General Paper + 1 optional)
+  subsidiary: [
+    "General Paper (Mandatory)",
+    "Sub-Mathematics",
+    "ICT (Subsidiary)"
+  ]
+};
+
+// =============================================================================
+// UNEB UCE (O-Level) Subjects - From Official 2023 & 2025 Timetables
+// =============================================================================
+// NOTE: UCE has TWO different curriculums with DIFFERENT subject structures:
+// 1. OLD CURRICULUM (Pre-2024): 8 Compulsory + 2 Optional = 10 subjects
+// 2. NEW CBC CURRICULUM (2024+): 10 subjects (all are "learning areas")
+
+// OLD CURRICULUM (Pre-2024) - 8 Compulsory Subjects
+const UCE_OLD_CURRICULUM_COMPULSORY = [
+  "English Language",
+  "Mathematics",
+  "Biology",
+  "Chemistry",
+  "Physics",
+  "History",
+  "Geography",
+  "Christian Religious Education (CRE) / Islamic Religious Education (IRE)"
 ];
 
-// UNEB UCE Subjects
-const UCE_SUBJECTS = [
-  "English Language", "Mathematics", "Biology", "Chemistry", "Physics",
-  "History", "Geography", "Christian Religious Education", "Islamic Religious Education",
-  "Commerce", "Accounting", "Economics", "Agriculture", "Computer Studies",
-  "Technical Drawing", "Food and Nutrition", "Home Management", "Woodwork",
-  "Metalwork", "Building Construction", "Art", "Music", "French", "German",
-  "Arabic", "Latin", "Literature in English", "Entrepreneurship"
+// OLD CURRICULUM (Pre-2024) - Optional Subjects (Choose 2)
+const UCE_OLD_CURRICULUM_OPTIONAL = [
+  // Sciences
+  "Agriculture",
+  "Computer Studies",
+  "Technical Drawing",
+  "Food and Nutrition",
+  // Commerce/Business
+  "Commerce",
+  "Accounting",
+  "Economics",
+  "Entrepreneurship",
+  // Technical/Vocational
+  "Woodwork",
+  "Metalwork",
+  "Building Construction",
+  "Home Management",
+  // Arts
+  "Art and Design",
+  "Music",
+  "Performing Arts",
+  // Languages
+  "Literature in English",
+  "French",
+  "German",
+  "Latin",
+  "Arabic",
+  "Luganda",
+  "Kiswahili"
 ];
+
+// NEW CBC CURRICULUM (2024+) - All 10 Subjects (Learning Areas)
+// Under CBC, all subjects are treated equally (no compulsory/optional distinction)
+const UCE_NEW_CURRICULUM_SUBJECTS = [
+  // Core Learning Areas (All students take these)
+  "English Language",
+  "Mathematics",
+  "Biology",
+  "Chemistry",
+  "Physics",
+  "History and Political Education",
+  "Geography and Environment",
+  "Religious Education (CRE/IRE)",
+  // Elective Learning Areas (Choose based on pathway)
+  "Agriculture",
+  "Computer Studies / ICT",
+  "Technical Drawing",
+  "Food and Nutrition",
+  "Commerce",
+  "Accounting",
+  "Economics",
+  "Entrepreneurship",
+  "Woodwork",
+  "Metalwork",
+  "Building Construction",
+  "Art and Design",
+  "Music",
+  "Performing Arts",
+  "Literature in English",
+  "Foreign Languages (French/German/Arabic)",
+  "Local Languages (Luganda/Kiswahili)"
+];
+
+// Combined UCE Subjects for backward compatibility
+const UCE_SUBJECTS = {
+  oldCurriculum: {
+    compulsory: UCE_OLD_CURRICULUM_COMPULSORY,
+    optional: UCE_OLD_CURRICULUM_OPTIONAL
+  },
+  newCurriculum: {
+    all: UCE_NEW_CURRICULUM_SUBJECTS
+  }
+};
 
 // UACE Grades
 const UACE_GRADES = ["A", "B", "C", "D", "E", "O", "F"];
@@ -44,17 +141,29 @@ const UACE_GRADES = ["A", "B", "C", "D", "E", "O", "F"];
 // UCE Grades
 const UCE_GRADES = ["D1", "D2", "C3", "C4", "C5", "C6", "P7", "P8", "F9"];
 
-// Compulsory UCE subjects
-const COMPULSORY_UCE = [
-  "English Language",
-  "Mathematics", 
-  "Biology",
-  "Chemistry",
-  "Physics",
-  "History",
-  "Geography",
-  "Christian Religious Education"
+// UNEB Official Compulsory UCE Subjects (Old Curriculum - 8 subjects)
+// Source: UNEB UCE Timetables 2023, 2024, 2025
+const COMPULSORY_UCE = UCE_OLD_CURRICULUM_COMPULSORY;
+
+// Flattened arrays for dropdown/select components
+const ALL_UACE_SUBJECTS = [
+  ...UACE_SUBJECTS.principal,
+  ...UACE_SUBJECTS.subsidiary
 ];
+
+// For Old Curriculum dropdowns
+const ALL_UCE_OLD_CURRICULUM = [
+  ...UCE_OLD_CURRICULUM_COMPULSORY,
+  ...UCE_OLD_CURRICULUM_OPTIONAL
+];
+
+// For New Curriculum dropdowns
+const ALL_UCE_NEW_CURRICULUM = UCE_NEW_CURRICULUM_SUBJECTS;
+
+// Helper function to get UCE subjects based on curriculum type
+const getUCESubjects = (curriculumType: "old" | "new") => {
+  return curriculumType === "old" ? ALL_UCE_OLD_CURRICULUM : ALL_UCE_NEW_CURRICULUM;
+};
 
 // Validation schema
 const step3Schema = z.object({
@@ -63,6 +172,7 @@ const step3Schema = z.object({
   uceSchoolName: z.string().min(3, "School name is required"),
   uceIndexNumber: z.string().regex(/^U\d{4}\/\d{3}$/, "Invalid format. Use: UXXXX/XXX (e.g., U2023/001)"),
   uceYear: z.string().regex(/^20\d{2}$/, "Invalid year. Use format: 20XX"),
+  uceCurriculum: z.enum(["old", "new"]).default("old"),
   uceSubjects: z.array(z.object({
     subject: z.string().min(1, "Subject is required"),
     grade: z.string().min(1, "Grade is required"),
@@ -119,6 +229,7 @@ export default function EducationBackground({ onNext, onBack, defaultValues }: E
       uceSchoolName: defaultValues?.uceSchoolName || "",
       uceIndexNumber: defaultValues?.uceIndexNumber || "",
       uceYear: defaultValues?.uceYear || "",
+      uceCurriculum: defaultValues?.uceCurriculum || "old",
       uceSubjects: defaultValues?.uceSubjects || [],
       hasUACE: defaultValues?.hasUACE || false,
       uaceSchoolName: defaultValues?.uaceSchoolName || "",
@@ -133,6 +244,7 @@ export default function EducationBackground({ onNext, onBack, defaultValues }: E
   });
 
   const qualificationType = watch("qualificationType");
+  const uceCurriculum = watch("uceCurriculum") || "old";
   const hasUACE = watch("hasUACE");
   const hasOtherQualifications = watch("hasOtherQualifications");
   const uceSubjects = watch("uceSubjects") || [];
@@ -303,6 +415,31 @@ export default function EducationBackground({ onNext, onBack, defaultValues }: E
                     <p className="text-xs text-destructive">{errors.uceYear.message}</p>
                   )}
                 </div>
+
+                {/* Curriculum Type */}
+                <div className="space-y-2">
+                  <Label htmlFor="uceCurriculum">Curriculum Type *</Label>
+                  <Select
+                    value={watch("uceCurriculum") || "old"}
+                    onValueChange={(value: string) => setValue("uceCurriculum", value as "old" | "new")}
+                  >
+                    <SelectTrigger className={errors.uceCurriculum ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Select curriculum" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="old">Old Curriculum (Pre-2024)</SelectItem>
+                      <SelectItem value="new">New CBC Curriculum (2024+)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {watch("uceCurriculum") === "new" 
+                      ? "CBC: 10 subjects (all learning areas)" 
+                      : "Old: 8 compulsory + 2 optional subjects"}
+                  </p>
+                  {errors.uceCurriculum && (
+                    <p className="text-xs text-destructive">{errors.uceCurriculum.message}</p>
+                  )}
+                </div>
               </div>
 
               {/* Add Compulsory Subjects Button */}
@@ -342,7 +479,7 @@ export default function EducationBackground({ onNext, onBack, defaultValues }: E
                         <SelectValue placeholder="Select subject" />
                       </SelectTrigger>
                       <SelectContent>
-                        {UCE_SUBJECTS.map((subject) => (
+                        {getUCESubjects(uceCurriculum).map((subject: string) => (
                           <SelectItem key={subject} value={subject}>
                             {subject}
                           </SelectItem>
@@ -525,7 +662,7 @@ export default function EducationBackground({ onNext, onBack, defaultValues }: E
                             <SelectValue placeholder="Select subject" />
                           </SelectTrigger>
                           <SelectContent>
-                            {UACE_SUBJECTS.map((subject) => (
+                            {ALL_UACE_SUBJECTS.map((subject) => (
                               <SelectItem key={subject} value={subject}>
                                 {subject}
                               </SelectItem>
