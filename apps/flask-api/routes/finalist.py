@@ -4,10 +4,12 @@ Provides finalist portal endpoints for admitted students
 """
 
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required
 from models import db, User, AdmissionApplication, FinalistProfile
 from routes.auth import get_current_user
 from datetime import datetime
 from utils.api_response import success_response, paginated_response, bad_request, unauthorized, forbidden, not_found, created
+from utils.decorators import require_auth
 
 finalist_bp = Blueprint("finalist", __name__)
 
@@ -30,6 +32,7 @@ def check_finalist_access():
 
 
 @finalist_bp.route("/profile", methods=["GET"])
+@jwt_required()
 def get_finalist_profile():
     """Get finalist profile information"""
     result = check_finalist_access()
@@ -52,6 +55,7 @@ def get_finalist_profile():
 
 
 @finalist_bp.route("/status", methods=["GET"])
+@jwt_required()
 def get_finalist_status():
     """Get finalist admission status"""
     result = check_finalist_access()
@@ -66,7 +70,6 @@ def get_finalist_status():
         "enrollment_date": approved_app.enrollment_date.isoformat() if approved_app and approved_app.enrollment_date else None,
         "next_steps": [
             "Complete student ID registration",
-            "Pay tuition fees",
             "Submit required documents",
             "Attend orientation"
         ] if approved_app else ["Wait for admission decision"]
@@ -74,6 +77,7 @@ def get_finalist_status():
 
 
 @finalist_bp.route("/documents", methods=["GET"])
+@jwt_required()
 def get_finalist_documents():
     """Get required documents for finalist"""
     result = check_finalist_access()
@@ -98,30 +102,6 @@ def get_finalist_documents():
     })
 
 
-@finalist_bp.route("/payments", methods=["GET"])
-def get_finalist_payments():
-    """Get payment information for finalist"""
-    result = check_finalist_access()
-    if len(result) == 2:
-        return result
-    user, error, approved_app = result
-    
-    # Get program fee information
-    program = Program.query.filter_by(name=approved_app.program_name).first()
-    
-    fees = {
-        "tuition": program.fees_local_per_semester if program else 0,
-        "functional_fees": program.functional_fees_local if program else 0,
-        "total_per_semester": (program.fees_local_per_semester + program.functional_fees_local) if program else 0,
-        "currency": "UGX"
-    }
-    
-    return success_response({
-        "fees": fees,
-        "payment_status": "pending",
-        "payment_deadline": "2025-08-15",
-        "payment_methods": ["bank_transfer", "mobile_money", "cash"]
-    })
 
 
 @finalist_bp.route("/profile", methods=["PUT"])
@@ -379,7 +359,6 @@ def get_career_preparation():
         "career_paths": career_paths,
         "resources": resources,
         "recommended_actions": [
-            "Update your LinkedIn profile with your new qualification",
             "Join the KIU alumni network",
             "Attend career fairs and networking events",
             "Consider postgraduate studies if interested"

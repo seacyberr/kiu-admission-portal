@@ -1,0 +1,314 @@
+[
+  {
+    "source": "diploma_programs.py",
+    "name": "Diploma in Commerce",
+    "code": "NEEDS_CODE",
+    "level": "diploma"
+  },
+  {
+    "source": "diploma_programs.py",
+    "name": "Diploma in International Relations",
+    "code": "NEEDS_CODE",
+    "level": "diploma"
+  },
+  {
+    "source": "diploma_programs.py",
+    "name": "Diploma in Social Work",
+    "code": "NEEDS_CODE",
+    "level": "diploma"
+  },
+  {
+    "source": "diploma_programs.py",
+    "name": "Diploma in Agribusiness",
+    "code": "NEEDS_CODE",
+    "level": "diploma"
+  },
+  {
+    "source": "diploma_programs.py",
+    "name": "Diploma in Agricultural Extension",
+    "code": "NEEDS_CODE",
+    "level": "diploma"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Biology and Chemistry",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Biology and Physics",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Chemistry and Mathematics",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Physics and Mathematics",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Economics and Mathematics",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Geography and Economics",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Geography and Entrepreneurship",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Geography and History",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Geography and Mathematics",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in History and Economics",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in History and Entrepreneurship",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in History and Religious Education",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Literature and Geography",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Literature and History",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Literature and Religious Education",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Mathematics and Entrepreneurship",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Religious Education and Economics",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "hec_programs.py",
+    "name": "Higher Education Certificate in Religious Education and Entrepreneurship",
+    "code": "NEEDS_CODE",
+    "level": "hec"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "PhD in Counseling Psychology",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "PhD in Conflict Resolution",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "PhD in Development Studies",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "PhD in Public Management",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "PhD in Telecommunications Engineering",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "PhD in Agriculture",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "PhD in Environmental Science",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Master of Business Administration (MBA)",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Master of Arts in Economic Policy",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Master of Arts in Conflict Resolution",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Master of Arts in Counseling Psychology",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Master of Arts in Social Work",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Master of Arts in International Relations",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Master of Science in Mass Communication",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Master of Science in IT",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Master of Science in Renewable Energy",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Master of Science in Public Health",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Master of Science in Medical Lab Tech",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Master of Agribusiness",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Master of Agricultural Extension",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Master of Agricultural Economics",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "Postgraduate Diploma in Business Administration",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "PGD in Human Resource Management",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "PGD in Public Administration",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "PGD in Development Studies",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "PGD in Civil Engineering",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "PGD in Electrical Engineering",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "PGD in Mechanical Engineering",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  },
+  {
+    "source": "kiu_programs.py",
+    "name": "PGD in Education",
+    "code": "NEEDS_CODE",
+    "level": "unknown"
+  }
+]

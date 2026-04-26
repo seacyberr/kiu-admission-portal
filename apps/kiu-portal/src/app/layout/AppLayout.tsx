@@ -211,7 +211,6 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
             <div>
               <h4 className="text-white font-semibold mb-4">Resources</h4>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/fees" className="hover:text-white transition-colors">Fee Structure</Link></li>
                 <li><Link href="/requirements" className="hover:text-white transition-colors">Entry Requirements</Link></li>
                 <li><Link href="/faq" className="hover:text-white transition-colors">FAQs</Link></li>
                 <li><Link href="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>

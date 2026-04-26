@@ -73,7 +73,7 @@ function Router() {
           )}
         </Route>
 
-        {/* LEGACY RECOMMENDATION ROUTES - All redirect to NCHE System */}
+        {/* NCHE UNDERGRADUATE RECOMMENDATION TOOL - Based on UNEB exam results */}
         <Route path="/recommend">
           {() => (
             <RoleGuard roles={["applicant"]}>
@@ -117,20 +117,6 @@ function Router() {
           )}
         </Route>
         <Route path="/recommend/bachelors">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <NCHERecommend />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/recommend/masters">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <NCHERecommend />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/recommend/phd">
           {() => (
             <RoleGuard roles={["applicant"]}>
               <NCHERecommend />

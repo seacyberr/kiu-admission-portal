@@ -20,8 +20,6 @@ interface NCHEProgramme {
   duration_years: number;
   intake_months: number[];
   campus: string[];
-  tuition_ugx_per_semester: number;
-  tuition_usd_per_semester: number;
   nche_accreditation: {
     status: string;
     accreditation_number: string;
@@ -85,36 +83,83 @@ interface NCHEProgramme {
   nche_compliant?: boolean;
 }
 
-// NCHE UACE Principal Subjects (from Official UNEB 2023 & 2025 Timetables)
-// Structure: 3 Principal + 2 Subsidiary (General Paper + 1 Subsidiary)
-const NCHE_UACE_SUBJECTS = [
-  // Sciences Group
-  "Biology", "Chemistry", "Physics", "Pure Mathematics",
-  // Technical/Applied Sciences
-  "Agriculture", "Food and Nutrition", "Technical Drawing",
-  // Languages Group
-  "Literature in English", "French", "German", "Latin", "Arabic", "Luganda",
-  // Religious Studies
-  "Islamic Religious Education (IRE)", "Divinity",
-  // Arts/Humanities Group
-  "History", "Geography", "Economics", "Entrepreneurship",
-  // Creative Arts
-  "Music", "Fine Art"
-];
+// =============================================================================
+// UNEB UACE (Advanced Level) Subjects - From Official 2023 & 2025 Timetables
+// =============================================================================
+// Structure for BOTH Old and New Curriculum: 3 Principal + 2 Subsidiary
+
+const NCHE_UACE_SUBJECTS = {
+  // PRINCIPAL SUBJECTS (Max 3) - Same for Old and New Curriculum
+  principal: [
+    // Sciences Group
+    "Biology", "Chemistry", "Physics", "Pure Mathematics",
+    // Technical/Applied Sciences
+    "Agriculture", "Food and Nutrition", "Technical Drawing",
+    // Languages Group
+    "Literature in English", "French", "German", "Latin", "Arabic", "Luganda",
+    // Religious Studies
+    "Islamic Religious Education (IRE)", "Divinity",
+    // Arts/Humanities Group
+    "History", "Geography", "Economics", "Entrepreneurship",
+    // Creative Arts
+    "Music", "Fine Art"
+  ],
+  // SUBSIDIARY SUBJECTS (Must take General Paper + 1 optional)
+  subsidiary: [
+    "General Paper (Mandatory)",
+    "Sub-Mathematics",
+    "ICT (Subsidiary)"
+  ]
+};
 
 // =============================================================================
 // UNEB UCE (O-Level) Subjects - From Official 2023 & 2025 Timetables
 // =============================================================================
-// OLD CURRICULUM (Pre-2024): 8 Compulsory + 2 Optional = 10 subjects
-// NEW CBC CURRICULUM (2024+): 10 subjects (all learning areas)
+// NOTE: UCE has TWO different curriculums with DIFFERENT subject structures:
+// 1. OLD CURRICULUM (Pre-2024): 8 Compulsory + 2 Optional = 10 subjects
+// 2. NEW CBC CURRICULUM (2024+): 10 subjects (all are "learning areas")
 
-const NCHE_UCE_SUBJECTS_OLD = [
-  // Compulsory (8 subjects)
-  "English Language", "Mathematics", "Biology", "Chemistry", "Physics",
-  "History", "Geography", "Christian Religious Education (CRE) / Islamic Religious Education (IRE)",
-  // Optional (choose 2)
-  "Agriculture", "Computer Studies", "Technical Drawing", "Food and Nutrition",
-  "Commerce", "Accounting", "Economics", "Entrepreneurship"
+// OLD CURRICULUM (Pre-2024) - 8 Compulsory Subjects
+const NCHE_UCE_COMPULSORY = [
+  "English Language",
+  "Mathematics",
+  "Biology",
+  "Chemistry",
+  "Physics",
+  "History",
+  "Geography",
+  "Christian Religious Education (CRE) / Islamic Religious Education (IRE)"
+];
+
+// OLD CURRICULUM (Pre-2024) - Optional Subjects (Choose 2)
+const NCHE_UCE_OPTIONAL = [
+  // Sciences
+  "Agriculture",
+  "Computer Studies",
+  "Technical Drawing",
+  "Food and Nutrition",
+  // Commerce/Business
+  "Commerce",
+  "Accounting",
+  "Economics",
+  "Entrepreneurship",
+  // Technical/Vocational
+  "Woodwork",
+  "Metalwork",
+  "Building Construction",
+  "Home Management",
+  // Arts
+  "Art and Design",
+  "Music",
+  "Performing Arts",
+  // Languages
+  "Literature in English",
+  "French",
+  "German",
+  "Latin",
+  "Arabic",
+  "Luganda",
+  "Kiswahili"
 ];
 
 // NCHE UACE Grades (UNEB grading system)
@@ -487,8 +532,8 @@ export default function NCHERecommendationsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <h3 className="font-semibold mb-3">Select Principal Subjects & Grades (Max 5)</h3>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {NCHE_UACE_SUBJECTS.map((subject) => (
+          <div className="space-y-2 max-h-80 overflow-y-auto border rounded-lg p-2 bg-gray-50/50">
+            {NCHE_UACE_SUBJECTS.principal.map((subject: string) => (
               <div key={subject} className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -611,9 +656,9 @@ export default function NCHERecommendationsPage() {
         </div>
 
         <div>
-          <Label>UCE Credits (Optional)</Label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {NCHE_UCE_SUBJECTS_OLD.slice(0, 8).map(subject => (
+          <Label>UCE Credits (Compulsory Subjects)</Label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto border rounded-lg p-2 bg-gray-50/50">
+            {NCHE_UCE_COMPULSORY.map((subject: string) => (
               <div key={subject} className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -629,6 +674,30 @@ export default function NCHERecommendationsPage() {
                   className="w-4 h-4"
                 />
                 <Label htmlFor={subject} className="text-sm">{subject}</Label>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <Label>UCE Optional Subjects (Select 2)</Label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto border rounded-lg p-2 bg-gray-50/50">
+            {NCHE_UCE_OPTIONAL.map((subject: string) => (
+              <div key={subject} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id={`opt-${subject}`}
+                  checked={uceCredits.includes(subject)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setUceCredits([...uceCredits, subject]);
+                    } else {
+                      setUceCredits(uceCredits.filter(c => c !== subject));
+                    }
+                  }}
+                  className="w-4 h-4"
+                />
+                <Label htmlFor={`opt-${subject}`} className="text-sm">{subject}</Label>
               </div>
             ))}
           </div>
@@ -837,7 +906,7 @@ export default function NCHERecommendationsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto p-2">
           {recommendations.map((programme) => (
             <Card key={programme.id} className="hover:shadow-lg transition-shadow">
               <CardContent className="p-6">
@@ -903,7 +972,7 @@ export default function NCHERecommendationsPage() {
                   <div className="mb-4 space-y-2">
                     {programme.nche_assessment.reasons_pass.length > 0 && (
                       <div className="p-3 bg-green-50 rounded-lg">
-                        <p className="text-sm font-medium text-green-900 mb-1">NCHE Compliance:</p>
+                        <p className="text-sm font-medium text-green-900 mb-1">Requirements Met:</p>
                         <ul className="text-sm text-green-800 space-y-1">
                           {programme.nche_assessment.reasons_pass.map((reason, index) => (
                             <li key={index} className="flex items-center">
@@ -917,7 +986,7 @@ export default function NCHERecommendationsPage() {
 
                     {programme.nche_assessment.reasons_fail.length > 0 && (
                       <div className="p-3 bg-red-50 rounded-lg">
-                        <p className="text-sm font-medium text-red-900 mb-1">NCHE Issues:</p>
+                        <p className="text-sm font-medium text-red-900 mb-1">Requirements Not Met:</p>
                         <ul className="text-sm text-red-800 space-y-1">
                           {programme.nche_assessment.reasons_fail.map((reason, index) => (
                             <li key={index} className="flex items-center">
@@ -931,7 +1000,7 @@ export default function NCHERecommendationsPage() {
 
                     {programme.nche_assessment.warnings.length > 0 && (
                       <div className="p-3 bg-yellow-50 rounded-lg">
-                        <p className="text-sm font-medium text-yellow-900 mb-1">NCHE Considerations:</p>
+                        <p className="text-sm font-medium text-yellow-900 mb-1">Important Notes:</p>
                         <ul className="text-sm text-yellow-800 space-y-1">
                           {programme.nche_assessment.warnings.map((reason, index) => (
                             <li key={index} className="flex items-center">
@@ -966,7 +1035,7 @@ export default function NCHERecommendationsPage() {
 
       <div className="text-center">
         <Button variant="outline" onClick={() => setStep("qualification")}>
-          Start Over
+          Check Another Program
         </Button>
       </div>
     </div>

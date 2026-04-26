@@ -7,8 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { MapPin, ArrowLeft, ArrowRight, Home, Phone, Heart } from "lucide-react";
+import { MapPin, ArrowLeft, ArrowRight, Home, Phone } from "lucide-react";
 import { motion } from "framer-motion";
 
 // Country codes for phone input
@@ -90,11 +89,6 @@ const step2Schema = z.object({
   countryCode: z.string().default("+256"),
   emergencyPhone: z.string().regex(/^[0-9]{9}$/, "Phone number must be 9 digits (e.g., 7XX XXX XXX)"),
   emergencyAddress: z.string().min(5, "Emergency contact address is required"),
-  sponsorshipType: z.enum(["bursary", "private"], {
-    required_error: "Please select a sponsorship type",
-  }),
-  sponsorshipSource: z.string().optional(), // Only for private sponsorship
-  sponsorName: z.string().optional(), // Only for private sponsorship
 });
 
 type Step2Data = z.infer<typeof step2Schema>;
@@ -134,15 +128,12 @@ export default function ContactLocation({ onNext, onBack, defaultValues }: Conta
       countryCode: defaultValues?.countryCode || "+256",
       emergencyPhone: defaultValues?.emergencyPhone || "",
       emergencyAddress: defaultValues?.emergencyAddress || "",
-      sponsorshipType: defaultValues?.sponsorshipType || undefined,
-      sponsorshipSource: defaultValues?.sponsorshipSource || "",
     },
   });
 
   const district = watch("district");
   const emergencyRelationship = watch("emergencyRelationship");
   const countryCode = watch("countryCode");
-  const sponsorshipType = watch("sponsorshipType");
 
   return (
     <motion.div
@@ -158,7 +149,7 @@ export default function ContactLocation({ onNext, onBack, defaultValues }: Conta
           </div>
           <h1 className="text-2xl font-bold">Step 2: Contact & Location Details</h1>
           <p className="mt-2 text-muted-foreground">
-            Please provide your contact information and sponsorship details.
+            Please provide your contact information.
           </p>
         </div>
 
@@ -328,78 +319,6 @@ export default function ContactLocation({ onNext, onBack, defaultValues }: Conta
                   )}
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Sponsorship Section */}
-          <div className="p-6 rounded-lg bg-muted/50">
-            <div className="flex items-center gap-2 mb-4">
-              <Heart className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-semibold">Sponsorship Details</h2>
-            </div>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Select how your tuition fees will be covered.
-            </p>
-
-            <div className="space-y-4">
-              <div className="space-y-3">
-                <Label>Sponsorship Type *</Label>
-                <RadioGroup
-                  value={sponsorshipType}
-                  onValueChange={(value: "bursary" | "private") => setValue("sponsorshipType", value)}
-                  className="grid gap-4 md:grid-cols-2"
-                >
-                  <div className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    sponsorshipType === "bursary" 
-                      ? "border-primary bg-primary/5" 
-                      : "border-muted hover:border-primary/50"
-                  }`}>
-                    <RadioGroupItem value="bursary" id="bursary" className="sr-only" />
-                    <Label htmlFor="bursary" className="cursor-pointer">
-                      <div className="font-semibold">KIU Bursary</div>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        50% tuition coverage (merit/need-based)
-                      </p>
-                    </Label>
-                  </div>
-
-                  <div className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    sponsorshipType === "private" 
-                      ? "border-primary bg-primary/5" 
-                      : "border-muted hover:border-primary/50"
-                  }`}>
-                    <RadioGroupItem value="private" id="private" className="sr-only" />
-                    <Label htmlFor="private" className="cursor-pointer">
-                      <div className="font-semibold">Private Sponsorship</div>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Full tuition payment (any source)
-                      </p>
-                    </Label>
-                  </div>
-                </RadioGroup>
-                {errors.sponsorshipType && (
-                  <p className="text-xs text-destructive">{errors.sponsorshipType.message}</p>
-                )}
-              </div>
-
-              {sponsorshipType === "private" && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="space-y-2"
-                >
-                  <Label>Sponsor Name *</Label>
-                  <Input
-                    placeholder="e.g., ABC Company Ltd"
-                    {...register("sponsorName")}
-                    className={errors.sponsorName ? "border-destructive" : ""}
-                  />
-                  {errors.sponsorName && (
-                    <p className="text-xs text-destructive">{errors.sponsorName.message}</p>
-                  )}
-                </motion.div>
-              )}
             </div>
           </div>
 

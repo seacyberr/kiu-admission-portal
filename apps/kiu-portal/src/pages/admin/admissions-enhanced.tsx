@@ -220,12 +220,6 @@ export default function AdminAdmissionsPage() {
     toast({ title: "Export Complete", description: `${filteredApplications.length} applications exported` });
   };
 
-  // Bulk status update (reserved for future use)
-  const _handleBulkAction = async (action: string, applicationIds: number[]) => {
-    // Implementation for bulk actions
-    toast({ title: "Bulk Action", description: `${action} on ${applicationIds.length} applications` });
-  };
-
   // View application details
   const viewApplicationDetails = (app: AdmissionApplication) => {
     setSelectedApplication(app);

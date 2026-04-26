@@ -72,7 +72,6 @@ def _load_programs_from_json(filepath):
         
         program = Program(
             name=p.get("name", ""),
-            code=p.get("code", ""),
             faculty=p.get("faculty", "") or "",
             department=p.get("department"),
             level=p.get("level", ""),
@@ -82,10 +81,6 @@ def _load_programs_from_json(filepath):
             min_olevel_points=p.get("minOlevelPoints"),
             min_alevel_points=p.get("minAlevelPoints"),
             available_slots=p.get("availableSlots", 100) or 100,
-            fees_local_per_semester=p.get("feesLocalPerSemester") or p.get("feesLocal"),
-            fees_international_per_semester=p.get("feesInternationalPerSemester") or p.get("feesInternational"),
-            functional_fees_local=p.get("functionalFeesLocal"),
-            functional_fees_international=p.get("functionalFeesInternational"),
         )
         programs.append(program)
     
@@ -100,12 +95,12 @@ def _add_missing_programs(filepath):
     with open(filepath, "r", encoding="utf-8") as f:
         seed = json.load(f)
 
-    existing_codes = {p.code for p in Program.query.all()}
+    existing_names = {p.name for p in Program.query.all()}
     missing = []
 
     for p in seed.get("programs", []):
-        code = p.get("code")
-        if not code or code in existing_codes:
+        name = p.get("name")
+        if not name or name in existing_names:
             continue
         
         # Handle both snake_case and camelCase field names for compatibility
@@ -113,8 +108,7 @@ def _add_missing_programs(filepath):
         
         missing.append(
             Program(
-                name=p.get("name", ""),
-                code=code,
+                name=name,
                 faculty=p.get("faculty", "") or "",
                 department=p.get("department"),
                 level=p.get("level", ""),
@@ -124,10 +118,6 @@ def _add_missing_programs(filepath):
                 min_olevel_points=p.get("minOlevelPoints"),
                 min_alevel_points=p.get("minAlevelPoints"),
                 available_slots=p.get("availableSlots", 100) or 100,
-                fees_local=p.get("feesLocal"),
-                fees_international=p.get("feesInternational"),
-                functional_fees_local=p.get("functionalFeesLocal"),
-                functional_fees_international=p.get("functionalFeesInternational"),
             )
         )
 

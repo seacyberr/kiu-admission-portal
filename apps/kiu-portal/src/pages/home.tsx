@@ -51,13 +51,13 @@ export default function Home() {
               Shape Your Future at <span className="text-accent">KIU</span>
             </h1>
             <p className="text-lg md:text-xl text-white/80 max-w-2xl leading-relaxed">
-              Welcome to the unified portal for Kampala International University. Whether you're applying as a new student or seeking career opportunities as a graduating finalist, your journey starts here.
+              Apply to KIU. Track your admission. Plan your career. Everything in one place.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Link href="/register">
                 <Button variant="accent" size="lg" className="w-full sm:w-auto gap-2 text-base shadow-xl shadow-accent/20">
                   <GraduationCap className="w-5 h-5" />
-                  Get Started
+                  Apply Now
                 </Button>
               </Link>
             </div>
@@ -72,8 +72,8 @@ export default function Home() {
       <section className="py-24 bg-background relative z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">One Portal, Two Pathways</h2>
-            <p className="text-muted-foreground text-lg">We support our students from the day they apply until the day they launch their careers.</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Apply. Study. Graduate.</h2>
+            <p className="text-muted-foreground text-lg">From first application to first job, we've got you covered.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
@@ -86,9 +86,9 @@ export default function Home() {
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 text-primary">
                 <BookOpen className="w-8 h-8" />
               </div>
-              <h3 className="text-2xl font-bold mb-3">New Admissions</h3>
+              <h3 className="text-2xl font-bold mb-3">For New Students</h3>
               <p className="text-muted-foreground mb-8">
-                Seamlessly apply for Undergraduate, Diploma, Master's, and PhD programs. Track your application status, submit your UNEB grades, and manage your admission process.
+                Undergraduate, Diploma, Masters, or PhD — find your program and apply online. Upload documents, check UNEB requirements, track your status in real time.
               </p>
               <ul className="space-y-3">
                 {['O-Level (UCE) & A-Level (UACE) Integration', 'Real-time Application Tracking', 'Secure Document Uploads'].map((item, i) => (

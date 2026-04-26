@@ -64,7 +64,7 @@ def upsert_my_profile():
     if missing:
         return bad_request(f"Missing required fields: {', '.join(missing)}", errors={field: "Required" for field in missing})
 
-    program = Program.query.get(data["programId"])
+    program = db.session.get(Program, data["programId"])
     if not program:
         return not_found("Program not found")
 
@@ -160,7 +160,7 @@ def match_jobs_to_profile():
         return not_found("Profile not found")
     
     # Get student's program for career paths
-    program = Program.query.get(profile.program_id) if profile.program_id else None
+    program = db.session.get(Program, profile.program_id) if profile.program_id else None
     
     # Get query parameters for filtering
     location = request.args.get("location")
@@ -254,7 +254,7 @@ def get_career_recommendations():
     if not profile:
         return not_found("Profile not found")
     
-    program = Program.query.get(profile.program_id) if profile.program_id else None
+    program = db.session.get(Program, profile.program_id) if profile.program_id else None
     
     recommendations = []
     

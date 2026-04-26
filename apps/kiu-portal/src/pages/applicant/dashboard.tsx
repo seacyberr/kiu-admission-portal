@@ -51,8 +51,8 @@ export default function ApplicantDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-primary">Applicant Dashboard</h1>
-        <p className="text-muted-foreground mt-2">Welcome back, {user?.firstName}. Manage your admission journey here.</p>
+        <h1 className="text-3xl font-display font-bold text-primary">My Application</h1>
+        <p className="text-muted-foreground mt-2">Welcome back{user?.firstName ? `, ${user.firstName}` : ''}. Track your admission status.</p>
       </div>
 
       {!hasApplication ? (
@@ -60,12 +60,12 @@ export default function ApplicantDashboard() {
           <div className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
             <FileText className="w-10 h-10" />
           </div>
-          <h2 className="text-2xl font-bold mb-4">No Application Found</h2>
+          <h2 className="text-2xl font-bold mb-4">Start Your Application</h2>
           <p className="text-muted-foreground max-w-md mx-auto mb-8">
-            You haven't submitted an application for admission yet. Start your journey by filling out the application form.
+            Ready to join KIU? Complete your application in minutes.
           </p>
           <Link href="/apply">
-            <Button size="lg" className="px-8 shadow-xl">Start Application Process</Button>
+            <Button size="lg" className="px-8 shadow-xl">Apply Now</Button>
           </Link>
         </Card>
       ) : (
@@ -95,7 +95,7 @@ export default function ApplicantDashboard() {
             </Card>
 
             <Card className="p-8">
-              <h3 className="text-xl font-bold mb-6 border-b border-border pb-4">Application Details</h3>
+              <h3 className="text-xl font-bold mb-6 border-b border-border pb-4">Your Details</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
                 <div>
                   <p className="text-sm text-muted-foreground font-semibold">Entry Level</p>
@@ -110,8 +110,8 @@ export default function ApplicantDashboard() {
                   <p className="text-foreground font-mono">{application.indexNumber}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground font-semibold">Program Code</p>
-                  <p className="text-foreground">{application.program?.code || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground font-semibold">Campus</p>
+                  <p className="text-foreground">{application.program?.campus || 'N/A'}</p>
                 </div>
               </div>
             </Card>

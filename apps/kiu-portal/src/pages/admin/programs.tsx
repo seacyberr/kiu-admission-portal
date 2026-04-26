@@ -15,10 +15,6 @@ interface Program {
   category: string;
   description?: string;
   duration?: string;
-  fees_local_per_semester: number;
-  fees_international_per_semester?: number;
-  functional_fees_local?: number;
-  functional_fees_international?: number;
   is_active: boolean;
   created_at: string;
 }
@@ -141,8 +137,6 @@ export default function AdminProgramsPage() {
                   <TableHead>Program Name</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Duration</TableHead>
-                  <TableHead>Local Fees</TableHead>
-                  <TableHead>International Fees</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -156,16 +150,6 @@ export default function AdminProgramsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>{program.duration || "-"}</TableCell>
-                    <TableCell>
-                      {program.fees_local_per_semester
-                        ? `UGX ${program.fees_local_per_semester.toLocaleString()}`
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      {program.fees_international_per_semester
-                        ? `$${program.fees_international_per_semester.toLocaleString()}`
-                        : "-"}
-                    </TableCell>
                     <TableCell>
                       <Badge
                         variant={program.is_active ? "default" : "destructive"}

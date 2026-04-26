@@ -263,7 +263,7 @@ const applySchema = z
     gender: z.enum(["male", "female", "other"]),
     nationality: z.string().default("Ugandan"),
     district: z.string().optional(),
-    sessionOfStudy: z.enum(["day", "evening", "weekend"]).optional(),
+    sessionOfStudy: z.enum(["day", "evening", "weekend"]),
     nextOfKinName: z.string().optional(),
     nextOfKinPhone: z.string().optional(),
     nextOfKinRelationship: z.string().optional(),
@@ -707,7 +707,9 @@ export default function Apply({ target }: { target: ApplyTarget }) {
         throw new Error(json.message || `Submission failed (${res.status})`);
       }
 
-      setApplicationId(json.id);
+      // Handle standardized API response format (data.id) or legacy format (id)
+      const appId = json.data?.id || json.id;
+      setApplicationId(appId);
       setStep("upload");
     } catch (err: any) {
       toast({ title: "Application failed", description: err.message || "Unknown error", variant: "destructive" });

@@ -220,13 +220,13 @@ def create_app():
     from routes.users import users_bp
     from routes.docs import docs_bp
     from routes.notifications import notifications_bp
-    from routes.nche_recommendations import recommendations_bp
-    from routes.certificate_verification import certificate_verification_bp
     from routes.reports import reports_bp
-    from routes.audit import audit_bp
     from routes.recommendations_v2 import recommendations_v2_bp
     from routes.admin import admin_bp
     from routes.finalist import finalist_bp
+    from routes.nche_recommendations import recommendations_bp
+    from routes.certificate_verification import certificate_verification_bp
+    from routes.audit import audit_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
@@ -296,7 +296,7 @@ def create_app():
             user = User.query.get(user_id)
             if not user or user.role != "admin":
                 return jsonify({"error": "Forbidden", "message": "Admin access required"}), 403
-        except:
+        except Exception:
             return jsonify({"error": "Unauthorized", "message": "Valid admin token required"}), 401
         
         stats = cache_manager.get_stats()

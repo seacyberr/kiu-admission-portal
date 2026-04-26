@@ -13,8 +13,6 @@ interface Programme {
   duration_years: number;
   intake_months: number[];
   campus: string[];
-  tuition_ugx_per_semester: number;
-  tuition_usd_per_semester: number;
   category: string;
   requirements: {
     subjects: string[];
@@ -98,13 +96,6 @@ export default function SimpleRecommendationsPage() {
     }
   };
 
-  const fmtUGX = (amount: number) => {
-    return new Intl.NumberFormat("en-UG", {
-      style: "currency",
-      currency: "UGX",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const getMatchColor = (score: number) => {
     if (score >= 70) return "bg-green-500";
@@ -273,12 +264,6 @@ export default function SimpleRecommendationsPage() {
                     <div className="text-sm">
                       <span className="font-medium">Requirements:</span>
                       <div className="text-gray-600">{programme.requirements.minimum_education}</div>
-                    </div>
-                    <div className="text-sm">
-                      <span className="font-medium">Tuition:</span>
-                      <div className="text-gray-600">
-                        {fmtUGX(programme.tuition_ugx_per_semester)}/semester
-                      </div>
                     </div>
                   </div>
                 </div>

@@ -85,7 +85,6 @@ class Program(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False, index=True)
-    code = db.Column(db.String(20), unique=True, nullable=False, index=True)
     faculty = db.Column(db.String(255), nullable=False, index=True)
     department = db.Column(db.String(255), index=True)
     level = db.Column(db.String(20), nullable=False, index=True)
@@ -96,30 +95,12 @@ class Program(db.Model):
     min_alevel_points = db.Column(db.Integer)
     available_slots = db.Column(db.Integer, default=100)
     campus = db.Column(db.String(50), nullable=False, default="kampala", index=True)  # 'kampala' or 'western'
-    fees_local_per_semester = db.Column(db.Integer)  # Tuition fees per semester for local/East African students (UGX)
-    fees_international_per_semester = db.Column(db.Integer)  # Tuition fees per semester for international students (USD)
-    functional_fees_local = db.Column(db.Integer)  # Functional fees for local students (UGX)
-    functional_fees_international = db.Column(db.Integer)  # Functional fees for international students (USD)
 
-    def to_dict(self, nationality=None):
-        """Return program dict, showing appropriate fees based on nationality."""
-        # Determine if student is local (East African) or international
-        is_local = True  # Default to local
-        if nationality:
-            ea_countries = ["ugandan", "uganda", "kenyan", "kenya", "tanzanian", "tanzania", 
-                          "rwandan", "rwanda", "burundian", "burundi", "south sudanese", 
-                          "south sudan", "east african"]
-            is_local = nationality.lower().strip() in ea_countries
-        
-        # Calculate fees based on nationality
-        tuition_fees_per_semester = self.fees_local_per_semester if is_local else self.fees_international_per_semester
-        functional_fees = self.functional_fees_local if is_local else self.functional_fees_international
-        total_fees_per_semester = (tuition_fees_per_semester or 0) + (functional_fees or 0)
-        
+    def to_dict(self):
+        """Return program dict."""
         return {
             "id": self.id,
             "name": self.name,
-            "code": self.code,
             "faculty": self.faculty,
             "department": self.department,
             "level": self.level,
@@ -130,14 +111,6 @@ class Program(db.Model):
             "minAlevelPoints": self.min_alevel_points,
             "availableSlots": self.available_slots,
             "campus": self.campus,
-            "feesLocalPerSemester": self.fees_local_per_semester,
-            "feesInternationalPerSemester": self.fees_international_per_semester,
-            "functionalFeesLocal": self.functional_fees_local,
-            "functionalFeesInternational": self.functional_fees_international,
-            "tuitionFeesPerSemester": tuition_fees_per_semester,
-            "functionalFees": functional_fees,
-            "totalFeesPerSemester": total_fees_per_semester,
-            "feesCurrency": "UGX" if is_local else "USD",
         }
 
 
@@ -317,7 +290,6 @@ class FinalistProfile(db.Model):
     gpa = db.Column(db.Float)
     skills = db.Column(db.JSON, default=list)
     bio = db.Column(db.Text)
-    linkedin_url = db.Column(db.Text)
     cv_url = db.Column(db.Text)
     is_finalist = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -338,7 +310,6 @@ class FinalistProfile(db.Model):
             "gpa": self.gpa,
             "skills": self.skills or [],
             "bio": self.bio,
-            "linkedinUrl": self.linkedin_url,
             "cvUrl": self.cv_url,
             "isFinalist": self.is_finalist,
         }

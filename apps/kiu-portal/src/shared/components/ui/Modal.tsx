@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { cn } from '@/shared/utils/cn';
 import { X } from 'lucide-react';
 
-interface ModalProps {
+export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;

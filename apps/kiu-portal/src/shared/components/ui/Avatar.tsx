@@ -4,7 +4,7 @@
 import React from 'react';
 import { cn } from '@/shared/utils/cn';
 
-interface AvatarProps {
+export interface AvatarProps {
   src?: string;
   name?: string;
   className?: string;

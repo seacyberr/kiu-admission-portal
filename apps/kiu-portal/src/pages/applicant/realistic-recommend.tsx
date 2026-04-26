@@ -13,8 +13,6 @@ interface Programme {
   duration_years: number;
   intake_months: number[];
   campus: string[];
-  tuition_ugx_per_semester: number;
-  tuition_usd_per_semester: number;
   category: string;
   competition_level: string;
   annual_quota: number;
@@ -168,13 +166,6 @@ export default function RealisticRecommendationsPage() {
     }
   };
 
-  const fmtUGX = (amount: number) => {
-    return new Intl.NumberFormat("en-UG", {
-      style: "currency",
-      currency: "UGX",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const getChanceColor = (chance: string) => {
     switch (chance) {
@@ -519,12 +510,6 @@ export default function RealisticRecommendationsPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <div className="text-sm">
-                      <span className="font-medium">Tuition:</span>
-                      <div className="text-gray-600">
-                        {fmtUGX(programme.tuition_ugx_per_semester)}/semester
-                      </div>
-                    </div>
                     <div className="text-sm">
                       <span className="font-medium">Next Intake:</span>
                       <div className="text-gray-600">

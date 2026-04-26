@@ -10,8 +10,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { data: user, isLoading } = useGetCurrentUser({ query: { retry: false } });
-  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const { data: user } = useGetCurrentUser({ query: { retry: false } });
 
   // Close mobile menu on route change
   useEffect(() => {

@@ -14,31 +14,31 @@ import { motion, AnimatePresence } from "framer-motion";
 // Simplified program data - would come from API in production
 const KIU_PROGRAMS = [
   // Certificate Programs
-  { id: "CERT-NUR", name: "Certificate in Nursing", level: "Certificate", duration: "1.5 years", campus: "Western", faculty: "Health Sciences", fees: "950,000 UGX" },
-  { id: "CERT-BA", name: "Certificate in Business Administration", level: "Certificate", duration: "1 year", campus: "Main", faculty: "Business & Management", fees: "750,000 UGX" },
-  
+  { id: "CERT-NUR", name: "Certificate in Nursing", level: "Certificate", duration: "1.5 years", campus: "Western", faculty: "Health Sciences" },
+  { id: "CERT-BA", name: "Certificate in Business Administration", level: "Certificate", duration: "1 year", campus: "Main", faculty: "Business & Management" },
+
   // Diploma Programs
-  { id: "DIP-NUR", name: "Diploma in Nursing", level: "Diploma", duration: "2 years", campus: "Western", faculty: "Health Sciences", fees: "1,250,000 UGX" },
-  { id: "DIP-BA", name: "Diploma in Business Administration", level: "Diploma", duration: "2 years", campus: "Main", faculty: "Business & Management", fees: "750,000 UGX" },
-  { id: "DIP-CS", name: "Diploma in Computer Science", level: "Diploma", duration: "2 years", campus: "Main", faculty: "Computing & IT", fees: "800,000 UGX" },
-  
+  { id: "DIP-NUR", name: "Diploma in Nursing", level: "Diploma", duration: "2 years", campus: "Western", faculty: "Health Sciences" },
+  { id: "DIP-BA", name: "Diploma in Business Administration", level: "Diploma", duration: "2 years", campus: "Main", faculty: "Business & Management" },
+  { id: "DIP-CS", name: "Diploma in Computer Science", level: "Diploma", duration: "2 years", campus: "Main", faculty: "Computing & IT" },
+
   // Bachelor's - Health Sciences
-  { id: "BCH-MBCHB", name: "Bachelor of Medicine & Bachelor of Surgery (MBChB)", level: "Bachelor", duration: "5 years", campus: "Western", faculty: "Health Sciences", fees: "7,085,000 UGX" },
-  { id: "BCH-BPHARM", name: "Bachelor of Pharmacy", level: "Bachelor", duration: "4 years", campus: "Western", faculty: "Health Sciences", fees: "5,760,000 UGX" },
-  { id: "BCH-BNSC", name: "Bachelor of Nursing Science", level: "Bachelor", duration: "4 years", campus: "Western", faculty: "Health Sciences", fees: "3,215,000 UGX" },
-  
+  { id: "BCH-MBCHB", name: "Bachelor of Medicine & Bachelor of Surgery (MBChB)", level: "Bachelor", duration: "5 years", campus: "Western", faculty: "Health Sciences" },
+  { id: "BCH-BPHARM", name: "Bachelor of Pharmacy", level: "Bachelor", duration: "4 years", campus: "Western", faculty: "Health Sciences" },
+  { id: "BCH-BNSC", name: "Bachelor of Nursing Science", level: "Bachelor", duration: "4 years", campus: "Western", faculty: "Health Sciences" },
+
   // Bachelor's - Business & Computing
-  { id: "BBA-BBA", name: "Bachelor of Business Administration", level: "Bachelor", duration: "3 years", campus: "Main", faculty: "Business & Management", fees: "1,130,000 UGX" },
-  { id: "BBA-BCOM", name: "Bachelor of Commerce", level: "Bachelor", duration: "3 years", campus: "Main", faculty: "Business & Management", fees: "1,130,000 UGX" },
-  { id: "BIT-BCS", name: "Bachelor of Computer Science", level: "Bachelor", duration: "3 years", campus: "Main", faculty: "Computing & IT", fees: "1,130,000 UGX" },
-  { id: "BIT-BIT", name: "Bachelor of Information Technology", level: "Bachelor", duration: "3 years", campus: "Main", faculty: "Computing & IT", fees: "1,130,000 UGX" },
-  
+  { id: "BBA-BBA", name: "Bachelor of Business Administration", level: "Bachelor", duration: "3 years", campus: "Main", faculty: "Business & Management" },
+  { id: "BBA-BCOM", name: "Bachelor of Commerce", level: "Bachelor", duration: "3 years", campus: "Main", faculty: "Business & Management" },
+  { id: "BIT-BCS", name: "Bachelor of Computer Science", level: "Bachelor", duration: "3 years", campus: "Main", faculty: "Computing & IT" },
+  { id: "BIT-BIT", name: "Bachelor of Information Technology", level: "Bachelor", duration: "3 years", campus: "Main", faculty: "Computing & IT" },
+
   // Bachelor's - Education & Law
-  { id: "BED-BAED", name: "Bachelor of Arts with Education", level: "Bachelor", duration: "3 years", campus: "Main", faculty: "Education", fees: "1,130,000 UGX" },
-  { id: "BLAW-LLB", name: "Bachelor of Laws (LLB)", level: "Bachelor", duration: "4 years", campus: "Main", faculty: "Law", fees: "1,600,000 UGX" },
-  
+  { id: "BED-BAED", name: "Bachelor of Arts with Education", level: "Bachelor", duration: "3 years", campus: "Main", faculty: "Education" },
+  { id: "BLAW-LLB", name: "Bachelor of Laws (LLB)", level: "Bachelor", duration: "4 years", campus: "Main", faculty: "Law" },
+
   // HEC
-  { id: "HEC-HEC", name: "Higher Education Certificate (HEC)", level: "HEC", duration: "1 year", campus: "Main", faculty: "Foundation", fees: "600,000 UGX" },
+  { id: "HEC-HEC", name: "Higher Education Certificate (HEC)", level: "HEC", duration: "1 year", campus: "Main", faculty: "Foundation" },
 ];
 
 const step4Schema = z.object({

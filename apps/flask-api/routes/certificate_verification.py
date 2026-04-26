@@ -7,7 +7,7 @@ import os
 import logging
 from flask import Blueprint, request, jsonify, current_app
 from routes.auth import get_current_user
-from services.certificate_verification import certificate_verifier
+# from services.certificate_verification import certificate_verifier
 from models import db, AdmissionApplication
 from utils.api_response import success_response, bad_request, unauthorized, forbidden, not_found
 

@@ -130,15 +130,7 @@ def list_programs():
     """
     List all academic programs.
 
-    BUG FIX 1 (caching): The old implementation applied a @cached decorator
-    that stored the entire JSON response including nationality-specific fees.
-    The first caller's nationality was baked into the cached response and
-    returned to every subsequent user — meaning international students saw
-    local fees or vice-versa.  Caching is now done at the queryset level
-    (programs list) and fee display is computed per-request from the user's
-    stored nationality without being cached.
-
-    BUG FIX 2 (ordering): Program.level.desc() ordered alphabetically
+    BUG FIX (ordering): Program.level.desc() ordered alphabetically
     descending, giving hec > diploma > degree — the opposite of what was
     intended.  Now uses an explicit integer sort key via CASE expression
     so "degree" always sorts first.
@@ -147,19 +139,6 @@ def list_programs():
 
     level = request.args.get("level")
     campus = request.args.get("campus")
-
-    # Resolve nationality for fee display (not cached — varies per user)
-    nationality = None
-    user, _ = get_current_user()
-    if user:
-        app = (
-            AdmissionApplication.query
-            .filter_by(user_id=user.id)
-            .order_by(AdmissionApplication.submitted_at.desc())
-            .first()
-        )
-        if app:
-            nationality = app.nationality
 
     query = Program.query
     if level:
@@ -183,7 +162,7 @@ def list_programs():
     )
     programs = query.order_by(level_order, Program.campus, Program.faculty, Program.name).all()
 
-    return success_response({"programs": [p.to_dict(nationality=nationality) for p in programs]})
+    return success_response({"programs": [p.to_dict() for p in programs]})
 
 
 @admission_bp.route("/programs/<int:program_id>", methods=["GET"])
@@ -284,13 +263,13 @@ def create_application():
         if olevel_points > program.min_olevel_points:
             raise ValidationError(
                 f"Your O-Level aggregate ({olevel_points}) does not meet the minimum "
-                f"requirement for {program.code} (aggregate ≤ {program.min_olevel_points})."
+                f"requirement for {program.name} (aggregate ≤ {program.min_olevel_points})."
             )
     if exam_level == "a_level" and program.min_alevel_points is not None:
         if (alevel_points or 0) < program.min_alevel_points:
             raise ValidationError(
                 f"Your A-Level points ({alevel_points or 0}) do not meet the minimum "
-                f"requirement for {program.code} ({program.min_alevel_points}+ points)."
+                f"requirement for {program.name} ({program.min_alevel_points}+ points)."
             )
 
     app_number = generate_application_number()
@@ -877,13 +856,14 @@ def get_analytics():
             risk_factors.append(f"A-Level points ({total_points}) below minimum ({program.min_alevel_points})")
 
         has_gp = any(g.get("subject", "").lower() in ["general paper", "gp"] for g in alevel_grades)
-        if not has_gp and program.code in ["LLB-DAY", "LLB-WE", "BAIRDS", "BAPA"]:
+        if not has_gp and program.name in ["Bachelor of Laws - Day", "Bachelor of Laws - Weekend/Evening", "BA International Relations and Diplomatic Studies", "Bachelor of Public Administration"]:
             risk_level = "high" if risk_level == "high" else "medium"
             risk_factors.append("Missing General Paper for program that requires it")
 
-        if program.code in ["MBChB", "BDS-DENT", "BPharm", "LLB-DAY", "LLB-WE"] and total_points < 12:
+        competitive_programs = ["Bachelor of Medicine and Bachelor of Surgery (MBChB)", "Bachelor of Dental Surgery", "Bachelor of Pharmacy", "Bachelor of Laws - Day", "Bachelor of Laws - Weekend/Evening"]
+        if program.name in competitive_programs and total_points < 12:
             risk_level = "high" if risk_level == "high" else "medium"
-            risk_factors.append(f"Competitive program ({program.code}) with low points")
+            risk_factors.append(f"Competitive program ({program.name}) with low points")
 
         if risk_level != "low":
             dropout_risk_apps.append({
@@ -891,7 +871,6 @@ def get_analytics():
                 "applicationNumber": app.application_number,
                 "studentName": f"{app.user.first_name} {app.user.last_name}" if app.user else "Unknown",
                 "program": program.name,
-                "programCode": program.code,
                 "totalPoints": total_points,
                 "minRequired": program.min_alevel_points,
                 "riskLevel": risk_level,
@@ -914,17 +893,13 @@ def get_analytics():
 
     top_programs = db.session.query(
         Program.name,
-        Program.code,
         Program.faculty,
         func.count(AdmissionApplication.id).label('application_count')
     ).join(AdmissionApplication).group_by(
-        Program.id, Program.name, Program.code, Program.faculty
+        Program.id, Program.name, Program.faculty
     ).order_by(func.count(AdmissionApplication.id).desc()).limit(10).all()
 
     nche_compliance = {"withGeneralPaper": 0, "withoutGeneralPaper": 0, "sufficientPoints": 0, "insufficientPoints": 0}
-    fee_distribution = {"local": 0, "international": 0}
-    ea_countries = ["ugandan", "uganda", "kenyan", "kenya", "tanzanian", "tanzania",
-                    "rwandan", "rwanda", "burundian", "burundi", "south sudanese", "south sudan"]
 
     for app in applications:
         alevel_grades = app.uneb_grades.get("alevel", []) if app.uneb_grades else []
@@ -934,10 +909,6 @@ def get_analytics():
         principal_grades = [g for g in alevel_grades if g.get("subjectType", "").lower() == "principal"]
         total_points = sum(ALEVEL_GRADE_POINTS.get(g.get("grade", "").upper(), 0) for g in principal_grades)
         nche_compliance["sufficientPoints" if total_points >= 6 else "insufficientPoints"] += 1
-
-        nationality = (app.nationality or "Ugandan").lower()
-        is_local = any(c in nationality for c in ea_countries)
-        fee_distribution["local" if is_local else "international"] += 1
 
     gender_distribution = db.session.query(
         AdmissionApplication.gender, func.count(AdmissionApplication.id)
@@ -962,13 +933,12 @@ def get_analytics():
         "programDemand": {
             "monthlyTrends": monthly_trends,
             "topPrograms": [
-                {"name": p.name, "code": p.code, "faculty": p.faculty, "applications": p.application_count}
+                {"name": p.name, "faculty": p.faculty, "applications": p.application_count}
                 for p in top_programs
             ],
         },
         "ncheCompliance": nche_compliance,
         "demographics": {
-            "feeDistribution": fee_distribution,
             "genderDistribution": {g: c for g, c in gender_distribution},
             "sessionDistribution": {s or "Not specified": c for s, c in session_distribution},
         },

@@ -53,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearErrors();
     try {
       // Response is now extracted directly from standardized format by apiFetch
-      const data = await apiPost<{ user: User; accessToken: string; refreshToken: string }>('/v1/auth/login', { email, password });
+      const data = await apiPost<{ user: User; accessToken: string; refreshToken: string }>('/api/v1/auth/login', { email, password });
       setUser(data.user);
       // Store user data only - auth token is in httpOnly cookie
       localStorage.setItem('kiu_user', JSON.stringify(data.user));
@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(async () => {
     // Call logout endpoint to clear httpOnly cookies server-side
     try {
-      await apiPost('/auth/logout', {});
+      await apiPost('/api/auth/logout', {});
     } catch (e) {
       // Ignore errors - still clear local state
     }
@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     clearErrors();
     try {
-      await apiPost('/v1/auth/register', data);
+      await apiPost('/api/v1/auth/register', data);
     } catch (error) {
       if (error instanceof ApiError) {
         setAuthError(error.message);

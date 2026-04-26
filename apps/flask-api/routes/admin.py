@@ -4,10 +4,12 @@ Provides admin dashboard and management endpoints
 """
 
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required
 from models import db, User, AdmissionApplication, Program
 from routes.auth import get_current_user
 from datetime import datetime, timedelta
-from utils.api_response import success_response, paginated_response, unauthorized, forbidden
+from utils.api_response import success_response, paginated_response, unauthorized, forbidden, error_response
+from utils.decorators import require_auth, require_admin
 from sqlalchemy.orm import joinedload
 
 admin_bp = Blueprint("admin", __name__)
@@ -24,6 +26,8 @@ def check_admin_access():
 
 
 @admin_bp.route("/dashboard", methods=["GET"])
+@jwt_required()
+@require_admin
 def get_dashboard():
     """Get admin dashboard statistics"""
     user, error = check_admin_access()
@@ -66,6 +70,8 @@ def get_dashboard():
 
 
 @admin_bp.route("/users", methods=["GET"])
+@jwt_required()
+@require_admin
 def get_admin_users():
     """Get all users for admin"""
     user, error = check_admin_access()
@@ -105,6 +111,8 @@ def get_admin_users():
 
 
 @admin_bp.route("/applications", methods=["GET"])
+@jwt_required()
+@require_admin
 def get_admin_applications():
     """Get all applications for admin"""
     user, error = check_admin_access()
@@ -134,6 +142,8 @@ def get_admin_applications():
 
 
 @admin_bp.route("/programs", methods=["GET"])
+@jwt_required()
+@require_admin
 def get_admin_programs():
     """Get all programs for admin"""
     user, error = check_admin_access()
@@ -146,6 +156,8 @@ def get_admin_programs():
 
 
 @admin_bp.route("/statistics", methods=["GET"])
+@jwt_required()
+@require_admin
 def get_admin_statistics():
     """Get detailed statistics for admin"""
     user, error = check_admin_access()
@@ -182,3 +194,35 @@ def get_admin_statistics():
             "recent": recent_applications
         }
     })
+
+
+@admin_bp.route("/applications/<int:application_id>/status", methods=["PATCH"])
+@require_auth
+@require_admin
+def update_application_status(application_id):
+    """Update application status (accept, reject, review)."""
+    from models import AdmissionApplication
+
+    data = request.get_json()
+    new_status = data.get("status")
+    admin_notes = data.get("adminNotes", "")
+
+    valid_statuses = ["pending", "under_review", "accepted", "rejected"]
+    if new_status not in valid_statuses:
+        return error_response(f"Invalid status. Must be one of: {', '.join(valid_statuses)}", 400)
+
+    application = AdmissionApplication.query.get(application_id)
+    if not application:
+        return error_response("Application not found", 404)
+
+    application.status = new_status
+    if admin_notes:
+        application.admin_notes = admin_notes
+
+    db.session.commit()
+
+    return success_response({
+        "id": application.id,
+        "status": application.status,
+        "adminNotes": application.admin_notes
+    }, message=f"Application status updated to {new_status}")

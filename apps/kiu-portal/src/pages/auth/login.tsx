@@ -147,7 +147,7 @@ export default function Login() {
               <Input
                 id="email"
                 type="email"
-                placeholder="student@example.com"
+                placeholder="your@email.com"
                 autoComplete="email"
                 {...register("email")}
                 className={errors.email ? "border-destructive" : ""}
@@ -194,15 +194,15 @@ export default function Login() {
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
+            New to KIU?{' '}
             <Link href="/register" className="font-bold text-primary hover:underline">
-              Register here
+              Create account
             </Link>
           </div>
 
           <div className="mt-4 text-center">
             <Link href="/" className="inline-flex items-center text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">
-              ← Back to Home
+              ← Back to homepage
             </Link>
           </div>
 

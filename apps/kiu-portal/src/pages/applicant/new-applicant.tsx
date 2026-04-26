@@ -22,10 +22,9 @@ import {
   FileText,
   Sparkles,
   Award,
-  BookOpen,
 } from 'lucide-react';
 
-type HighestEducation = 'o_level' | 'a_level' | 'diploma' | 'hec' | 'national_cert' | 'bachelors' | 'masters' | 'phd';
+type HighestEducation = 'o_level' | 'a_level' | 'diploma' | 'hec' | 'national_cert' | 'bachelors' | 'masters';
 type YesNo = 'yes' | 'no';
 
 function toDegreeApply(qualification: 'a_level' | 'diploma' | 'hec') {
@@ -84,57 +83,51 @@ export default function NewApplicant() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[
-                // Entry Level - Secondary Education
+                // Secondary Education (O-Level)
                 {
                   key: 'o_level' as HighestEducation,
                   icon: School,
                   label: 'O-Level (UCE)',
-                  sub: 'Start here: Certificate, HEC or Diploma',
+                  sub: 'Uganda Certificate of Education',
                 },
-                // Alternative Secondary Path
+                // Post-O-Level Pathways
+                {
+                  key: 'hec' as HighestEducation,
+                  icon: FileText,
+                  label: 'HEC (Higher Education Certificate)',
+                  sub: '1-year program for degree entry',
+                },
                 {
                   key: 'national_cert' as HighestEducation,
                   icon: Award,
                   label: 'National Certificate',
                   sub: 'Technical/Vocational qualification',
                 },
-                // Post-Secondary Pathways
-                {
-                  key: 'a_level' as HighestEducation,
-                  icon: GraduationCap,
-                  label: 'A-Level (UACE)',
-                  sub: 'Direct entry to Bachelor\'s Degree',
-                },
-                {
-                  key: 'hec' as HighestEducation,
-                  icon: FileText,
-                  label: 'HEC (Higher Education Certificate)',
-                  sub: 'Progress to Bachelor\'s Degree',
-                },
                 {
                   key: 'diploma' as HighestEducation,
                   icon: FileText,
                   label: 'Diploma',
-                  sub: 'Advanced entry to Bachelor\'s Degree',
+                  sub: '2-3 year professional qualification',
+                },
+                // Secondary Education (A-Level)
+                {
+                  key: 'a_level' as HighestEducation,
+                  icon: GraduationCap,
+                  label: 'A-Level (UACE)',
+                  sub: 'Uganda Advanced Certificate',
                 },
                 // Tertiary Education
                 {
                   key: 'bachelors' as HighestEducation,
                   icon: GraduationCap,
                   label: "Bachelor's Degree",
-                  sub: 'Apply for Masters programmes',
+                  sub: 'Undergraduate degree',
                 },
                 {
                   key: 'masters' as HighestEducation,
                   icon: Award,
                   label: "Master's Degree",
-                  sub: 'Apply for PhD programmes',
-                },
-                {
-                  key: 'phd' as HighestEducation,
-                  icon: BookOpen,
-                  label: 'PhD / Doctorate',
-                  sub: 'Highest academic qualification',
+                  sub: 'Postgraduate degree',
                 },
               ].map(({ key, icon: Icon, label, sub }) => (
                 <button
@@ -347,7 +340,7 @@ export default function NewApplicant() {
                       </h3>
                       <p className="text-sm text-muted-foreground mt-1">
                         Enter your A-Level subjects and grades. Our NCHE-compliant engine will
-                        show you the programs that best match your combination — with fees,
+                        show you the programs that best match your combination — with
                         entry requirements and career prospects.
                       </p>
                     </div>
@@ -606,28 +599,10 @@ export default function NewApplicant() {
         {highest === 'masters' && (
           <Card className="p-8">
             <div className="bg-secondary/30 rounded-xl p-5 mb-6">
-              <h2 className="text-lg font-bold">Master's Program Application</h2>
+              <h2 className="text-lg font-bold">Postgraduate Application</h2>
               <p className="text-muted-foreground text-sm mt-1">
-                Apply for Master's degree programs at KIU. You will need to provide your
-                Bachelor's degree information including university, degree title, graduation
-                year, and GPA.
-              </p>
-            </div>
-            <Button className="w-full" variant="accent" onClick={() => setLocation('/apply/masters')}>
-              Continue to Master's Application
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Card>
-        )}
-
-        {/* ── PhD ──────────────────────────────────────────────────────────── */}
-        {highest === 'phd' && (
-          <Card className="p-8">
-            <div className="bg-secondary/30 rounded-xl p-5 mb-6">
-              <h2 className="text-lg font-bold">PhD Program Application</h2>
-              <p className="text-muted-foreground text-sm mt-1">
-                Apply for Doctoral (PhD) programs at KIU. You will need to provide your
-                Master's degree information and a research proposal.
+                With your Master's degree, you can apply for PhD programs at KIU. 
+                You will need to provide your Master's degree details and a research proposal.
               </p>
             </div>
             <Button className="w-full" variant="accent" onClick={() => setLocation('/apply/phd')}>

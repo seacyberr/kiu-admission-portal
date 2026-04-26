@@ -124,17 +124,6 @@ const UCE_NEW_CURRICULUM_SUBJECTS = [
   "Local Languages (Luganda/Kiswahili)"
 ];
 
-// Combined UCE Subjects for backward compatibility
-const UCE_SUBJECTS = {
-  oldCurriculum: {
-    compulsory: UCE_OLD_CURRICULUM_COMPULSORY,
-    optional: UCE_OLD_CURRICULUM_OPTIONAL
-  },
-  newCurriculum: {
-    all: UCE_NEW_CURRICULUM_SUBJECTS
-  }
-};
-
 // UACE Grades
 const UACE_GRADES = ["A", "B", "C", "D", "E", "O", "F"];
 

@@ -48,18 +48,7 @@ def get_dashboard_stats():
         AdmissionApplication.status,
         func.count(AdmissionApplication.id)
     ).group_by(AdmissionApplication.status).all()
-    
-    # Payment statistics
-    total_payments = Payment.query.filter_by(status="successful").count()
-    total_revenue = db.session.query(
-        func.sum(Payment.amount)
-    ).filter(Payment.status == "successful").scalar() or 0
-    
-    recent_payments = Payment.query.filter(
-        Payment.created_at >= since,
-        Payment.status == "successful"
-    ).count()
-    
+
     # Program statistics
     applications_by_program = db.session.query(
         Program.name,
@@ -78,12 +67,6 @@ def get_dashboard_stats():
             "total": total_applications,
             "recent": recent_applications,
             "by_status": {status: count for status, count in applications_by_status}
-        },
-        "payments": {
-            "total_count": total_payments,
-            "recent_count": recent_payments,
-            "total_revenue_ugx": total_revenue,
-            "total_revenue_formatted": f"UGX {total_revenue:,.0f}"
         },
         "programs": {
             "top_10": [{"program": name, "applications": count} for name, count in applications_by_program]
@@ -144,7 +127,6 @@ def get_applications_report():
             "exam_level": app.exam_level,
             "index_number": app.index_number,
             "status": app.status,
-            "payment_status": app.payment_status,
             "submitted_at": app.submitted_at.isoformat() if app.submitted_at else None,
             "district": app.district,
             "gender": app.gender
@@ -156,59 +138,6 @@ def get_applications_report():
     return success_response({
         "count": len(data),
         "applications": data
-    })
-
-
-@reports_bp.route("/payments", methods=["GET"])
-def get_payments_report():
-    """Generate payments report"""
-    user, error = check_admin_access()
-    if error:
-        return error
-    
-    # Query parameters
-    status = request.args.get("status")
-    start_date = request.args.get("start_date")
-    end_date = request.args.get("end_date")
-    export_format = request.args.get("format", "json")
-    
-    query = Payment.query.join(User).join(AdmissionApplication)
-    
-    if status:
-        query = query.filter(Payment.status == status)
-    if start_date:
-        query = query.filter(Payment.created_at >= start_date)
-    if end_date:
-        query = query.filter(Payment.created_at <= end_date)
-    
-    payments = query.order_by(Payment.created_at.desc()).all()
-    
-    total_amount = sum(p.amount for p in payments if p.status == "successful")
-    
-    data = []
-    for payment in payments:
-        data.append({
-            "id": payment.id,
-            "reference": payment.reference,
-            "applicant_name": f"{payment.user.first_name} {payment.user.last_name}",
-            "applicant_email": payment.user.email,
-            "amount": payment.amount,
-            "currency": payment.currency,
-            "status": payment.status,
-            "phone_number": payment.phone_number,
-            "application_number": payment.application.application_number if payment.application else None,
-            "created_at": payment.created_at.isoformat() if payment.created_at else None,
-            "paid_at": payment.paid_at.isoformat() if payment.paid_at else None
-        })
-    
-    if export_format == "csv":
-        return export_to_csv(data, "payments_report.csv")
-    
-    return success_response({
-        "count": len(data),
-        "total_amount_ugx": total_amount,
-        "total_amount_formatted": f"UGX {total_amount:,.0f}",
-        "payments": data
     })
 
 
@@ -234,14 +163,9 @@ def get_program_analytics(program_id):
         func.count(AdmissionApplication.id)
     ).filter_by(program_id=program_id).group_by(AdmissionApplication.exam_level).all()
     
-    by_payment_status = db.session.query(
-        AdmissionApplication.payment_status,
-        func.count(AdmissionApplication.id)
-    ).filter_by(program_id=program_id).group_by(AdmissionApplication.payment_status).all()
-    
-    # Conversion metrics
-    paid_count = sum(1 for s, c in by_payment_status if s == "paid" for _ in range(c))
-    conversion_rate = (paid_count / total_applications * 100) if total_applications > 0 else 0
+    # Conversion metrics based on application status
+    approved_count = sum(1 for s, c in by_status if s == "approved" for _ in range(c))
+    conversion_rate = (approved_count / total_applications * 100) if total_applications > 0 else 0
     
     # Daily trend (last 30 days)
     days = 30
@@ -261,7 +185,6 @@ def get_program_analytics(program_id):
         "program": {
             "id": program.id,
             "name": program.name,
-            "code": program.code,
             "faculty": program.faculty,
             "campus": program.campus
         },
@@ -269,7 +192,6 @@ def get_program_analytics(program_id):
             "total_applications": total_applications,
             "by_status": {status: count for status, count in by_status},
             "by_exam_level": {level: count for level, count in by_exam_level},
-            "by_payment_status": {status: count for status, count in by_payment_status},
             "conversion_rate": round(conversion_rate, 2)
         },
         "daily_trend": list(reversed(daily_stats))
