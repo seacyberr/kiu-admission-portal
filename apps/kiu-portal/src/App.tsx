@@ -31,6 +31,7 @@ import MyApplications from "@/pages/finalist/my-applications";
 import FinalistProfileEdit from "@/pages/finalist/profile";
 import NotificationsPage from "@/pages/notifications";
 import AdminDashboard from "@/pages/admin/dashboard";
+import AdminProgrammeApplicationsDashboard from "@/pages/admin/programme-applications-dashboard";
 import AdminAdmissions from "@/pages/admin/admissions";
 import AdminOpportunities from "@/pages/admin/opportunities";
 import AdminUsers from "@/pages/admin/users";
@@ -278,6 +279,13 @@ function Router() {
           {() => (
             <RoleGuard roles={["admin"]}>
               <AdminDashboard />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/admin/programme-applications-dashboard">
+          {() => (
+            <RoleGuard roles={["admin"]}>
+              <AdminProgrammeApplicationsDashboard />
             </RoleGuard>
           )}
         </Route>

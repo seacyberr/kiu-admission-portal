@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useListAdmissionApplications, useListOpportunities } from '@workspace/api-client-react';
 import { Card } from '@/components/ui/shared';
-import { FileText, Briefcase, Clock, TrendingUp } from 'lucide-react';
+import { FileText, Briefcase, Clock, TrendingUp, BarChart3 } from 'lucide-react';
 import { Link } from 'wouter';
+import { AnimatedReveal, StaggeredReveal } from '@/components/animated-reveal';
 
 export default function AdminDashboard() {
   const { data: admissions, isLoading: admissionsLoading } = useListAdmissionApplications();
@@ -49,12 +50,12 @@ export default function AdminDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="mb-8">
+      <AnimatedReveal className="mb-8">
         <h1 className="text-3xl font-display font-bold text-primary">Admin Overview</h1>
         <p className="text-muted-foreground mt-2">Admissions and opportunities management</p>
-      </div>
+      </AnimatedReveal>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <StaggeredReveal className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         <Card className="p-6 flex items-center gap-4 bg-primary text-primary-foreground border-none">
           <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
             <FileText className="w-6 h-6" />
@@ -93,51 +94,66 @@ export default function AdminDashboard() {
             <p className="text-3xl font-bold">{atRiskCount}</p>
           </div>
         </Card>
-      </div>
+      </StaggeredReveal>
 
       <div className="grid md:grid-cols-2 gap-8">
-        <Card className="p-8">
-          <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-          <div className="space-y-4">
-            <Link
-              href="/admin/admissions"
-              className="block p-4 rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-all"
-            >
-              <div className="font-semibold text-primary mb-1">Review Admissions</div>
-              <p className="text-sm text-muted-foreground">Process incoming student applications.</p>
-            </Link>
-            <Link
-              href="/admin/opportunities"
-              className="block p-4 rounded-xl border border-border hover:border-accent hover:bg-accent/5 transition-all"
-            >
-              <div className="font-semibold text-accent-foreground mb-1">
-                Manage Jobs & Internships
+        <AnimatedReveal direction="left">
+          <Card className="p-8">
+            <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
+            <div className="space-y-4">
+              <Link
+                href="/admin/programme-applications-dashboard"
+                className="block p-4 rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-all"
+              >
+                <div className="font-semibold text-primary mb-1 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Programme Applications Dashboard
+                </div>
+                <p className="text-sm text-muted-foreground">View detailed analytics and manage applications.</p>
+              </Link>
+              <Link
+                href="/admin/admissions"
+                className="block p-4 rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-all"
+              >
+                <div className="font-semibold text-primary mb-1">Review Admissions</div>
+                <p className="text-sm text-muted-foreground">Process incoming student applications.</p>
+              </Link>
+              <Link
+                href="/admin/opportunities"
+                className="block p-4 rounded-xl border border-border hover:border-accent hover:bg-accent/5 transition-all"
+              >
+                <div className="font-semibold text-accent-foreground mb-1">
+                  Manage Jobs & Internships
+                </div>
+                <p className="text-sm text-muted-foreground">Post new roles for finalists.</p>
+              </Link>
+            </div>
+          </Card>
+        </AnimatedReveal>
+
+        <AnimatedReveal direction="right">
+          <Card className="p-8">
+            <h2 className="text-xl font-bold mb-4">Analytics Snapshot</h2>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Applications (last 30 days)</span>
+                <span className="font-semibold">{recent30Days}</span>
               </div>
-              <p className="text-sm text-muted-foreground">Post new roles for finalists.</p>
-            </Link>
-          </div>
-        </Card>
-        <Card className="p-8">
-          <h2 className="text-xl font-bold mb-4">Analytics Snapshot</h2>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Applications (last 30 days)</span>
-              <span className="font-semibold">{recent30Days}</span>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Accepted</span>
+                <span className="font-semibold">{stats?.by_status?.accepted || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Under Review</span>
+                <span className="font-semibold">{stats?.by_status?.under_review || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Rejected</span>
+                <span className="font-semibold">{stats?.by_status?.rejected || 0}</span>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Accepted</span>
-              <span className="font-semibold">{stats?.by_status?.accepted || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Under Review</span>
-              <span className="font-semibold">{stats?.by_status?.under_review || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Rejected</span>
-              <span className="font-semibold">{stats?.by_status?.rejected || 0}</span>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        </AnimatedReveal>
       </div>
     </div>
   );

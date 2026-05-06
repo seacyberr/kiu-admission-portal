@@ -7,6 +7,7 @@ import { Button } from './ui/shared';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeProvider';
 import { NotificationsDropdown } from './notifications-dropdown';
+import { PageProgressBar } from './page-progress-bar';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
@@ -141,6 +142,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </button>
         </div>
       </header>
+
+      {/* Page Progress Bar */}
+      <PageProgressBar />
 
       {/* Mobile Menu */}
       <AnimatePresence>
