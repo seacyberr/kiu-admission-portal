@@ -2,6 +2,7 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 import './lib/fetch-patch';
 import { Layout } from "@/components/layout";
@@ -39,14 +40,14 @@ import AdminPrograms from "@/pages/admin/programs";
 import CareerApplications from "@/pages/admin/career-applications";
 import NotFound from "@/pages/not-found";
 import { RoleGuard } from "@/components/role-guard";
-import { ErrorBoundary } from "@/components/error-boundary";
 
 const queryClient = new QueryClient();
 
 function Router() {
   return (
-    <Layout>
-      <Switch>
+    <ErrorBoundary>
+      <Layout>
+        <Switch>
         <Route path="/" component={Home} />
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
@@ -365,6 +366,7 @@ function Router() {
         <Route component={NotFound} />
       </Switch>
     </Layout>
+    </ErrorBoundary>
   );
 }
 

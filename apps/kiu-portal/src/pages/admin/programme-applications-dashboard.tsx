@@ -21,14 +21,17 @@ import { Input } from '@/components/ui/shared';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/status-badge';
 import type { AdmissionApplication } from '@workspace/api-client-react';
+import { useToast } from '@/hooks/use-toast';
+import { CardSkeleton, ChartSkeleton, TableSkeleton, Skeleton } from '@/components/ui/skeleton';
 
 export default function AdminProgrammeApplicationsDashboard() {
-  const { data: applicationsData, isLoading } = useListAdmissionApplications();
+  const { data: applicationsData, isLoading, error } = useListAdmissionApplications();
   const [applications, setApplications] = useState<AdmissionApplication[]>([]);
   const [filteredApplications, setFilteredApplications] = useState<AdmissionApplication[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [programmeFilter, setProgrammeFilter] = useState<string>('all');
+  const { toast } = useToast();
 
   useEffect(() => {
     if (applicationsData?.applications) {
@@ -90,12 +93,39 @@ export default function AdminProgrammeApplicationsDashboard() {
   ];
 
   const handleStatusChange = async (applicationId: number, newStatus: string) => {
-    // In a real app, this would call an API
-    setApplications(prev =>
-      prev.map(app =>
-        app.id === applicationId ? { ...app, status: newStatus as any, updatedAt: new Date().toISOString() } : app
-      )
-    );
+    try {
+      const response = await fetch(`/api/admission/applications/${applicationId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update status');
+      }
+
+      // Update local state
+      setApplications(prev =>
+        prev.map(app =>
+          app.id === applicationId ? { ...app, status: newStatus as any, updatedAt: new Date().toISOString() } : app
+        )
+      );
+
+      toast({
+        title: "Status Updated",
+        description: `Application status changed to ${newStatus.replace('_', ' ')}`,
+      });
+    } catch (error) {
+      console.error('Error updating application status:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update application status. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusBadgeStatus = (status: string) => {
@@ -111,8 +141,42 @@ export default function AdminProgrammeApplicationsDashboard() {
 
   if (isLoading) {
     return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <Skeleton className="h-8 w-96 mb-2" />
+          <Skeleton className="h-4 w-80" />
+        </div>
+
+        {/* Stats Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+
+        {/* Charts Skeleton */}
+        <div className="grid md:grid-cols-2 gap-8 mb-8">
+          <ChartSkeleton />
+          <ChartSkeleton />
+        </div>
+
+        {/* Table Skeleton */}
+        <div className="border rounded-xl p-6">
+          <Skeleton className="h-6 w-48 mb-4" />
+          <TableSkeleton rows={8} columns={5} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="text-center">
+          <XCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
+          <h3 className="text-lg font-semibold text-destructive mb-2">Error Loading Applications</h3>
+          <p className="text-muted-foreground">Failed to load application data. Please try again later.</p>
+        </div>
       </div>
     );
   }
@@ -274,40 +338,40 @@ export default function AdminProgrammeApplicationsDashboard() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full" role="table" aria-label="Programme applications">
             <thead>
-              <tr className="border-b">
-                <th className="text-left py-3 px-4 font-semibold">Applicant</th>
-                <th className="text-left py-3 px-4 font-semibold">Programme</th>
-                <th className="text-left py-3 px-4 font-semibold">Status</th>
-                <th className="text-left py-3 px-4 font-semibold">Submitted</th>
-                <th className="text-left py-3 px-4 font-semibold">Actions</th>
+              <tr className="border-b" role="row">
+                <th className="text-left py-3 px-4 font-semibold" role="columnheader" scope="col">Applicant</th>
+                <th className="text-left py-3 px-4 font-semibold" role="columnheader" scope="col">Programme</th>
+                <th className="text-left py-3 px-4 font-semibold" role="columnheader" scope="col">Status</th>
+                <th className="text-left py-3 px-4 font-semibold" role="columnheader" scope="col">Submitted</th>
+                <th className="text-left py-3 px-4 font-semibold" role="columnheader" scope="col">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredApplications.map((application) => (
-                <tr key={application.id} className="border-b hover:bg-muted/50">
-                  <td className="py-3 px-4">
+                <tr key={application.id} className="border-b hover:bg-muted/50" role="row">
+                  <td className="py-3 px-4" role="cell">
                     <div>
                       <p className="font-semibold">{application.applicationNumber || `App-${application.id}`}</p>
                       <p className="text-sm text-muted-foreground">{application.applicantPhone || 'No phone'}</p>
                     </div>
                   </td>
-                  <td className="py-3 px-4">{application.program?.name || `Program ${application.programId}`}</td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4" role="cell">{application.program?.name || `Program ${application.programId}`}</td>
+                  <td className="py-3 px-4" role="cell">
                     <StatusBadge status={getStatusBadgeStatus(application.status)} />
                   </td>
-                  <td className="py-3 px-4 text-sm text-muted-foreground">
+                  <td className="py-3 px-4 text-sm text-muted-foreground" role="cell">
                     {application.submittedAt ? new Date(application.submittedAt).toLocaleDateString() : 'N/A'}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4" role="cell">
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">View</Button>
+                      <Button variant="outline" size="sm" aria-label={`View application ${application.applicationNumber}`}>View</Button>
                       <Select
                         value={application.status}
                         onValueChange={(value) => handleStatusChange(application.id, value)}
                       >
-                        <SelectTrigger className="w-32">
+                        <SelectTrigger className="w-32" aria-label={`Change status for application ${application.applicationNumber}`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

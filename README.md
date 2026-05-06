@@ -2,10 +2,50 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Node 18+](https://img.shields.io/badge/node-18+-green.svg)](https://www.python.org/downloads/)
 [![Node 18+](https://img.shields.io/badge/node-18+-green.svg)](https://nodejs.org/)
 
 **A cross-platform admission management system for Kampala International University**  
 Compliant with NCHE Uganda requirements. Works on Windows, macOS, Linux, and mobile devices.
+
+---
+
+## ✨ Features
+
+### 🎨 Modern UI/UX
+- **Dark Mode Support**: Toggle between light and dark themes with persistent preferences
+- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **Animated Interactions**: Smooth transitions and scroll-triggered animations
+- **Page Progress Bar**: Visual indicator showing scroll progress on pages
+
+### 🔐 Authentication & Security
+- **JWT-based Authentication**: Secure token-based user sessions
+- **Password Strength Meter**: Real-time password validation during registration
+- **Role-based Access Control**: Separate dashboards for applicants, finalists, and admins
+- **OTP Verification**: Email-based one-time password verification
+
+### 📊 Admin Dashboard
+- **Programme Applications Dashboard**: Comprehensive analytics with interactive charts
+  - Pie charts for application status distribution
+  - Bar charts for programme popularity
+  - Timeline charts for application trends
+  - Advanced filtering and search functionality
+- **Real-time Statistics**: Live metrics for applications, approvals, and rejections
+- **Status Management**: One-click status updates with API integration
+- **Export Capabilities**: Data export functionality for reporting
+
+### 📱 User Experience
+- **Notifications System**: Dropdown notifications with unread badges
+- **Toast Notifications**: User feedback for actions and errors
+- **Loading States**: Skeleton screens and progress indicators
+- **Error Boundaries**: Graceful error handling with recovery options
+- **Form Validation**: Real-time validation with helpful error messages
+
+### 🎓 Academic Features
+- **NCHE Recommendations**: AI-powered programme recommendations based on exam results
+- **Qualification Checker**: Automatic eligibility verification for programmes
+- **Multiple Exam Support**: O-Level, A-Level, Diploma, and Degree qualification handling
+- **Programme Matching**: Intelligent programme suggestions based on academic performance
 
 ---
 
