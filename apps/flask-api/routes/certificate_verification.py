@@ -10,6 +10,11 @@ from routes.auth import get_current_user
 # from services.certificate_verification import certificate_verifier
 from models import db, AdmissionApplication
 from utils.api_response import success_response, bad_request, unauthorized, forbidden, not_found
+from utils.external_api_validation import (
+    safe_external_api_call,
+    validate_certificate_service_response,
+    validate_external_api_response
+)
 
 log = logging.getLogger(__name__)
 

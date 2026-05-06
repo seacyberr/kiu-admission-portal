@@ -2,15 +2,29 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGetCurrentUser } from '@workspace/api-client-react';
-import { LogOut, Menu, X } from 'lucide-react';
+import { LogOut, Menu, X, Moon, Sun } from 'lucide-react';
 import { Button } from './ui/shared';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from '../context/ThemeProvider';
+import { NotificationsDropdown } from './notifications-dropdown';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { data: user } = useGetCurrentUser({ query: { retry: false } });
+  const { theme, toggleTheme } = useTheme();
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      message: 'Your application has been reviewed',
+      isRead: false,
+      createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
+      type: 'info' as const,
+      link: '/dashboard'
+    }
+  ]);
+  const [unreadCount, setUnreadCount] = useState(1);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -41,6 +55,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         { label: 'Dashboard', path: '/admin' },
         { label: 'Admissions', path: '/admin/admissions' },
         { label: 'Opportunities', path: '/admin/opportunities' },
+        { label: 'Notifications', path: '/notifications' },
       ];
     }
     if (user.role === 'finalist') {
@@ -48,11 +63,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
         { label: 'Career Dashboard', path: '/career' },
         { label: 'Career Paths', path: '/career/paths' },
         { label: 'Opportunities', path: '/career/opportunities' },
+        { label: 'Notifications', path: '/notifications' },
       ];
     }
     return [
       { label: 'Admission Dashboard', path: '/dashboard' },
       { label: 'My Application', path: '/apply' },
+      { label: 'Notifications', path: '/notifications' },
     ];
   };
 
@@ -84,10 +101,33 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="hidden md:flex items-center gap-4 absolute right-4">
             {user && (
               <div className="flex items-center gap-4 border-l border-border pl-4">
+                <NotificationsDropdown 
+                  notifications={notifications}
+                  unreadCount={unreadCount}
+                  onMarkAsRead={(id) => {
+                    setNotifications(prev => 
+                      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
+                    );
+                    setUnreadCount(prev => Math.max(0, prev - 1));
+                  }}
+                  onMarkAllAsRead={() => {
+                    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+                    setUnreadCount(0);
+                  }}
+                />
                 <div className="flex flex-col text-right">
                   <span className="text-sm font-bold text-foreground leading-none">{user.firstName} {user.lastName}</span>
                   <span className="text-xs text-muted-foreground capitalize">{user.role}</span>
                 </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors" 
+                  onClick={toggleTheme}
+                  title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                >
+                  {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                </Button>
                 <Button variant="ghost" size="icon" className="rounded-full bg-secondary text-secondary-foreground hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={handleLogout} title="Logout">
                   <LogOut className="w-4 h-4" />
                 </Button>
@@ -124,7 +164,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               )}
               {user && (
-                <Button variant="destructive" className="w-full mt-4" onClick={handleLogout}>Log Out</Button>
+                <div className="flex gap-2 w-full mt-4">
+                  <Button variant="outline" className="flex-1" onClick={toggleTheme}>
+                    {theme === 'light' ? <Moon className="w-4 h-4 mr-2" /> : <Sun className="w-4 h-4 mr-2" />}
+                    {theme === 'light' ? 'Dark' : 'Light'} Mode
+                  </Button>
+                  <Button variant="destructive" className="flex-1" onClick={handleLogout}>Log Out</Button>
+                </div>
               )}
             </div>
           </motion.div>

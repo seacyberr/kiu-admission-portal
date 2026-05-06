@@ -23,7 +23,7 @@ try:
 except ImportError:
     pass
 
-from flask import Flask, g, jsonify, request, send_from_directory, make_response
+from flask import Flask, g, jsonify, request, send_from_directory, make_response, redirect
 try:
     from flask_cors import CORS
 except ModuleNotFoundError:
@@ -100,7 +100,11 @@ def create_app():
     app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
     app.config["JWT_COOKIE_SECURE"] = os.environ.get("FLASK_ENV", "").lower() == "production"
     app.config["JWT_COOKIE_SAMESITE"] = "Lax"
-    app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # Disable for simplicity, enable in production
+    app.config["JWT_COOKIE_CSRF_PROTECT"] = os.environ.get("FLASK_ENV", "").lower() == "production"
+    app.config["JWT_COOKIE_CSRF_METHODS"] = ["POST", "PUT", "PATCH", "DELETE"]
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_ENV", "").lower() == "production"
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["JWT_ERROR_MESSAGE_KEY"] = "error"
     
     jwt = JWTManager(app)
@@ -149,7 +153,7 @@ def create_app():
                 
             resp.headers['Access-Control-Allow-Credentials'] = 'true'
             resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-            resp.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Request-ID, Accept'
+            resp.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Request-ID, Accept, X-CSRF-TOKEN'
             
         return resp
     
@@ -184,6 +188,14 @@ def create_app():
         log.warning(f"Cache warm-up failed: {e}")
 
     # Request middleware
+    @app.before_request
+    def _enforce_https():
+        """Enforce HTTPS in production environment."""
+        if config.FLASK_ENV == "production" and not request.is_secure:
+            if request.environ.get("HTTP_X_FORWARDED_PROTO") != "https":
+                url = request.url.replace("http://", "https://", 1)
+                return redirect(url, code=301)
+
     @app.before_request
     def _assign_request_id():
         g.request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
@@ -224,9 +236,9 @@ def create_app():
     from routes.recommendations_v2 import recommendations_v2_bp
     from routes.admin import admin_bp
     from routes.finalist import finalist_bp
-    from routes.nche_recommendations import recommendations_bp
     from routes.certificate_verification import certificate_verification_bp
     from routes.audit import audit_bp
+    from routes.nche_recommend import nche_recommend_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(admin_bp, url_prefix="/api/admin")
@@ -244,8 +256,8 @@ def create_app():
     # Unified Recommendations API v2 (handles both old and new curriculum)
     app.register_blueprint(recommendations_v2_bp, url_prefix="/api/v2/recommendations")
 
-    # Legacy NCHE-based recommendations (deprecated, kept for backward compatibility)
-    app.register_blueprint(recommendations_bp, url_prefix="/api")
+    # NCHE Programme Recommendation with weighted scoring (replaces legacy /api/recommendations)
+    app.register_blueprint(nche_recommend_bp, url_prefix="/api/nche")
 
     # Initialize Prometheus metrics
     from metrics import init_metrics

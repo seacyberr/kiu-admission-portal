@@ -27,12 +27,15 @@ import ApplicantProfile from "@/pages/applicant/profile";
 import FinalistDashboard from "@/pages/finalist/dashboard";
 import CareerPaths from "@/pages/finalist/career-paths";
 import Opportunities from "@/pages/finalist/opportunities";
+import MyApplications from "@/pages/finalist/my-applications";
 import FinalistProfileEdit from "@/pages/finalist/profile";
+import NotificationsPage from "@/pages/notifications";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminAdmissions from "@/pages/admin/admissions";
 import AdminOpportunities from "@/pages/admin/opportunities";
 import AdminUsers from "@/pages/admin/users";
 import AdminPrograms from "@/pages/admin/programs";
+import CareerApplications from "@/pages/admin/career-applications";
 import NotFound from "@/pages/not-found";
 import { RoleGuard } from "@/components/role-guard";
 import { ErrorBoundary } from "@/components/error-boundary";
@@ -69,6 +72,13 @@ function Router() {
           {() => (
             <RoleGuard roles={["applicant"]}>
               <ApplicantProfile />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/notifications">
+          {() => (
+            <RoleGuard roles={["applicant", "finalist", "admin"]}>
+              <NotificationsPage />
             </RoleGuard>
           )}
         </Route>
@@ -244,7 +254,7 @@ function Router() {
         <Route path="/career/applications">
           {() => (
             <RoleGuard roles={["finalist"]}>
-              <Opportunities />
+              <MyApplications />
             </RoleGuard>
           )}
         </Route>
@@ -285,6 +295,13 @@ function Router() {
             </RoleGuard>
           )}
         </Route>
+        <Route path="/admin/career-applications">
+          {() => (
+            <RoleGuard roles={["admin"]}>
+              <CareerApplications />
+            </RoleGuard>
+          )}
+        </Route>
         <Route path="/admin/users">
           {() => (
             <RoleGuard roles={["admin"]}>
@@ -319,6 +336,13 @@ function Router() {
           {() => (
             <RoleGuard roles={["finalist", "admin"]}>
               <Opportunities />
+            </RoleGuard>
+          )}
+        </Route>
+        <Route path="/finalist/my-applications">
+          {() => (
+            <RoleGuard roles={["finalist", "admin"]}>
+              <MyApplications />
             </RoleGuard>
           )}
         </Route>

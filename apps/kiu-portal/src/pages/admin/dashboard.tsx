@@ -1,13 +1,35 @@
 // BUG FIX: removed unused imports Users and TrendingUp that caused TypeScript
 // noUnusedLocals warnings and cluttered the bundle.
+import { useEffect, useState } from 'react';
 import { useListAdmissionApplications, useListOpportunities } from '@workspace/api-client-react';
 import { Card } from '@/components/ui/shared';
-import { FileText, Briefcase, Clock } from 'lucide-react';
+import { FileText, Briefcase, Clock, TrendingUp } from 'lucide-react';
 import { Link } from 'wouter';
 
 export default function AdminDashboard() {
   const { data: admissions, isLoading: admissionsLoading } = useListAdmissionApplications();
   const { data: opportunities, isLoading: opportunitiesLoading } = useListOpportunities();
+  const [stats, setStats] = useState<any | null>(null);
+  const [analytics, setAnalytics] = useState<any | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [statsRes, analyticsRes] = await Promise.all([
+          fetch('/api/admission/applications/statistics', { credentials: 'include' }),
+          fetch('/api/admission/analytics', { credentials: 'include' }),
+        ]);
+        const statsJson = await statsRes.json();
+        const analyticsJson = await analyticsRes.json();
+        setStats(statsJson?.data || null);
+        setAnalytics(analyticsJson?.data || null);
+      } catch {
+        setStats(null);
+        setAnalytics(null);
+      }
+    };
+    load();
+  }, []);
 
   if (admissionsLoading || opportunitiesLoading) {
     return (
@@ -22,6 +44,8 @@ export default function AdminDashboard() {
     admissions?.applications.filter((a: any) => a.status === 'pending').length || 0;
   const activeJobs =
     opportunities?.opportunities.filter((o: any) => o.isActive).length || 0;
+  const atRiskCount = analytics?.dropoutRisk?.totalAtRisk || 0;
+  const recent30Days = stats?.recent_30_days || 0;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -30,7 +54,7 @@ export default function AdminDashboard() {
         <p className="text-muted-foreground mt-2">Admissions and opportunities management</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         <Card className="p-6 flex items-center gap-4 bg-primary text-primary-foreground border-none">
           <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
             <FileText className="w-6 h-6" />
@@ -60,6 +84,15 @@ export default function AdminDashboard() {
             <p className="text-3xl font-bold">{activeJobs}</p>
           </div>
         </Card>
+        <Card className="p-6 flex items-center gap-4 border-warning/30 bg-warning/5">
+          <div className="w-12 h-12 rounded-full bg-warning/20 text-warning flex items-center justify-center">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-muted-foreground font-semibold text-sm">At-Risk Applicants</p>
+            <p className="text-3xl font-bold">{atRiskCount}</p>
+          </div>
+        </Card>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
@@ -82,6 +115,27 @@ export default function AdminDashboard() {
               </div>
               <p className="text-sm text-muted-foreground">Post new roles for finalists.</p>
             </Link>
+          </div>
+        </Card>
+        <Card className="p-8">
+          <h2 className="text-xl font-bold mb-4">Analytics Snapshot</h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Applications (last 30 days)</span>
+              <span className="font-semibold">{recent30Days}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Accepted</span>
+              <span className="font-semibold">{stats?.by_status?.accepted || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Under Review</span>
+              <span className="font-semibold">{stats?.by_status?.under_review || 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Rejected</span>
+              <span className="font-semibold">{stats?.by_status?.rejected || 0}</span>
+            </div>
           </div>
         </Card>
       </div>

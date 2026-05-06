@@ -35,6 +35,11 @@ class Config:
     """Base configuration."""
 
     # ------------------------------------------------------------------ #
+    # Environment
+    # ------------------------------------------------------------------ #
+    FLASK_ENV: str = os.environ.get("FLASK_ENV", "development").lower()
+
+    # ------------------------------------------------------------------ #
     # Database
     # ------------------------------------------------------------------ #
     DATABASE_URL: str = _resolve_db_url() or _default_database_url()
@@ -123,8 +128,9 @@ class Config:
     ENABLE_SECURITY_HEADERS: bool = (
         os.environ.get("ENABLE_SECURITY_HEADERS", "true").lower() == "true"
     )
+    # Default HSTS to true in production, false in development
     ENABLE_HSTS: bool = (
-        os.environ.get("ENABLE_HSTS", "").lower() == "true"
+        os.environ.get("ENABLE_HSTS", "true" if _is_production() else "false").lower() == "true"
     )
 
     # FIX: changed default from "true" to "false".

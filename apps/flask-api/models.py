@@ -85,6 +85,7 @@ class Program(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False, index=True)
+    code = db.Column(db.String(20), index=True)  # Program code like BCS, BIT, etc.
     faculty = db.Column(db.String(255), nullable=False, index=True)
     department = db.Column(db.String(255), index=True)
     level = db.Column(db.String(20), nullable=False, index=True)
@@ -95,12 +96,22 @@ class Program(db.Model):
     min_alevel_points = db.Column(db.Integer)
     available_slots = db.Column(db.Integer, default=100)
     campus = db.Column(db.String(50), nullable=False, default="kampala", index=True)  # 'kampala' or 'western'
+    
+    # NCHE A-Level subject requirements for weighted scoring
+    essential_subjects = db.Column(db.Text)   # Comma-separated: "Mathematics,Physics"
+    relevant_subjects = db.Column(db.Text)    # Comma-separated: "Chemistry,Economics,Geography"
+    desirable_subjects = db.Column(db.Text)   # Comma-separated: "General Paper,Computer Studies"
+    essential_type = db.Column(db.String(20), default='specific')  # 'specific' or 'any_two'
+    min_weighted_score = db.Column(db.Float, default=4.0)
+    career_prospects = db.Column(db.Text)
+    fees_per_year = db.Column(db.Integer)
 
     def to_dict(self):
         """Return program dict."""
         return {
             "id": self.id,
             "name": self.name,
+            "code": self.code,
             "faculty": self.faculty,
             "department": self.department,
             "level": self.level,
@@ -111,7 +122,29 @@ class Program(db.Model):
             "minAlevelPoints": self.min_alevel_points,
             "availableSlots": self.available_slots,
             "campus": self.campus,
+            "essentialSubjects": self.essential_subjects,
+            "relevantSubjects": self.relevant_subjects,
+            "desirableSubjects": self.desirable_subjects,
+            "essentialType": self.essential_type,
+            "minWeightedScore": self.min_weighted_score,
+            "careerProspects": self.career_prospects,
+            "feesPerYear": self.fees_per_year,
         }
+    
+    def get_essential_list(self):
+        if not self.essential_subjects:
+            return []
+        return [s.strip() for s in self.essential_subjects.split(',')]
+    
+    def get_relevant_list(self):
+        if not self.relevant_subjects:
+            return []
+        return [s.strip() for s in self.relevant_subjects.split(',')]
+    
+    def get_desirable_list(self):
+        if not self.desirable_subjects:
+            return []
+        return [s.strip() for s in self.desirable_subjects.split(',')]
 
 
 class AdmissionApplication(db.Model):
@@ -399,13 +432,30 @@ class OpportunityApplication(db.Model):
     user = db.relationship("User", backref="opportunity_applications", lazy="joined")
     opportunity = db.relationship("Opportunity", backref="applications", lazy="joined")
 
+    STATUS_LABELS = {
+        'applied': ('Applied', 'primary'),
+        'reviewed': ('Reviewed', 'info'),
+        'shortlisted': ('Shortlisted', 'warning'),
+        'interview_scheduled': ('Interview Scheduled', 'warning'),
+        'interviewed': ('Interviewed', 'info'),
+        'placed': ('Placed', 'success'),
+        'accepted': ('Accepted', 'success'),
+        'rejected': ('Rejected', 'danger'),
+    }
+
+    def status_label(self):
+        return self.STATUS_LABELS.get(self.status, (self.status.capitalize(), 'secondary'))
+
     def to_dict(self):
+        label, color = self.status_label()
         return {
             "id": self.id,
             "opportunityId": self.opportunity_id,
             "opportunity": self.opportunity.to_dict() if self.opportunity else None,
             "userId": self.user_id,
             "status": self.status,
+            "statusLabel": label,
+            "statusColor": color,
             "coverLetter": self.cover_letter,
             "cvUrl": self.cv_url,
             "additionalInfo": self.additional_info,

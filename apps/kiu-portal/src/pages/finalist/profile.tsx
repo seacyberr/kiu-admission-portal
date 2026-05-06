@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGetCurrentUser, useGetFinalistProfile, useUpdateFinalistProfile } from '@workspace/api-client-react';
 import { Card, Button, Input, Textarea, Label } from '@/components/ui/shared';
 import { ArrowLeft, Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
@@ -18,6 +18,17 @@ export default function FinalistProfileEdit() {
     skills: profile?.skills?.join(', ') || '',
     cvUrl: profile?.cvUrl || '',
   });
+  useEffect(() => {
+    if (!profile) return;
+    setFormData({
+      studentNumber: profile.studentNumber || '',
+      programId: profile.programId || '',
+      gpa: profile.gpa || '',
+      graduationYear: profile.graduationYear || new Date().getFullYear(),
+      skills: profile.skills?.join(', ') || '',
+      cvUrl: profile.cvUrl || '',
+    });
+  }, [profile]);
 
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -41,7 +52,7 @@ export default function FinalistProfileEdit() {
     formData.append('cv', cvFile);
 
     try {
-      const response = await fetch('/api/finalist/profile/upload-cv', {
+      const response = await fetch('/api/career/profile/upload-cv', {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -49,7 +60,8 @@ export default function FinalistProfileEdit() {
 
       if (response.ok) {
         const data = await response.json();
-        setFormData(prev => ({ ...prev, cvUrl: data.cvUrl }));
+        const cvUrl = data?.data?.cvUrl || data?.cvUrl || '';
+        setFormData(prev => ({ ...prev, cvUrl }));
         toast.success('CV uploaded successfully');
       } else {
         toast.error('Failed to upload CV');

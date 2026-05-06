@@ -5,7 +5,7 @@ Provides finalist portal endpoints for admitted students
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
-from models import db, User, AdmissionApplication, FinalistProfile
+from models import db, User, AdmissionApplication, FinalistProfile, Program
 from routes.auth import get_current_user
 from datetime import datetime
 from utils.api_response import success_response, paginated_response, bad_request, unauthorized, forbidden, not_found, created
@@ -105,6 +105,7 @@ def get_finalist_documents():
 
 
 @finalist_bp.route("/profile", methods=["PUT"])
+@jwt_required()
 def update_finalist_profile():
     """Update finalist profile"""
     result = check_finalist_access()
@@ -123,16 +124,15 @@ def update_finalist_profile():
         user.phone = data["phone"]
     
     # Update student profile if exists
-    profile = StudentProfile.query.filter_by(user_id=user.id).first()
+    profile = FinalistProfile.query.filter_by(user_id=user.id).first()
     if not profile:
-        profile = StudentProfile(user_id=user.id)
+        profile = FinalistProfile(user_id=user.id, application_id=approved_app.id if approved_app else None, is_finalist=True)
         db.session.add(profile)
     
     # Update profile fields
     profile_fields = [
-        "student_number", "program", "faculty", "year_of_study",
-        "expected_graduation", "cgpa", "specialization", "thesis_title",
-        "industrial_attachment_status", "clearance_status"
+        "student_number", "year_of_study", "graduation_year", "gpa",
+        "skills", "bio", "cv_url", "is_finalist"
     ]
     
     for field in profile_fields:
@@ -149,6 +149,7 @@ def update_finalist_profile():
 
 # Admin endpoints for finalist management
 @finalist_bp.route("/admin/list", methods=["GET"])
+@jwt_required()
 def list_finalists():
     """Admin: List all finalists with filters"""
     # Check admin access
@@ -209,6 +210,7 @@ def list_finalists():
 
 
 @finalist_bp.route("/admin/statistics", methods=["GET"])
+@jwt_required()
 def get_finalist_statistics():
     """Admin: Get finalist statistics"""
     admin_check = get_current_user()
@@ -258,6 +260,7 @@ def get_finalist_statistics():
 
 
 @finalist_bp.route("/admin/graduate", methods=["POST"])
+@jwt_required()
 def mark_as_graduated():
     """Admin: Mark finalist as graduated"""
     admin_check = get_current_user()
@@ -291,6 +294,7 @@ def mark_as_graduated():
 
 
 @finalist_bp.route("/clearance", methods=["GET"])
+@jwt_required()
 def get_clearance_status():
     """Get student clearance status"""
     result = check_finalist_access()
@@ -317,6 +321,7 @@ def get_clearance_status():
 
 
 @finalist_bp.route("/career-prep", methods=["GET"])
+@jwt_required()
 def get_career_preparation():
     """Get career preparation resources for finalists"""
     result = check_finalist_access()
@@ -364,15 +369,3 @@ def get_career_preparation():
             "Consider postgraduate studies if interested"
         ]
     })
-    
-    if "student_id" in data:
-        profile.student_id = data["student_id"]
-    if "enrollment_date" in data:
-        profile.enrollment_date = data["enrollment_date"]
-    
-    db.session.commit()
-    
-    return success_response({
-        "user": user.to_dict(),
-        "profile": profile.to_dict()
-    }, message="Profile updated successfully")

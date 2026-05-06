@@ -214,6 +214,39 @@ export default function NCHERecommendationsPage() {
   const [recommendations, setRecommendations] = useState<NCHEProgramme[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedProgrammeIds, setSavedProgrammeIds] = useState<string[]>([]);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+
+  const SAVED_KEY = "kiu_saved_programmes";
+
+  React.useEffect(() => {
+    const raw = localStorage.getItem(SAVED_KEY);
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setSavedProgrammeIds(parsed);
+      }
+    } catch {
+      // ignore corrupted local data
+    }
+  }, []);
+
+  const toggleSavedProgramme = (id: string) => {
+    setSavedProgrammeIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id];
+      localStorage.setItem(SAVED_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const toggleCompareProgramme = (id: string) => {
+    setCompareIds((prev) => {
+      if (prev.includes(id)) return prev.filter((item) => item !== id);
+      if (prev.length >= 3) return prev;
+      return [...prev, id];
+    });
+  };
 
   const calculateNCHEPoints = () => {
     const gradePoints: Record<string, number> = { "A": 6, "B": 5, "C": 4, "D": 3, "E": 2, "O": 1, "F": 0 };
@@ -280,7 +313,7 @@ export default function NCHERecommendationsPage() {
         applicantData.work_experience = workExperience;
       }
 
-      const response = await fetch("/api/recommendations/assess", {
+      const response = await fetch("/api/v2/recommendations/assess", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(applicantData)
@@ -907,6 +940,19 @@ export default function NCHERecommendationsPage() {
         </Card>
       ) : (
         <div className="space-y-4 max-h-[70vh] overflow-y-auto p-2">
+          {compareIds.length > 0 && (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-4">
+                <p className="text-sm font-semibold mb-2">Compare shortlist ({compareIds.length}/3)</p>
+                <div className="text-sm text-muted-foreground">
+                  {recommendations
+                    .filter((programme) => compareIds.includes(programme.id))
+                    .map((programme) => `${programme.name} (${programme.duration_years} years, ${programme.campus.join(", ")})`)
+                    .join(" | ")}
+                </div>
+              </CardContent>
+            </Card>
+          )}
           {recommendations.map((programme) => (
             <Card key={programme.id} className="hover:shadow-lg transition-shadow">
               <CardContent className="p-6">
@@ -1021,11 +1067,27 @@ export default function NCHERecommendationsPage() {
                       <span>Professional Registration: {programme.professional_registration.join(", ")}</span>
                     </div>
                   </div>
-                  <Button asChild disabled={!programme.nche_assessment?.eligible}>
-                    <a href={programme.apply_url}>
-                      {programme.nche_assessment?.eligible ? "Apply Now" : "Not Eligible"}
-                    </a>
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant={savedProgrammeIds.includes(programme.id) ? "default" : "outline"}
+                      onClick={() => toggleSavedProgramme(programme.id)}
+                    >
+                      {savedProgrammeIds.includes(programme.id) ? "Saved" : "Save"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={compareIds.includes(programme.id) ? "default" : "outline"}
+                      onClick={() => toggleCompareProgramme(programme.id)}
+                    >
+                      {compareIds.includes(programme.id) ? "Compared" : "Compare"}
+                    </Button>
+                    <Button asChild disabled={!programme.nche_assessment?.eligible}>
+                      <a href={programme.apply_url}>
+                        {programme.nche_assessment?.eligible ? "Apply Now" : "Not Eligible"}
+                      </a>
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

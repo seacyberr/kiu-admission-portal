@@ -242,6 +242,18 @@ export default function AdminAdmissions() {
             <Button type="button" variant="secondary" onClick={applySearch}>
               <Search className="w-4 h-4 mr-1" /> Search
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const params = new URLSearchParams();
+                if (statusFilter) params.set("status", statusFilter);
+                const url = `/api/reports/applications?format=csv${params.toString() ? `&${params.toString()}` : ""}`;
+                window.open(url, "_blank");
+              }}
+            >
+              Export CSV
+            </Button>
           </div>
         </div>
       </div>

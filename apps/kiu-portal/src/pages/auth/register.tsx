@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { useRegisterUser } from '@workspace/api-client-react';
 import { Button, Input, Label, Card } from '@/components/ui/shared';
 import { useToast } from '@/hooks/use-toast';
+import { PasswordStrengthMeter } from '@/components/password-strength-meter';
 import { ArrowLeft, User, GraduationCap, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -169,6 +170,7 @@ export default function Register() {
                   </button>
                 </div>
                 {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+                <PasswordStrengthMeter password={watch("password") || ""} />
               </div>
             </div>
 

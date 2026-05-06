@@ -849,6 +849,10 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                                       {p.entryRequirements}
                                     </p>
                                   )}
+                                  <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                                    {p.feesPerYear && <p>Fees/Year: UGX {Number(p.feesPerYear).toLocaleString()}</p>}
+                                    {p.careerProspects && <p>Career Prospects: {p.careerProspects}</p>}
+                                  </div>
                                 </div>
                               </label>
                             ))}

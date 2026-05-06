@@ -32,9 +32,10 @@ export interface ApplicationData {
     postalAddress?: string;
     emergencyContactName: string;
     emergencyRelationship: string;
+    countryCode?: string;
     emergencyPhone: string;
     emergencyAddress: string;
-    sponsorshipType: "bursary" | "private";
+    sponsorshipType?: "bursary" | "private";
     sponsorshipSource?: string;
   };
   education?: {
@@ -184,7 +185,7 @@ export default function ApplicationWizard() {
   // Auto-save draft to backend
   const saveDraftToBackend = useCallback(async (data: ApplicationData) => {
     try {
-      const response = await fetch("/api/admission/applications/draft", {
+      const response = await fetch("/api/admission/applications/wizard/save-draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -214,12 +215,85 @@ export default function ApplicationWizard() {
     setIsSubmitting(true);
     
     try {
-      // Submit application to backend with raw data
-      const response = await fetch("/api/admission/applications", {
+      const programChoices = [
+        Number(applicationData.program?.firstChoice || 0),
+        Number(applicationData.program?.secondChoice || 0),
+        Number(applicationData.program?.thirdChoice || 0),
+      ].filter((id) => id > 0);
+
+      const education = applicationData.education;
+      const wizardPayload = {
+        personalInfo: {
+          firstName: applicationData.personal?.firstName || "",
+          surname: applicationData.personal?.surname || "",
+          dateOfBirth: applicationData.personal?.dateOfBirth
+            ? new Date(applicationData.personal.dateOfBirth).toISOString().split("T")[0]
+            : undefined,
+          gender: applicationData.personal?.gender || "",
+          nationality: applicationData.personal?.nationality || "Ugandan",
+          personalStatement: "",
+        },
+        contactInfo: {
+          district: applicationData.contact?.district || "",
+          nextOfKinName: applicationData.contact?.emergencyContactName || "",
+          nextOfKinPhone: applicationData.contact?.emergencyPhone || "",
+          nextOfKinRelationship: applicationData.contact?.emergencyRelationship || "",
+          sessionOfStudy: "day",
+        },
+        educationInfo: {
+          qualificationType: education?.qualificationType || "uace",
+          examYear: Number(education?.uaceYear || education?.uceYear || new Date().getFullYear()),
+          indexNumber: education?.uaceIndexNumber || education?.uceIndexNumber || "",
+          uce: {
+            subjects: (education?.uceSubjects || []).map((s) => ({
+              subject: s.subject,
+              grade: s.grade,
+            })),
+          },
+          uace: {
+            subjects: [
+              ...(education?.uacePrincipalSubjects || []).map((s) => ({
+                subject: s.subject,
+                grade: s.grade,
+                subjectType: "principal",
+              })),
+              ...(education?.uaceSubsidiarySubjects || []).map((s) => ({
+                subject: s.subject,
+                grade: s.grade,
+                subjectType: "subsidiary",
+              })),
+            ],
+          },
+          hecTrack: education?.hecTrack,
+          hecInstitution: education?.hecInstitution,
+          hecCompletionYear: education?.hecCompletionYear,
+          hecGpa: education?.hecGpa,
+          nationalCertificate: {
+            institution: education?.nationalCertificateInstitution,
+            field: education?.nationalCertificateField,
+            completionYear: education?.nationalCertificateCompletionYear,
+          },
+          diploma: {
+            institution: education?.diplomaInstitution,
+            program: education?.diplomaProgram,
+            completionYear: undefined,
+            class: education?.diplomaClass,
+          },
+          previousDegree: {
+            institution: education?.previousDegreeInstitution,
+            program: education?.previousDegreeProgram,
+            gpa: education?.previousDegreeGpa,
+          },
+        },
+        programChoices,
+        documents: {},
+      };
+
+      const response = await fetch("/api/admission/applications/wizard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(applicationData),
+        body: JSON.stringify(wizardPayload),
       });
 
       if (!response.ok) {
@@ -252,7 +326,8 @@ export default function ApplicationWizard() {
         });
         
         if (response.ok) {
-          const { draft } = await response.json();
+        const json = await response.json();
+        const draft = json?.data?.draft || json?.draft;
           if (draft && !localStorage.getItem(STORAGE_KEY)) {
             // Only use backend draft if no localStorage data
             // Merge carefully to avoid overwriting local changes

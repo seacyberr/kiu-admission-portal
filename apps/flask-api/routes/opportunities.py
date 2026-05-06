@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from datetime import datetime, date
-from models import db, Opportunity, OpportunityApplication
+from models import db, Opportunity, OpportunityApplication, Notification
 from routes.auth import get_current_user
 from sqlalchemy import func
 from utils.api_response import success_response, paginated_response, bad_request, unauthorized, forbidden, not_found, conflict, created, no_content
@@ -211,16 +211,40 @@ def update_application_status(app_id):
     if not data:
         return bad_request("No JSON body provided")
     
-    valid_statuses = ["applied", "shortlisted", "interview_scheduled", "accepted", "rejected"]
+    valid_statuses = ["applied", "reviewed", "shortlisted", "interview_scheduled", "interviewed", "placed", "accepted", "rejected"]
     new_status = data.get("status")
     if new_status not in valid_statuses:
         return bad_request(f"Status must be one of {valid_statuses}", errors={"status": f"Must be one of: {', '.join(valid_statuses)}"})
 
+    old_status = application.status
     application.status = new_status
     if "adminNotes" in data:
         application.admin_notes = data["adminNotes"]
     application.updated_at = datetime.utcnow()
     db.session.commit()
+    
+    if new_status != old_status:
+        status_messages = {
+            'reviewed': 'Your application has been reviewed.',
+            'shortlisted': 'Congratulations! You have been shortlisted.',
+            'interview_scheduled': 'You have been scheduled for an interview.',
+            'interviewed': 'You have completed your interview.',
+            'placed': 'Congratulations! You have been selected for the position.',
+            'accepted': 'Your application has been accepted.',
+            'rejected': 'Thank you for your interest. Your application was not successful.',
+        }
+        message = status_messages.get(new_status, f'Your application status has been updated to: {new_status}')
+        
+        notification = Notification(
+            user_id=application.user_id,
+            title=f'Application Status Update',
+            message=f'Your application for "{application.opportunity.title}" - {message}',
+            notification_type='application_status',
+            link=f'/finalist/opportunities/{application.opportunity_id}'
+        )
+        db.session.add(notification)
+        db.session.commit()
+    
     return success_response(application.to_dict(), message="Application status updated")
 
 
