@@ -1,27 +1,55 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, current_app
 from datetime import datetime
 import os
 import uuid
+from functools import wraps
 from werkzeug.utils import secure_filename
-from models import db, CareerPath, FinalistProfile, Program
+from models import db, CareerPath, FinalistProfile, Program, Opportunity
 from routes.auth import get_current_user
 from utils.api_response import success_response, paginated_response, bad_request, unauthorized, not_found, created
 
 career_bp = Blueprint("career", __name__)
 
 
+def require_auth(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        user, error = get_current_user()
+        if error:
+            return unauthorized(error)
+        return func(user, *args, **kwargs)
+
+    return wrapper
+
+
+def get_or_create_profile(user, create=False):
+    profile = FinalistProfile.query.filter_by(user_id=user.id).first()
+    if profile or not create:
+        return profile
+
+    profile = FinalistProfile(user_id=user.id)
+    db.session.add(profile)
+    return profile
+
+
+def json_array_contains(column, value):
+    return column.like(f'%"{value}"%')
+
+
+def parse_int_query(name, default):
+    return request.args.get(name, type=int) or default
+
+
 @career_bp.route("/paths", methods=["GET"])
 def list_career_paths():
     program_name = request.args.get("program")
     faculty = request.args.get("faculty")
-    page = int(request.args.get("page", 1))
-    limit = int(request.args.get("limit", 20))
+    page = parse_int_query("page", 1)
+    limit = parse_int_query("limit", 20)
 
     query = CareerPath.query
     if program_name:
-        # Cross-compatible JSON array search (works on both MySQL and PostgreSQL)
-        # Uses LIKE with JSON substring pattern instead of PostgreSQL-specific @>
-        query = query.filter(CareerPath.related_programs.like(f'%"{program_name}"%'))
+        query = query.filter(json_array_contains(CareerPath.related_programs, program_name))
     if faculty:
         query = query.filter_by(industry_field=faculty)
 
@@ -37,11 +65,8 @@ def list_career_paths():
 
 
 @career_bp.route("/my-profile", methods=["GET"])
-def get_my_profile():
-    user, error = get_current_user()
-    if error:
-        return unauthorized(error)
-
+@require_auth
+def get_my_profile(user):
     profile = FinalistProfile.query.filter_by(user_id=user.id).first()
     if not profile:
         return not_found("Finalist profile not found")
@@ -50,11 +75,8 @@ def get_my_profile():
 
 
 @career_bp.route("/my-profile", methods=["PUT"])
-def upsert_my_profile():
-    user, error = get_current_user()
-    if error:
-        return unauthorized(error)
-
+@require_auth
+def upsert_my_profile(user):
     data = request.get_json()
     if not data:
         return bad_request("No JSON body provided")
@@ -62,17 +84,16 @@ def upsert_my_profile():
     required = ["programId", "studentNumber", "yearOfStudy"]
     missing = [field for field in required if field not in data]
     if missing:
-        return bad_request(f"Missing required fields: {', '.join(missing)}", errors={field: "Required" for field in missing})
+        return bad_request(
+            f"Missing required fields: {', '.join(missing)}",
+            errors={field: "Required" for field in missing}
+        )
 
     program = db.session.get(Program, data["programId"])
     if not program:
         return not_found("Program not found")
 
-    profile = FinalistProfile.query.filter_by(user_id=user.id).first()
-    if not profile:
-        profile = FinalistProfile(user_id=user.id)
-        db.session.add(profile)
-
+    profile = get_or_create_profile(user, create=True)
     profile.program_id = data["programId"]
     profile.student_number = data["studentNumber"]
     profile.year_of_study = data["yearOfStudy"]
@@ -85,16 +106,18 @@ def upsert_my_profile():
     profile.is_finalist = True
     profile.updated_at = datetime.utcnow()
 
-    db.session.commit()
-    return success_response(profile.to_dict(), message="Profile updated successfully")
+    try:
+        db.session.commit()
+        return success_response(profile.to_dict(), message="Profile updated successfully")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Failed to update profile: {e}")
+        return bad_request("Failed to update profile")
 
 
 @career_bp.route("/profile/upload-cv", methods=["POST"])
-def upload_cv():
-    user, error = get_current_user()
-    if error:
-        return unauthorized(error)
-
+@require_auth
+def upload_cv(user):
     if 'cv' not in request.files:
         return bad_request("No file part")
 
@@ -129,116 +152,102 @@ def upload_cv():
     cv_url = f"/uploads/cvs/{filename}"
 
     # Update user profile
-    profile = FinalistProfile.query.filter_by(user_id=user.id).first()
-    if not profile:
-        profile = FinalistProfile(user_id=user.id)
-        db.session.add(profile)
-
+    profile = get_or_create_profile(user, create=True)
     profile.cv_url = cv_url
     profile.updated_at = datetime.utcnow()
-    db.session.commit()
-
-    return success_response({
-        "cvUrl": cv_url,
-        "filename": file.filename
-    }, message="CV uploaded successfully")
+    
+    try:
+        db.session.commit()
+        return success_response({
+            "cvUrl": cv_url,
+            "filename": file.filename
+        }, message="CV uploaded successfully")
+    except Exception as e:
+        db.session.rollback()
+        # Remove uploaded file on error
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        current_app.logger.error(f"Failed to update profile with CV: {e}")
+        return bad_request("Failed to upload CV")
 
 
 @career_bp.route("/match-jobs", methods=["GET"])
-def match_jobs_to_profile():
+@require_auth
+def match_jobs_to_profile(user):
     """
     Match student profile with available job opportunities
     Uses skills, program, and interests to find best matches
     """
-    user, error = get_current_user()
-    if error:
-        return unauthorized(error)
-    
-    # Get student's profile
     profile = FinalistProfile.query.filter_by(user_id=user.id).first()
     if not profile:
         return not_found("Profile not found")
-    
-    # Get student's program for career paths
+
     program = db.session.get(Program, profile.program_id) if profile.program_id else None
-    
-    # Get query parameters for filtering
     location = request.args.get("location")
-    job_type = request.args.get("job_type")  # full_time, part_time, internship
+    job_type = request.args.get("job_type")
     min_salary = request.args.get("min_salary", type=int)
-    
-    # Build query for opportunities
-    from models import Opportunity
+
     query = Opportunity.query.filter_by(status="active")
-    
     if location:
         query = query.filter(Opportunity.location.ilike(f"%{location}%"))
     if job_type:
         query = query.filter_by(job_type=job_type)
     if min_salary:
         query = query.filter(Opportunity.salary_min >= min_salary)
-    
-    # Get all active opportunities
-    opportunities = query.all()
-    
-    # Score each opportunity based on profile match
+
+    profile_skills = {s.lower() for s in (profile.skills or [])}
+    program_name = program.name.lower() if program else None
+
     scored_opportunities = []
-    for opp in opportunities:
+    for opp in query:
         score = 0
         reasons = []
-        
-        # Check if opportunity is related to student's program
-        if program and program.name in (opp.required_programs or []):
+
+        if program_name and opp.required_programs and program_name in {p.lower() for p in opp.required_programs}:
             score += 30
             reasons.append(f"Matches your program ({program.name})")
-        
-        # Check skill overlap
-        if profile.skills and opp.required_skills:
-            profile_skills = set(s.lower() for s in profile.skills)
-            opp_skills = set(s.lower() for s in opp.required_skills)
+
+        if opp.required_skills:
+            opp_skills = {s.lower() for s in opp.required_skills}
             overlap = profile_skills & opp_skills
             if overlap:
-                skill_score = len(overlap) * 10
-                score += min(skill_score, 40)  # Max 40 points for skills
+                score += min(len(overlap) * 10, 40)
                 reasons.append(f"Matches {len(overlap)} of your skills")
-        
-        # GPA bonus if specified
+
         if opp.min_gpa and profile.gpa and profile.gpa >= opp.min_gpa:
             score += 10
             reasons.append("Your GPA meets requirements")
-        
-        # Recent posting bonus
-        if opp.created_at:
-            days_old = (datetime.utcnow() - opp.created_at).days
-            if days_old <= 7:
-                score += 5
-                reasons.append("Posted recently")
-        
-        if score > 0:  # Only include if there's some match
+
+        if opp.created_at and (datetime.utcnow() - opp.created_at).days <= 7:
+            score += 5
+            reasons.append("Posted recently")
+
+        if score:
             scored_opportunities.append({
                 "opportunity": opp.to_dict(),
                 "match_score": min(score, 100),
                 "match_reasons": reasons,
-                "is_recommended": score >= 50
+                "is_recommended": score >= 50,
             })
-    
-    # Sort by match score
-    scored_opportunities.sort(key=lambda x: x["match_score"], reverse=True)
-    
+
+    scored_opportunities.sort(key=lambda item: item["match_score"], reverse=True)
+    recommended = [o for o in scored_opportunities if o["is_recommended"]]
+
     return success_response({
         "total_matches": len(scored_opportunities),
-        "recommended": [o for o in scored_opportunities if o["is_recommended"]],
+        "recommended": recommended,
         "other_matches": [o for o in scored_opportunities if not o["is_recommended"]],
         "profile_summary": {
             "program": program.name if program else None,
             "skills": profile.skills,
-            "gpa": profile.gpa
-        }
+            "gpa": profile.gpa,
+        },
     })
 
 
 @career_bp.route("/recommendations", methods=["GET"])
-def get_career_recommendations():
+@require_auth
+def get_career_recommendations(user):
     """
     Get personalized career path recommendations based on:
     - Academic performance
@@ -246,30 +255,23 @@ def get_career_recommendations():
     - Program of study
     - Industry trends
     """
-    user, error = get_current_user()
-    if error:
-        return unauthorized(error)
-    
     profile = FinalistProfile.query.filter_by(user_id=user.id).first()
     if not profile:
         return not_found("Profile not found")
-    
+
     program = db.session.get(Program, profile.program_id) if profile.program_id else None
-    
     recommendations = []
-    
-    # Get career paths related to the student's program
+
     if program:
         career_paths = CareerPath.query.filter(
-            CareerPath.related_programs.like(f'%"{program.name}"%')
+            json_array_contains(CareerPath.related_programs, program.name)
         ).all()
-        
+        profile_skills = {s.lower() for s in (profile.skills or [])}
+
         for path in career_paths:
-            # Calculate fit score
-            fit_score = 50  # Base score
+            fit_score = 50
             fit_reasons = [f"Common path for {program.name} graduates"]
-            
-            # GPA consideration
+
             if profile.gpa:
                 if profile.gpa >= 4.5:
                     fit_score += 20
@@ -277,14 +279,14 @@ def get_career_recommendations():
                 elif profile.gpa >= 3.5:
                     fit_score += 10
                     fit_reasons.append("Your strong GPA meets most entry requirements")
-            
-            # Skills match
-            if profile.skills and path.required_skills:
-                matches = set(s.lower() for s in profile.skills) & set(s.lower() for s in path.required_skills)
+
+            if path.required_skills:
+                path_skills = {s.lower() for s in path.required_skills}
+                matches = profile_skills & path_skills
                 if matches:
                     fit_score += min(len(matches) * 5, 15)
                     fit_reasons.append(f"You have {len(matches)} relevant skills")
-            
+
             recommendations.append({
                 "career_path": path.to_dict(),
                 "fit_score": min(fit_score, 100),
@@ -294,43 +296,36 @@ def get_career_recommendations():
                 "recommended_next_steps": [
                     f"Gain experience in {path.industry_field}",
                     "Build portfolio of relevant projects",
-                    "Network with professionals in the field"
-                ]
+                    "Network with professionals in the field",
+                ],
             })
-    
-    # Sort by fit score
+
     recommendations.sort(key=lambda x: x["fit_score"], reverse=True)
-    
     return success_response({
-        "recommendations": recommendations[:5],  # Top 5
+        "recommendations": recommendations[:5],
         "total_available": len(recommendations),
         "student_profile": {
             "program": program.name if program else None,
             "gpa": profile.gpa,
-            "skills": profile.skills
-        }
+            "skills": profile.skills,
+        },
     })
 
 
 @career_bp.route("/skills-gap", methods=["GET"])
-def analyze_skills_gap():
+@require_auth
+def analyze_skills_gap(user):
     """
     Analyze skills gap between current profile and target career path
     """
-    user, error = get_current_user()
-    if error:
-        return unauthorized(error)
-    
     profile = FinalistProfile.query.filter_by(user_id=user.id).first()
     if not profile:
         return not_found("Profile not found")
     
     target_career = request.args.get("target_career")
-    
     if not target_career:
         return bad_request("target_career parameter required", errors={"target_career": "Required"})
-    
-    # Find the career path
+
     career_path = CareerPath.query.filter(
         CareerPath.title.ilike(f"%{target_career}%")
     ).first()
@@ -339,9 +334,9 @@ def analyze_skills_gap():
         return not_found("Career path not found")
     
     # Compare skills
-    current_skills = set(s.lower() for s in (profile.skills or []))
-    required_skills = set(s.lower() for s in (career_path.required_skills or []))
-    
+    current_skills = {s.lower() for s in (profile.skills or [])}
+    required_skills = {s.lower() for s in (career_path.required_skills or [])}
+
     matched_skills = current_skills & required_skills
     missing_skills = required_skills - current_skills
     extra_skills = current_skills - required_skills
@@ -374,12 +369,11 @@ def analyze_skills_gap():
 @career_bp.route("/employers", methods=["GET"])
 def list_employer_partners():
     """List employers who partner with KIU for recruitment"""
-    page = int(request.args.get("page", 1))
-    limit = int(request.args.get("limit", 20))
+    page = parse_int_query("page", 1)
+    limit = parse_int_query("limit", 20)
     industry = request.args.get("industry")
-    
-    # This would typically query an Employer model
-    # For now, return mock data representing typical KIU partners
+    partners_only = request.args.get("partners_only") == "true"
+
     employers = [
         {
             "name": "Mulago National Referral Hospital",
@@ -417,12 +411,16 @@ def list_employer_partners():
     
     if industry:
         employers = [e for e in employers if industry.lower() in e["industry"].lower()]
-    
+    if partners_only:
+        employers = [e for e in employers if e["is_partner"]]
+
+    start = (page - 1) * limit
+    paged_employers = employers[start:start + limit]
     return success_response({
-        "employers": employers,
+        "employers": paged_employers,
         "total": len(employers),
-        "partners_only": request.args.get("partners_only") == "true",
-        "page": page
+        "partners_only": partners_only,
+        "page": page,
     })
 
 

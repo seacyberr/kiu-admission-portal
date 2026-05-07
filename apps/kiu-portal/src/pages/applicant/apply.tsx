@@ -879,7 +879,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                 <h2 className="text-xl font-bold mb-1">Uganda Certificate of Education (UCE)</h2>
                 <p className="text-muted-foreground text-sm mb-2">Enter your O-Level results as they appear on your UNEB certificate.</p>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm">
-                  <p className="font-medium text-blue-900">📋 UNEB UCE Subject Requirements:</p>
+                  <p className="font-medium text-blue-900">UNEB UCE Subject Requirements:</p>
                   <p className="text-blue-800 mt-1">
                     • <strong>8 Compulsory subjects:</strong> English, Math, Bio, Chem, Physics, History, Geo, CRE/IRE<br/>
                     • <strong>2 Optional subjects:</strong> Choose from Languages, Arts, Technical, or Commercial subjects
@@ -978,7 +978,7 @@ export default function Apply({ target }: { target: ApplyTarget }) {
                 <h2 className="text-xl font-bold mb-1">Uganda Advanced Certificate of Education (UACE)</h2>
                 <p className="text-muted-foreground text-sm mb-2">Enter your A-Level results as they appear on your UNEB certificate.</p>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm">
-                  <p className="font-medium text-blue-900">📋 UNEB UACE Subject Requirements:</p>
+                  <p className="font-medium text-blue-900">UNEB UACE Subject Requirements:</p>
                   <p className="text-blue-800 mt-1">
                     • <strong>3 Principal subjects:</strong> Choose from Sciences, Arts, Commercial, or Technical groups<br/>
                     • <strong>2 Subsidiary subjects:</strong> General Paper (compulsory) + 1 other (ICT, Sub-Math, or General Studies)

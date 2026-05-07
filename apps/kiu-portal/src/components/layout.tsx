@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGetCurrentUser } from '@workspace/api-client-react';
@@ -11,7 +11,7 @@ import { PageProgressBar } from './page-progress-bar';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { data: user } = useGetCurrentUser({ query: { retry: false } });
   const { theme, toggleTheme } = useTheme();
@@ -32,8 +32,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     setIsMobileMenuOpen(false);
   }, [location]);
 
-  const [, setLocation] = useLocation();
-
   const handleLogout = async () => {
     try {
       await fetch(`/api/auth/logout`, { method: "POST", credentials: "include" });
@@ -47,7 +45,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     setLocation("/login");
   };
 
-  const getNavLinks = () => {
+  const links = useMemo(() => {
     if (!user) return [];
     // Don't show app navigation on home page - home is a landing page
     if (location === '/') return [];
@@ -72,9 +70,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       { label: 'My Application', path: '/apply' },
       { label: 'Notifications', path: '/notifications' },
     ];
-  };
-
-  const links = getNavLinks();
+  }, [location, user]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background selection:bg-accent/20">

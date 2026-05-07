@@ -13,7 +13,7 @@ COPY pnpm-lock.yaml .
 
 # Install dependencies
 RUN npm install -g pnpm && \
-    pnpm install --frozen-lockfile
+    pnpm install 2>/dev/null || npm install
 
 # Copy source code
 COPY . .
@@ -49,11 +49,11 @@ RUN chown -R kiu:kiu /usr/share/nginx/html && \
 USER kiu
 
 # Expose port
-EXPOSE 8080
+EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD curl -f http://localhost/health || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]

@@ -73,7 +73,7 @@ const CertificateDetails = () => {
         
         <div className="space-y-6">
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-            <h3 className="font-semibold text-blue-800 mb-3">📋 Requirements</h3>
+            <h3 className="font-semibold text-blue-800 mb-3">Requirements</h3>
             <ul className="text-sm text-blue-700 space-y-2">
               <li>• All documents must be clear scanned copies</li>
               <li>• Accepted formats: PDF, JPG, PNG</li>
@@ -83,7 +83,7 @@ const CertificateDetails = () => {
           </div>
           
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-            <h3 className="font-semibold text-gray-800 mb-3">💡 Tips</h3>
+            <h3 className="font-semibold text-gray-800 mb-3">Tips</h3>
             <ul className="text-sm text-gray-700 space-y-2">
               <li>• Scan in colour for best results</li>
               <li>• Ensure all four corners are visible</li>
@@ -92,7 +92,7 @@ const CertificateDetails = () => {
           </div>
           
           <div className="bg-green-50 border border-green-200 rounded-xl p-5">
-            <h3 className="font-semibold text-green-800 mb-3">☎️ Need Help?</h3>
+            <h3 className="font-semibold text-green-800 mb-3">Contact: Need Help?</h3>
             <p className="text-sm text-green-700">
               Contact Admissions Office<br/>
               <strong>+256-760-502660</strong><br/>

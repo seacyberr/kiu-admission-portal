@@ -115,7 +115,6 @@ export default function CareerApplications() {
 
   const handleStatusUpdate = (appId: number) => {
     // In production, call API to update status
-    console.log(`Updating app ${appId} to status ${newStatus} with notes: ${adminNotes}`);
     setSelectedApp(null);
     setNewStatus("");
     setAdminNotes("");

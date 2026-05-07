@@ -91,12 +91,12 @@ export interface ApplicationData {
 
 // Wizard steps configuration
 const WIZARD_STEPS = [
-  { id: 1, name: "Personal", component: PersonalInformation, icon: "👤" },
-  { id: 2, name: "Contact", component: ContactLocation, icon: "📍" },
-  { id: 3, name: "Education", component: EducationBackground, icon: "📚" },
-  { id: 4, name: "Program", component: ProgramSelection, icon: "🎓" },
-  { id: 5, name: "Documents", component: DocumentUpload, icon: "📄" },
-  { id: 6, name: "Review", component: ReviewSubmit, icon: "✓" },
+  { id: 1, name: "Personal", component: PersonalInformation, icon: "user" },
+  { id: 2, name: "Contact", component: ContactLocation, icon: "location" },
+  { id: 3, name: "Education", component: EducationBackground, icon: "book" },
+  { id: 4, name: "Program", component: ProgramSelection, icon: "graduation" },
+  { id: 5, name: "Documents", component: DocumentUpload, icon: "file" },
+  { id: 6, name: "Review", component: ReviewSubmit, icon: "DONE:" },
 ];
 
 // Storage key for auto-save
@@ -442,7 +442,7 @@ export default function ApplicationWizard() {
                       }
                     }}
                   >
-                    {isCompleted ? "✓" : step.icon}
+                    {isCompleted ? "DONE:" : step.icon}
                   </div>
 
                   {/* Step Name */}

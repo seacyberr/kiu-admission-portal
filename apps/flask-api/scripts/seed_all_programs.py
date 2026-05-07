@@ -132,9 +132,9 @@ def seed_programs():
         if programs_to_add:
             db.session.add_all(programs_to_add)
             db.session.commit()
-            print(f"\n✅ Successfully added {len(programs_to_add)} programs!")
+            print(f"\nSUCCESS: Successfully added {len(programs_to_add)} programs!")
         else:
-            print("\nℹ️ No new programs to add (all already exist)")
+            print("\nINFO No new programs to add (all already exist)")
         
         print(f"\nTotal programs in database: {Program.query.count()}")
 

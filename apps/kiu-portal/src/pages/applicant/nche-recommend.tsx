@@ -516,7 +516,7 @@ export default function NCHERecommendationsPage() {
           <li><strong>Diploma holders:</strong> Direct entry recommendations (Year 2/3) based on diploma field</li>
         </ul>
         <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-          <h5 className="font-semibold text-yellow-800 text-sm">⚠️ Important Distinction</h5>
+          <h5 className="font-semibold text-yellow-800 text-sm">WARNING: Important Distinction</h5>
           <p className="text-xs text-yellow-700 mt-1">
             <strong>National Certificate</strong> = A <em>qualification/credential</em> you receive from a technical institute (2 years after UCE). 
             Example: "National Certificate in Automotive Engineering"

@@ -45,7 +45,7 @@ def create_admin_user():
         db.session.add(test_user)
         db.session.commit()
         
-        print("✅ Test user created successfully!")
+        print("SUCCESS: Test user created successfully!")
         print(f"Email: test@example.com")
         print(f"Password: testpass123")
         print(f"Role: applicant")

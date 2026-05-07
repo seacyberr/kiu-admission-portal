@@ -219,10 +219,14 @@ def update_application_status(application_id):
     if admin_notes:
         application.admin_notes = admin_notes
 
-    db.session.commit()
-
-    return success_response({
-        "id": application.id,
-        "status": application.status,
-        "adminNotes": application.admin_notes
-    }, message=f"Application status updated to {new_status}")
+    try:
+        db.session.commit()
+        return success_response({
+            "id": application.id,
+            "status": application.status,
+            "adminNotes": application.admin_notes
+        }, message=f"Application status updated to {new_status}")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Failed to update application status: {e}")
+        return error_response("Failed to update application status", 500)

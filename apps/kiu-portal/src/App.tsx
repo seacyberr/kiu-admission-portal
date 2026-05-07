@@ -1,3 +1,4 @@
+import type { ComponentType } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -43,330 +44,87 @@ import { RoleGuard } from "@/components/role-guard";
 
 const queryClient = new QueryClient();
 
+type ProtectedRouteConfig = {
+  path: string;
+  component?: ComponentType;
+  render?: () => JSX.Element;
+  roles?: Array<'applicant' | 'finalist' | 'admin'>;
+};
+
+const routes: ProtectedRouteConfig[] = [
+  { path: '/', component: Home },
+  { path: '/login', component: Login },
+  { path: '/register', component: Register },
+  { path: '/verify-otp', component: VerifyOtp },
+  { path: '/forgot-password', component: ForgotPassword },
+  { path: '/reset-password', component: ResetPassword },
+  { path: '/dashboard', component: ApplicantDashboard, roles: ['applicant'] },
+  { path: '/apply', component: NewApplicant, roles: ['applicant'] },
+  { path: '/profile', component: ApplicantProfile, roles: ['applicant'] },
+  { path: '/notifications', component: NotificationsPage, roles: ['applicant', 'finalist', 'admin'] },
+  { path: '/recommend', component: NCHERecommend, roles: ['applicant'] },
+  { path: '/recommend/o-level', component: NCHERecommend, roles: ['applicant'] },
+  { path: '/recommend/a-level', component: NCHERecommend, roles: ['applicant'] },
+  { path: '/recommend/diploma', component: NCHERecommend, roles: ['applicant'] },
+  { path: '/recommend/hec', component: NCHERecommend, roles: ['applicant'] },
+  { path: '/recommend/national-cert', component: NCHERecommend, roles: ['applicant'] },
+  { path: '/recommend/bachelors', component: NCHERecommend, roles: ['applicant'] },
+  { path: '/recommend/tool', component: NCHERecommend, roles: ['applicant'] },
+  { path: '/apply/degree', render: () => <ApplyForm target="degree" />, roles: ['applicant'] },
+  { path: '/apply/diploma', render: () => <ApplyForm target="diploma" />, roles: ['applicant'] },
+  { path: '/apply/hec', render: () => <ApplyForm target="hec" />, roles: ['applicant'] },
+  { path: '/apply/masters', render: () => <ApplyForm target="masters" />, roles: ['applicant'] },
+  { path: '/apply/phd', render: () => <ApplyForm target="phd" />, roles: ['applicant'] },
+  { path: '/recommend-simple', component: SimpleRecommend, roles: ['applicant'] },
+  { path: '/realistic-recommend', component: RealisticRecommend, roles: ['applicant'] },
+  { path: '/apply/start', component: ApplicationStart, roles: ['applicant'] },
+  { path: '/apply/certificate-details', component: CertificateDetails, roles: ['applicant'] },
+  { path: '/apply/personal-info', component: PersonalInfo, roles: ['applicant'] },
+  { path: '/apply/review', component: ReviewSubmit, roles: ['applicant'] },
+  { path: '/career', component: FinalistDashboard, roles: ['finalist'] },
+  { path: '/career/profile', component: FinalistProfileEdit, roles: ['finalist'] },
+  { path: '/career/applications', component: MyApplications, roles: ['finalist'] },
+  { path: '/career/paths', component: CareerPaths, roles: ['finalist'] },
+  { path: '/career/opportunities', component: Opportunities, roles: ['finalist'] },
+  { path: '/admin', component: AdminDashboard, roles: ['admin'] },
+  { path: '/admin/programme-applications-dashboard', component: AdminProgrammeApplicationsDashboard, roles: ['admin'] },
+  { path: '/admin/admissions', component: AdminAdmissions, roles: ['admin'] },
+  { path: '/admin/opportunities', component: AdminOpportunities, roles: ['admin'] },
+  { path: '/admin/career-applications', component: CareerApplications, roles: ['admin'] },
+  { path: '/admin/users', component: AdminUsers, roles: ['admin'] },
+  { path: '/admin/programs', component: AdminPrograms, roles: ['admin'] },
+  { path: '/finalist', component: FinalistDashboard, roles: ['finalist', 'admin'] },
+  { path: '/finalist/careers', component: CareerPaths, roles: ['finalist', 'admin'] },
+  { path: '/finalist/opportunities', component: Opportunities, roles: ['finalist', 'admin'] },
+  { path: '/finalist/my-applications', component: MyApplications, roles: ['finalist', 'admin'] },
+  { path: '/finalist/profile', component: FinalistProfileEdit, roles: ['finalist', 'admin'] },
+];
+
+function renderRoute(route: ProtectedRouteConfig) {
+  const { path, component: Component, render, roles } = route;
+  const element = render ? render() : Component ? <Component /> : null;
+
+  return (
+    <Route key={path} path={path}>
+      {() =>
+        roles ? (
+          <RoleGuard roles={roles}>{element}</RoleGuard>
+        ) : (
+          element
+        )
+      }
+    </Route>
+  );
+}
+
 function Router() {
   return (
-    <ErrorBoundary>
-      <Layout>
-        <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/login" component={Login} />
-        <Route path="/register" component={Register} />
-        <Route path="/verify-otp" component={VerifyOtp} />
-        <Route path="/forgot-password" component={ForgotPassword} />
-        <Route path="/reset-password" component={ResetPassword} />
-
-        {/* Applicant */}
-        <Route path="/dashboard">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <ApplicantDashboard />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/apply">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <NewApplicant />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/profile">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <ApplicantProfile />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/notifications">
-          {() => (
-            <RoleGuard roles={["applicant", "finalist", "admin"]}>
-              <NotificationsPage />
-            </RoleGuard>
-          )}
-        </Route>
-
-        {/* NCHE UNDERGRADUATE RECOMMENDATION TOOL - Based on UNEB exam results */}
-        <Route path="/recommend">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <NCHERecommend />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/recommend/o-level">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <NCHERecommend />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/recommend/a-level">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <NCHERecommend />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/recommend/diploma">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <NCHERecommend />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/recommend/hec">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <NCHERecommend />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/recommend/national-cert">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <NCHERecommend />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/recommend/bachelors">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <NCHERecommend />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/recommend/tool">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <NCHERecommend />
-            </RoleGuard>
-          )}
-        </Route>
-
-        <Route path="/apply/degree">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <ApplyForm target="degree" />
-            </RoleGuard>
-          )}
-        </Route>
-
-        <Route path="/apply/diploma">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <ApplyForm target="diploma" />
-            </RoleGuard>
-          )}
-        </Route>
-
-        <Route path="/apply/hec">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <ApplyForm target="hec" />
-            </RoleGuard>
-          )}
-        </Route>
-
-        <Route path="/apply/masters">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <ApplyForm target="masters" />
-            </RoleGuard>
-          )}
-        </Route>
-
-        <Route path="/apply/phd">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <ApplyForm target="phd" />
-            </RoleGuard>
-          )}
-        </Route>
-
-        {/* NCHE-Based Recommendation System (Primary) */}
-        <Route path="/nche-recommend">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <NCHERecommend />
-            </RoleGuard>
-          )}
-        </Route>
-        
-        {/* Alternative Recommendation Systems */}
-        <Route path="/recommend-simple">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <SimpleRecommend />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/realistic-recommend">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <RealisticRecommend />
-            </RoleGuard>
-          )}
-        </Route>
-
-        {/* New Application Workflow */}
-        <Route path="/apply/start">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <ApplicationStart />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/apply/certificate-details">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <CertificateDetails />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/apply/personal-info">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <PersonalInfo />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/apply/review">
-          {() => (
-            <RoleGuard roles={["applicant"]}>
-              <ReviewSubmit />
-            </RoleGuard>
-          )}
-        </Route>
-
-        {/* Finalist */}
-        <Route path="/career">
-          {() => (
-            <RoleGuard roles={["finalist"]}>
-              <FinalistDashboard />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/career/profile">
-          {() => (
-            <RoleGuard roles={["finalist"]}>
-              <FinalistProfileEdit />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/career/applications">
-          {() => (
-            <RoleGuard roles={["finalist"]}>
-              <MyApplications />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/career/paths">
-          {() => (
-            <RoleGuard roles={["finalist"]}>
-              <CareerPaths />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/career/opportunities">
-          {() => (
-            <RoleGuard roles={["finalist"]}>
-              <Opportunities />
-            </RoleGuard>
-          )}
-        </Route>
-
-        {/* Admin */}
-        <Route path="/admin">
-          {() => (
-            <RoleGuard roles={["admin"]}>
-              <AdminDashboard />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/admin/programme-applications-dashboard">
-          {() => (
-            <RoleGuard roles={["admin"]}>
-              <AdminProgrammeApplicationsDashboard />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/admin/admissions">
-          {() => (
-            <RoleGuard roles={["admin"]}>
-              <AdminAdmissions />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/admin/opportunities">
-          {() => (
-            <RoleGuard roles={["admin"]}>
-              <AdminOpportunities />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/admin/career-applications">
-          {() => (
-            <RoleGuard roles={["admin"]}>
-              <CareerApplications />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/admin/users">
-          {() => (
-            <RoleGuard roles={["admin"]}>
-              <AdminUsers />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/admin/programs">
-          {() => (
-            <RoleGuard roles={["admin"]}>
-              <AdminPrograms />
-            </RoleGuard>
-          )}
-        </Route>
-
-        {/* Finalist */}
-        <Route path="/finalist">
-          {() => (
-            <RoleGuard roles={["finalist", "admin"]}>
-              <FinalistDashboard />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/finalist/careers">
-          {() => (
-            <RoleGuard roles={["finalist", "admin"]}>
-              <CareerPaths />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/finalist/opportunities">
-          {() => (
-            <RoleGuard roles={["finalist", "admin"]}>
-              <Opportunities />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/finalist/my-applications">
-          {() => (
-            <RoleGuard roles={["finalist", "admin"]}>
-              <MyApplications />
-            </RoleGuard>
-          )}
-        </Route>
-        <Route path="/finalist/profile">
-          {() => (
-            <RoleGuard roles={["finalist", "admin"]}>
-              <FinalistProfileEdit />
-            </RoleGuard>
-          )}
-        </Route>
-
+    <Layout>
+      <Switch>
+        {routes.map(renderRoute)}
         <Route component={NotFound} />
       </Switch>
     </Layout>
-    </ErrorBoundary>
   );
 }
 

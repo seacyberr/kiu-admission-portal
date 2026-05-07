@@ -26,18 +26,18 @@ def main():
     print("\n[1] Checking server status...")
     ret, out, err = run_command(f"curl -s {BASE_URL}/api/health")
     if ret == 0 and 'healthy' in out:
-        print("    ✅ Server is running")
+        print("    SUCCESS: Server is running")
     else:
-        print("    ❌ Server not running - attempting to start...")
+        print("    ERROR: Server not running - attempting to start...")
         # Try to start server
         ret, out, err = run_command("gunicorn -w 1 -b 127.0.0.1:5001 wsgi:app --daemon", 
                                     cwd="/home/sea/Downloads/Kiu-Admission-Portal/apps/flask-api")
         time.sleep(5)
         ret, out, err = run_command(f"curl -s {BASE_URL}/api/health")
         if ret == 0 and 'healthy' in out:
-            print("    ✅ Server started successfully")
+            print("    SUCCESS: Server started successfully")
         else:
-            print(f"    ❌ Failed to start server: {err}")
+            print(f"    ERROR: Failed to start server: {err}")
             return
     
     # Test endpoints
@@ -51,22 +51,22 @@ def main():
     for name, cmd, expected in tests:
         ret, out, err = run_command(cmd)
         if ret == 0 and expected in out:
-            print(f"    ✅ {name}")
+            print(f"    SUCCESS: {name}")
         else:
-            print(f"    ❌ {name} - Error: {err[:50] if err else out[:50]}")
+            print(f"    ERROR: {name} - Error: {err[:50] if err else out[:50]}")
     
     # Test NCHE Assessment
     print("\n[3] NCHE Assessment Test:")
     nche_data = '{"qualification":"uace","curriculum":"new","subjects":[{"name":"Mathematics","grade":"A"}]}'
     ret, out, err = run_command(f"curl -s -X POST {BASE_URL}/api/v1/nche/assess -H 'Content-Type: application/json' -d '{nche_data}'")
     if ret == 0 and '"eligible"' in out:
-        print("    ✅ NCHE Assessment working")
+        print("    SUCCESS: NCHE Assessment working")
         if '"transparency"' in out:
-            print("    ✅ Transparency field present")
+            print("    SUCCESS: Transparency field present")
         else:
-            print("    ⚠️ Transparency field missing")
+            print("    WARNING: Transparency field missing")
     else:
-        print(f"    ❌ NCHE Assessment failed: {out[:100]}")
+        print(f"    ERROR: NCHE Assessment failed: {out[:100]}")
     
     # Test Registration
     print("\n[4] User Registration Test:")
@@ -75,9 +75,9 @@ def main():
     reg_data = f'"email":"{email}","password":"TestPass123!","first_name":"Test","last_name":"User","phone":"+256799999999","role":"applicant"'
     ret, out, err = run_command(f"curl -s -X POST {BASE_URL}/api/auth/register -H 'Content-Type: application/json' -d '{{{reg_data}}}'")
     if ret == 0 and ('user_id' in out or 'id' in out or '201' in str(ret)):
-        print(f"    ✅ User registration working ({email})")
+        print(f"    SUCCESS: User registration working ({email})")
     else:
-        print(f"    ⚠️ Registration: {out[:100]}")
+        print(f"    WARNING: Registration: {out[:100]}")
     
     # Frontend checks
     print("\n[5] Frontend File Verification:")
@@ -85,9 +85,9 @@ def main():
     files_to_check = ["apply.tsx", "nche-recommend.tsx"]
     for f in files_to_check:
         if os.path.exists(f"{frontend_path}/{f}"):
-            print(f"    ✅ {f} exists")
+            print(f"    SUCCESS: {f} exists")
         else:
-            print(f"    ❌ {f} missing")
+            print(f"    ERROR: {f} missing")
     
     # Check subject lists
     apply_file = f"{frontend_path}/apply.tsx"
@@ -99,9 +99,9 @@ def main():
                  "ALEVEL_PRINCIPAL_SUBJECTS", "ALEVEL_SUBSIDIARY_SUBJECTS"]
         for lst in lists:
             if lst in content:
-                print(f"    ✅ {lst} defined")
+                print(f"    SUCCESS: {lst} defined")
             else:
-                print(f"    ❌ {lst} missing")
+                print(f"    ERROR: {lst} missing")
     
     print("\n" + "="*70)
     print("TESTS COMPLETE")

@@ -28,7 +28,7 @@ def reset_admin_password():
         admin = User.query.filter_by(role="admin").first()
         
         if not admin:
-            print("❌ No admin user found in the database!")
+            print("ERROR: No admin user found in the database!")
             print("Run the server with SEED_DATABASE=true to create an admin user.")
             return
         
@@ -46,7 +46,7 @@ def reset_admin_password():
         print(f"  Email    : {admin.email}")
         print(f"  Password : {new_password}")
         print("=" * 60)
-        print("\n✅ Admin password has been reset successfully!")
+        print("\nSUCCESS: Admin password has been reset successfully!")
         print("You can now login to the admin dashboard at /admin")
 
 if __name__ == "__main__":

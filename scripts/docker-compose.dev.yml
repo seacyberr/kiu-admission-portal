@@ -2,8 +2,6 @@
 # Cross-platform development environment (Windows, macOS, Linux)
 # Uses MySQL + Redis for consistent database behavior across platforms
 
-version: '3.8'
-
 services:
   # MySQL Database (consistent across all platforms)
   db:
@@ -15,7 +13,7 @@ services:
       MYSQL_USER: kiu_dev
       MYSQL_PASSWORD: kiu_dev_password
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -45,10 +43,14 @@ services:
 
   # Flask API Backend
   api:
+    image: kiu-api-dev
     build:
       context: ./apps/flask-api
       dockerfile: Dockerfile.dev
     container_name: kiu-api-dev
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       FLASK_ENV: development
       DATABASE_URL: mysql+pymysql://kiu_dev:kiu_dev_password@db:3306/kiu_portal_dev
@@ -86,6 +88,9 @@ services:
     image: node:20-slim
     container_name: kiu-frontend-dev
     working_dir: /workspace/apps/kiu-portal
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       VITE_API_URL: http://localhost:5001/api
       CHOKIDAR_USEPOLLING: "true"  # For Windows file watching

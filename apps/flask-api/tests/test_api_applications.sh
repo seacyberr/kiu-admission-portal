@@ -53,30 +53,30 @@ test_exam_level() {
         -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"firstName\":\"$FIRST_NAME\",\"lastName\":\"$LAST_NAME\"}")
     
     if echo $REGISTER | grep -q "token"; then
-        echo "   ✓ User registered successfully"
+        echo "   OK User registered successfully"
     elif echo $REGISTER | grep -q "needsVerification"; then
-        echo "   ℹ User registered, OTP verification required"
+        echo "   INFO User registered, OTP verification required"
         # Get OTP from database (for testing purposes)
         OTP_CODE=$(sqlite3 /home/sea/Downloads/Kiu-Admission-Portal/apps/flask-api/instance/kiu_admissions.db \
             "SELECT code FROM otp_codes WHERE user_id = (SELECT id FROM users WHERE email = '$EMAIL') ORDER BY created_at DESC LIMIT 1" 2>/dev/null)
         if [ -z "$OTP_CODE" ]; then
-            echo "   ✗ Could not retrieve OTP from database"
+            echo "   FAIL Could not retrieve OTP from database"
             return 1
         fi
-        echo "   ℹ Verifying OTP: $OTP_CODE"
+        echo "   INFO Verifying OTP: $OTP_CODE"
         VERIFY=$(curl -s -X POST "$BASE_URL/auth/verify-otp" \
             -H "Content-Type: application/json" \
             -d "{\"email\":\"$EMAIL\",\"code\":\"$OTP_CODE\"}")
         if echo $VERIFY | grep -q "token"; then
-            echo "   ✓ OTP verified successfully"
+            echo "   OK OTP verified successfully"
         else
-            echo "   ✗ OTP verification failed: $VERIFY"
+            echo "   FAIL OTP verification failed: $VERIFY"
             return 1
         fi
     elif echo $REGISTER | grep -q "already exists"; then
-        echo "   ℹ User already exists, proceeding to login"
+        echo "   INFO User already exists, proceeding to login"
     else
-        echo "   ✗ Registration failed: $REGISTER"
+        echo "   FAIL Registration failed: $REGISTER"
         return 1
     fi
     
@@ -90,31 +90,31 @@ test_exam_level() {
     TOKEN=$(echo $LOGIN | jq -r '.token')
     
     if [ "$TOKEN" != "null" ] && [ -n "$TOKEN" ]; then
-        echo "   ✓ Login successful, token obtained"
+        echo "   OK Login successful, token obtained"
     elif echo $LOGIN | grep -q "needsVerification"; then
-        echo "   ℹ Login requires OTP verification"
+        echo "   INFO Login requires OTP verification"
         # Wait a moment for OTP to be saved to database
         sleep 1
         # Get OTP from database
         OTP_CODE=$(sqlite3 /home/sea/Downloads/Kiu-Admission-Portal/apps/flask-api/instance/kiu_admissions.db \
             "SELECT code FROM otp_codes WHERE user_id = (SELECT id FROM users WHERE email = '$EMAIL') ORDER BY created_at DESC LIMIT 1" 2>/dev/null)
         if [ -z "$OTP_CODE" ]; then
-            echo "   ✗ Could not retrieve OTP from database"
+            echo "   FAIL Could not retrieve OTP from database"
             return 1
         fi
-        echo "   ℹ Verifying OTP: $OTP_CODE"
+        echo "   INFO Verifying OTP: $OTP_CODE"
         VERIFY=$(curl -s -X POST "$BASE_URL/auth/verify-otp" \
             -H "Content-Type: application/json" \
             -d "{\"email\":\"$EMAIL\",\"code\":\"$OTP_CODE\"}")
         if echo $VERIFY | grep -q "token"; then
             TOKEN=$(echo $VERIFY | jq -r '.token')
-            echo "   ✓ OTP verified successfully, token obtained"
+            echo "   OK OTP verified successfully, token obtained"
         else
-            echo "   ✗ OTP verification failed: $VERIFY"
+            echo "   FAIL OTP verification failed: $VERIFY"
             return 1
         fi
     else
-        echo "   ✗ Login failed: $LOGIN"
+        echo "   FAIL Login failed: $LOGIN"
         return 1
     fi
     
@@ -131,13 +131,13 @@ test_exam_level() {
     if echo $APP_RESPONSE | grep -q "applicationNumber"; then
         APP_NUM=$(echo $APP_RESPONSE | jq -r '.applicationNumber')
         APP_ID=$(echo $APP_RESPONSE | jq -r '.id')
-        echo "   ✓ Application submitted successfully"
-        echo "   ✓ Application Number: $APP_NUM"
-        echo "   ✓ Application ID: $APP_ID"
-        echo "   ✓ Status: $(echo $APP_RESPONSE | jq -r '.status')"
-        echo "   ✓ Exam Level: $(echo $APP_RESPONSE | jq -r '.examLevel')"
+        echo "   OK Application submitted successfully"
+        echo "   OK Application Number: $APP_NUM"
+        echo "   OK Application ID: $APP_ID"
+        echo "   OK Status: $(echo $APP_RESPONSE | jq -r '.status')"
+        echo "   OK Exam Level: $(echo $APP_RESPONSE | jq -r '.examLevel')"
     else
-        echo "   ✗ Application submission failed: $APP_RESPONSE"
+        echo "   FAIL Application submission failed: $APP_RESPONSE"
         return 1
     fi
     
@@ -148,10 +148,10 @@ test_exam_level() {
         -H "Authorization: Bearer $TOKEN")
     
     if echo $MY_APP | grep -q "applicationNumber"; then
-        echo "   ✓ Application found in database"
-        echo "   ✓ Application Number: $(echo $MY_APP | jq -r '.application.applicationNumber')"
+        echo "   OK Application found in database"
+        echo "   OK Application Number: $(echo $MY_APP | jq -r '.application.applicationNumber')"
     else
-        echo "   ✗ Application not found"
+        echo "   FAIL Application not found"
         return 1
     fi
     
@@ -191,10 +191,10 @@ echo ""
 echo "================================================================================"
 echo "TEST SUMMARY"
 echo "================================================================================"
-echo "A_LEVEL         : $([ $ALEVEL_RESULT -eq 0 ] && echo '✓ PASSED' || echo '✗ FAILED')"
-echo "O_LEVEL         : $([ $OLEVEL_RESULT -eq 0 ] && echo '✓ PASSED' || echo '✗ FAILED')"
-echo "HEC             : $([ $HEC_RESULT -eq 0 ] && echo '✓ PASSED' || echo '✗ FAILED')"
-echo "DIPLOMA         : $([ $DIPLOMA_RESULT -eq 0 ] && echo '✓ PASSED' || echo '✗ FAILED')"
+echo "A_LEVEL         : $([ $ALEVEL_RESULT -eq 0 ] && echo 'OK PASSED' || echo 'FAIL FAILED')"
+echo "O_LEVEL         : $([ $OLEVEL_RESULT -eq 0 ] && echo 'OK PASSED' || echo 'FAIL FAILED')"
+echo "HEC             : $([ $HEC_RESULT -eq 0 ] && echo 'OK PASSED' || echo 'FAIL FAILED')"
+echo "DIPLOMA         : $([ $DIPLOMA_RESULT -eq 0 ] && echo 'OK PASSED' || echo 'FAIL FAILED')"
 
 ALL_PASSED=0
 [ $ALEVEL_RESULT -ne 0 ] && ALL_PASSED=1
@@ -204,9 +204,9 @@ ALL_PASSED=0
 
 echo ""
 if [ $ALL_PASSED -eq 0 ]; then
-    echo "Overall Result: ✓ ALL TESTS PASSED"
+    echo "Overall Result: OK ALL TESTS PASSED"
 else
-    echo "Overall Result: ✗ SOME TESTS FAILED"
+    echo "Overall Result: FAIL SOME TESTS FAILED"
 fi
 
 exit $ALL_PASSED

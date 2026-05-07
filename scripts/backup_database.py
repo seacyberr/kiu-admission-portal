@@ -262,8 +262,8 @@ def main():
     logger.info("Backup Summary:")
     logger.info(f"  File: {backup_info['filename']}")
     logger.info(f"  Size: {backup_info['size_mb']} MB")
-    logger.info(f"  S3 Upload: {'✓' if s3_success else '✗'}")
-    logger.info(f"  GCS Upload: {'✓' if gcs_success else '✗'}")
+    logger.info(f"  S3 Upload: {'OK' if s3_success else 'FAIL'}")
+    logger.info(f"  GCS Upload: {'OK' if gcs_success else 'FAIL'}")
     logger.info("=" * 60)
     logger.info("Backup completed successfully!")
     

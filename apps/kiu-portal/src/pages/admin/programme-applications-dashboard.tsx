@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useListAdmissionApplications } from '@workspace/api-client-react';
-import { Card } from '@/components/ui/shared';
+import { Button, Card, Input } from '@/components/ui/shared';
 import {
   BarChart,
   Bar,
@@ -16,18 +16,32 @@ import {
   AreaChart
 } from 'recharts';
 import { Search, Download, Eye, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/shared';
-import { Input } from '@/components/ui/shared';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/status-badge';
 import type { AdmissionApplication } from '@workspace/api-client-react';
 import { useToast } from '@/hooks/use-toast';
 import { CardSkeleton, ChartSkeleton, TableSkeleton, Skeleton } from '@/components/ui/skeleton';
 
+const STATUS_BADGE_STATUS: Record<string, 'pending' | 'reviewed' | 'approved' | 'rejected' | 'in_progress'> = {
+  pending: 'pending',
+  under_review: 'reviewed',
+  accepted: 'approved',
+  rejected: 'rejected',
+  waitlisted: 'in_progress',
+};
+
+const statusOptions = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'under_review', label: 'Under Review' },
+  { value: 'accepted', label: 'Accepted' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'waitlisted', label: 'Waitlisted' },
+];
+
 export default function AdminProgrammeApplicationsDashboard() {
   const { data: applicationsData, isLoading, error } = useListAdmissionApplications();
   const [applications, setApplications] = useState<AdmissionApplication[]>([]);
-  const [filteredApplications, setFilteredApplications] = useState<AdmissionApplication[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [programmeFilter, setProgrammeFilter] = useState<string>('all');
@@ -36,61 +50,73 @@ export default function AdminProgrammeApplicationsDashboard() {
   useEffect(() => {
     if (applicationsData?.applications) {
       setApplications(applicationsData.applications);
-      setFilteredApplications(applicationsData.applications);
     }
   }, [applicationsData]);
 
-  useEffect(() => {
-    let filtered = applications;
+  const filteredApplications = useMemo(() => {
+    return applications.filter((app) => {
+      const matchesSearch = searchTerm
+        ? (app.applicationNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+          (app.applicantPhone?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+          (app.program?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+        : true;
 
-    if (searchTerm) {
-      filtered = filtered.filter(app =>
-        (app.applicationNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
-        (app.applicantPhone?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
-        (app.program?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
-      );
-    }
+      const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
+      const matchesProgramme = programmeFilter === 'all' || app.program?.name === programmeFilter;
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(app => app.status === statusFilter);
-    }
+      return matchesSearch && matchesStatus && matchesProgramme;
+    });
+  }, [applications, programmeFilter, searchTerm, statusFilter]);
 
-    if (programmeFilter !== 'all') {
-      filtered = filtered.filter(app => app.program?.name === programmeFilter);
-    }
+  const statusCounts = useMemo(
+    () =>
+      applications.reduce(
+        (acc, app) => {
+          acc[app.status] = (acc[app.status] || 0) + 1;
+          return acc;
+        },
+        {
+          pending: 0,
+          under_review: 0,
+          accepted: 0,
+          rejected: 0,
+          waitlisted: 0,
+        } as Record<string, number>
+      ),
+    [applications]
+  );
 
-    setFilteredApplications(filtered);
-  }, [applications, searchTerm, statusFilter, programmeFilter]);
+  const statusData = useMemo(
+    () => [
+      { name: 'Pending', value: statusCounts.pending, color: '#FFBB28' },
+      { name: 'Under Review', value: statusCounts.under_review, color: '#0088FE' },
+      { name: 'Accepted', value: statusCounts.accepted, color: '#00C49F' },
+      { name: 'Rejected', value: statusCounts.rejected, color: '#FF8042' },
+      { name: 'Waitlisted', value: statusCounts.waitlisted, color: '#8884D8' },
+    ],
+    [statusCounts]
+  );
 
-  // Prepare chart data
-  const statusData = [
-    { name: 'Pending', value: applications.filter(a => a.status === 'pending').length, color: '#FFBB28' },
-    { name: 'Under Review', value: applications.filter(a => a.status === 'under_review').length, color: '#0088FE' },
-    { name: 'Accepted', value: applications.filter(a => a.status === 'accepted').length, color: '#00C49F' },
-    { name: 'Rejected', value: applications.filter(a => a.status === 'rejected').length, color: '#FF8042' },
-    { name: 'Waitlisted', value: applications.filter(a => a.status === 'waitlisted').length, color: '#8884D8' },
-  ];
+  const programmeData = useMemo(
+    () =>
+      applications.reduce((acc, app) => {
+        const programmeName = app.program?.name || `Program ${app.programId}`;
+        const existing = acc.find((item) => item.programme === programmeName);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          acc.push({ programme: programmeName, count: 1 });
+        }
+        return acc;
+      }, [] as { programme: string; count: number }[]),
+    [applications]
+  );
 
-  const programmeData = applications.reduce((acc, app) => {
-    const programmeName = app.program?.name || `Program ${app.programId}`;
-    const existing = acc.find(item => item.programme === programmeName);
-    if (existing) {
-      existing.count += 1;
-    } else {
-      acc.push({ programme: programmeName, count: 1 });
-    }
-    return acc;
-  }, [] as { programme: string; count: number }[]);
-
-  // Mock timeline data - in real app, this would come from analytics API
-  const timelineData = [
-    { month: 'Jan', applications: 45 },
-    { month: 'Feb', applications: 52 },
-    { month: 'Mar', applications: 38 },
-    { month: 'Apr', applications: 61 },
-    { month: 'May', applications: 55 },
-    { month: 'Jun', applications: 67 },
-  ];
+  const programmeOptionsList = useMemo(
+    () =>
+      Array.from(new Set(applications.map((app) => app.program?.name).filter(Boolean))) as string[],
+    [applications]
+  );
 
   const handleStatusChange = async (applicationId: number, newStatus: string) => {
     try {
@@ -107,37 +133,37 @@ export default function AdminProgrammeApplicationsDashboard() {
         throw new Error('Failed to update status');
       }
 
-      // Update local state
-      setApplications(prev =>
-        prev.map(app =>
+      setApplications((prev) =>
+        prev.map((app) =>
           app.id === applicationId ? { ...app, status: newStatus as any, updatedAt: new Date().toISOString() } : app
         )
       );
 
       toast({
-        title: "Status Updated",
+        title: 'Status Updated',
         description: `Application status changed to ${newStatus.replace('_', ' ')}`,
       });
     } catch (error) {
       console.error('Error updating application status:', error);
       toast({
-        title: "Update Failed",
-        description: "Failed to update application status. Please try again.",
-        variant: "destructive",
+        title: 'Update Failed',
+        description: 'Failed to update application status. Please try again.',
+        variant: 'destructive',
       });
     }
   };
 
-  const getStatusBadgeStatus = (status: string) => {
-    switch (status) {
-      case 'pending': return 'pending';
-      case 'under_review': return 'reviewed';
-      case 'accepted': return 'approved';
-      case 'rejected': return 'rejected';
-      case 'waitlisted': return 'in_progress';
-      default: return 'pending';
-    }
-  };
+  const getStatusBadgeStatus = (status: string) => STATUS_BADGE_STATUS[status] ?? 'pending';
+
+  // Mock timeline data - in real app, this would come from analytics API
+  const timelineData = [
+    { month: 'Jan', applications: 45 },
+    { month: 'Feb', applications: 52 },
+    { month: 'Mar', applications: 38 },
+    { month: 'Apr', applications: 61 },
+    { month: 'May', applications: 55 },
+    { month: 'Jun', applications: 67 },
+  ];
 
   if (isLoading) {
     return (
@@ -209,7 +235,7 @@ export default function AdminProgrammeApplicationsDashboard() {
             </div>
             <div>
               <p className="text-muted-foreground font-semibold text-sm">Pending Review</p>
-              <p className="text-3xl font-bold">{applications.filter(a => a.status === 'pending').length}</p>
+              <p className="text-3xl font-bold">{statusCounts.pending}</p>
             </div>
           </div>
         </Card>
@@ -221,7 +247,7 @@ export default function AdminProgrammeApplicationsDashboard() {
             </div>
             <div>
               <p className="text-muted-foreground font-semibold text-sm">Accepted</p>
-              <p className="text-3xl font-bold">{applications.filter(a => a.status === 'accepted').length}</p>
+              <p className="text-3xl font-bold">{statusCounts.accepted}</p>
             </div>
           </div>
         </Card>
@@ -233,7 +259,7 @@ export default function AdminProgrammeApplicationsDashboard() {
             </div>
             <div>
               <p className="text-muted-foreground font-semibold text-sm">Rejected</p>
-              <p className="text-3xl font-bold">{applications.filter(a => a.status === 'rejected').length}</p>
+              <p className="text-3xl font-bold">{statusCounts.rejected}</p>
             </div>
           </div>
         </Card>
@@ -311,11 +337,9 @@ export default function AdminProgrammeApplicationsDashboard() {
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="under_review">Under Review</SelectItem>
-              <SelectItem value="accepted">Accepted</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
+              {statusOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
@@ -325,8 +349,8 @@ export default function AdminProgrammeApplicationsDashboard() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Programmes</SelectItem>
-              {Array.from(new Set(applications.map(a => a.program?.name).filter(Boolean))).map(programme => (
-                <SelectItem key={programme} value={programme!}>{programme}</SelectItem>
+              {programmeOptionsList.map((programme) => (
+                <SelectItem key={programme} value={programme}>{programme}</SelectItem>
               ))}
             </SelectContent>
           </Select>

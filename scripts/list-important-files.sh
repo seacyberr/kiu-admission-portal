@@ -2,7 +2,7 @@
 # Script to list ONLY important project files for Claude upload
 # Filters out test files, scripts, duplicates, etc.
 
-echo "📋 Listing IMPORTANT project files for Claude..."
+echo "Listing IMPORTANT project files for Claude..."
 
 # Output file
 OUTPUT="important-files.txt"
@@ -135,10 +135,10 @@ echo "./IMPLEMENTATION_PHASE3.md" >> "$OUTPUT"
 echo "./CHANGES.md" >> "$OUTPUT"
 
 echo ""
-echo "✅ Created $OUTPUT with important files only"
+echo "Created $OUTPUT with important files only"
 echo ""
-echo "📊 Summary:"
+echo "Summary:"
 grep -c "^===" "$OUTPUT" | xargs -I {} echo "   Total sections: {}"
 grep -c "^\./" "$OUTPUT" | xargs -I {} echo "   Total files: {}"
 echo ""
-echo "💡 View the file: cat $OUTPUT"
+echo " View the file: cat $OUTPUT"

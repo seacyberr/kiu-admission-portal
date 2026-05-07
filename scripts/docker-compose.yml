@@ -1,8 +1,6 @@
 # KIU Admission Portal - Docker Compose Configuration
 # Production-ready setup with database, API, and frontend
 
-version: '3.8'
-
 services:
   # MySQL Database
   db:
@@ -72,12 +70,13 @@ services:
     build:
       context: ./apps/kiu-portal
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
     container_name: kiu-frontend
     environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:5001}
+      VITE_API_URL: /api
     ports:
       - "80:80"
-      - "443:443"
     depends_on:
       - api
     networks:

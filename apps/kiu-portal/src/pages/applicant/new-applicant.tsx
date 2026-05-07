@@ -154,7 +154,7 @@ export default function NewApplicant() {
           <Card className="p-8">
             <div className="space-y-5">
               <div className="bg-green-50 p-4 rounded-xl text-sm">
-                <p className="font-semibold text-green-800">✓ Eligible for HEC / Diploma</p>
+                <p className="font-semibold text-green-800">DONE: Eligible for HEC / Diploma</p>
                 <p className="text-green-700 mt-1">
                   We recommend using the Program Recommendation Tool first to find the best match for your subjects.
                 </p>
@@ -321,7 +321,7 @@ export default function NewApplicant() {
             {hasThreePrincipalPasses === 'yes' && (
               <div className="space-y-5">
                 <div className="bg-green-50 p-4 rounded-xl text-sm">
-                  <p className="font-semibold text-green-800">✓ Eligible for Degree</p>
+                  <p className="font-semibold text-green-800">DONE: Eligible for Degree</p>
                   <p className="text-green-700 mt-1">
                     You can apply for a Degree with A-Level (UACE). We recommend using the
                     Program Recommendation Tool first to find the best match for your subjects.
@@ -336,7 +336,7 @@ export default function NewApplicant() {
                     </div>
                     <div>
                       <h3 className="font-bold text-base">
-                        🎯 Get Personalised Program Recommendations
+                        Get Personalised Program Recommendations
                       </h3>
                       <p className="text-sm text-muted-foreground mt-1">
                         Enter your A-Level subjects and grades. Our NCHE-compliant engine will
@@ -400,7 +400,7 @@ export default function NewApplicant() {
           <Card className="p-8">
             <div className="space-y-5">
               <div className="bg-green-50 p-4 rounded-xl text-sm">
-                <p className="font-semibold text-green-800">✓ Eligible for Degree</p>
+                <p className="font-semibold text-green-800">DONE: Eligible for Degree</p>
                 <p className="text-green-700 mt-1">
                   We recommend using the Program Recommendation Tool first to find the best matching programs for your Diploma.
                 </p>
@@ -414,7 +414,7 @@ export default function NewApplicant() {
                   </div>
                   <div>
                     <h3 className="font-bold text-base">
-                      🎯 Get Personalised Program Recommendations
+                      Get Personalised Program Recommendations
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       Enter your Diploma subjects and grades to find the best matching Degree programs.
@@ -457,7 +457,7 @@ export default function NewApplicant() {
           <Card className="p-8">
             <div className="space-y-5">
               <div className="bg-green-50 p-4 rounded-xl text-sm">
-                <p className="font-semibold text-green-800">✓ Eligible for Degree</p>
+                <p className="font-semibold text-green-800">DONE: Eligible for Degree</p>
                 <p className="text-green-700 mt-1">
                   We recommend using the Program Recommendation Tool first to find the best matching programs for your HEC.
                 </p>
@@ -471,7 +471,7 @@ export default function NewApplicant() {
                   </div>
                   <div>
                     <h3 className="font-bold text-base">
-                      🎯 Get Personalised Program Recommendations
+                      Get Personalised Program Recommendations
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       Enter your HEC subjects and grades to find the best matching Degree programs.
@@ -513,7 +513,7 @@ export default function NewApplicant() {
         {highest === 'national_cert' && (
           <Card className="p-8">
             <div className="bg-green-50 p-4 rounded-xl text-sm mb-6">
-              <p className="font-semibold text-green-800">✓ Eligible for Diploma / Degree</p>
+              <p className="font-semibold text-green-800">DONE: Eligible for Diploma / Degree</p>
               <p className="text-green-700 mt-1">
                 National Certificate holders are eligible to apply for Diploma programs and direct Degree entry.
               </p>
@@ -527,7 +527,7 @@ export default function NewApplicant() {
                 </div>
                 <div>
                   <h3 className="font-bold text-base">
-                    🎯 Get Personalised Program Recommendations
+                    Get Personalised Program Recommendations
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
                     Enter your National Certificate subjects and grades to find the best matching programs.
@@ -556,7 +556,7 @@ export default function NewApplicant() {
         {highest === 'bachelors' && (
           <Card className="p-8">
             <div className="bg-green-50 p-4 rounded-xl text-sm mb-6">
-              <p className="font-semibold text-green-800">✓ Eligible for Master's Programs</p>
+              <p className="font-semibold text-green-800">DONE: Eligible for Master's Programs</p>
               <p className="text-green-700 mt-1">
                 Bachelor's Degree holders are eligible to apply for all Master's programs at KIU.
               </p>
@@ -570,7 +570,7 @@ export default function NewApplicant() {
                 </div>
                 <div>
                   <h3 className="font-bold text-base">
-                    🎯 Get Personalised Program Recommendations
+                    Get Personalised Program Recommendations
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
                     Find recommended Master's programs based on your Bachelor's degree field.

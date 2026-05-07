@@ -14,7 +14,7 @@ def is_windows():
     return sys.platform.startswith('win')
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 5000))
+    port = int(os.getenv("PORT", 5001))
     
     print("=" * 60)
     print("  KIU ADMISSION PORTAL API SERVER")

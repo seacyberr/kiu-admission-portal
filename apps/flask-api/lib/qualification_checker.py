@@ -107,16 +107,16 @@ class UgandaQualificationChecker:
                 if required_subjects and subject in [s.lower() for s in required_subjects]:
                     relevant_subsidiary += 1
         
-        result.requirements_met.append(f"📊 A-Level Results: {principal_passes} Principal Passes, {subsidiary_passes} Subsidiary Passes")
+        result.requirements_met.append(f"A-Level Results: {principal_passes} Principal Passes, {subsidiary_passes} Subsidiary Passes")
         
         # Check subject relevance if required subjects are specified
         meets_subject_requirements = True
         if required_subjects and len(required_subjects) > 0:
             if relevant_principal == 0:
                 meets_subject_requirements = False
-                result.requirements_missing.append(f"❌ Requires Principal Pass in at least one relevant subject: {', '.join(required_subjects)}")
+                result.requirements_missing.append(f"ERROR: Requires Principal Pass in at least one relevant subject: {', '.join(required_subjects)}")
             else:
-                result.requirements_met.append(f"✅ Relevant subject requirements satisfied ({relevant_principal} relevant Principal passes)")
+                result.requirements_met.append(f"SUCCESS: Relevant subject requirements satisfied ({relevant_principal} relevant Principal passes)")
         
         # Calculate total principal points
         total_principal_points = sum(g.get('points', 0) for g in alevel_grades if g.get('subjectType', '').lower() == 'principal')

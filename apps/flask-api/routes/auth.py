@@ -207,7 +207,12 @@ def verify_otp():
 
     # OTP valid - verify user and create session
     user.is_verified = True
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Failed to verify user: {e}")
+        return bad_request("Failed to verify account")
 
     # Create JWT tokens using Flask-JWT-Extended (identity must be string)
     access_token = create_access_token(identity=str(user.id), additional_claims={"role": user.role, "email": user.email})
@@ -465,9 +470,13 @@ def reset_password():
     # Reset password
     user.set_password(password)
     user.is_verified = True
-    db.session.commit()
-
-    return success_response(
-        {"email": email},
-        message="Password reset successful. You can now login with your new password."
-    )
+    try:
+        db.session.commit()
+        return success_response(
+            {"email": email},
+            message="Password reset successful. You can now login with your new password."
+        )
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Failed to reset password: {e}")
+        return bad_request("Failed to reset password")

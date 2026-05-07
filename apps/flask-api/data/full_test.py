@@ -26,7 +26,7 @@ BASE_URL = "http://127.0.0.1:5001"
 TEST_RESULTS = []
 
 def log_test(name, status, details=""):
-    symbol = "✅" if status else "❌"
+    symbol = "SUCCESS:" if status else "ERROR:"
     TEST_RESULTS.append({"name": name, "status": status, "details": details})
     print(f"{symbol} {name}")
     if details:
@@ -207,13 +207,13 @@ def print_summary():
         print("FAILED TESTS:")
         for r in TEST_RESULTS:
             if not r['status']:
-                print(f"  ❌ {r['name']}: {r['details']}")
+                print(f"  ERROR: {r['name']}: {r['details']}")
     
     print("\n" + "="*60)
     if passed == total:
-        print("✅ ALL TESTS PASSED - Ready for manual testing!")
+        print("SUCCESS: ALL TESTS PASSED - Ready for manual testing!")
     else:
-        print(f"⚠️  {total-passed} TEST(S) FAILED - Review issues above")
+        print(f"WARNING:  {total-passed} TEST(S) FAILED - Review issues above")
     print("="*60)
 
 if __name__ == "__main__":
