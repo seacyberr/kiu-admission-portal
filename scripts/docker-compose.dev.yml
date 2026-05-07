@@ -95,8 +95,7 @@ services:
       VITE_API_URL: http://localhost:5001/api
       CHOKIDAR_USEPOLLING: "true"  # For Windows file watching
       WATCHPACK_POLLING: "true"    # Alternative polling for Windows
-    ports:
-      - "5173:5173"
+    network_mode: host
     volumes:
       - .:/workspace:cached
       - frontend_node_modules:/workspace/apps/kiu-portal/node_modules
@@ -108,8 +107,6 @@ services:
              pnpm install &&
              cd apps/kiu-portal &&
              pnpm dev --host 0.0.0.0"
-    networks:
-      - kiu-network
     depends_on:
       - api
 
