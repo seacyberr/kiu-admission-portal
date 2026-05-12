@@ -1,9 +1,16 @@
 {
-  "name": "workspace",
-  "version": "0.0.0",
+  "name": "kiu-admission-portal",
+  "version": "1.0.0",
+  "description": "Official digital admission and career placement platform for Kampala International University (KIU)",
   "license": "MIT",
+  "author": "KIU ICT Department",
+  "homepage": "https://github.com/seacyberr/kiu-admission-portal#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seacyberr/kiu-admission-portal.git"
+  },
   "scripts": {
-    "preinstall": "node -e \"const fs=require('fs');['package-lock.json','yarn.lock'].forEach(f=>{try{fs.unlinkSync(f)}catch(e){}});if(!process.env.npm_config_user_agent.includes('pnpm')){console.error('\\x1b[31mERROR: Use pnpm instead of npm/yarn\\x1b[0m');process.exit(1)}\"",
+    "preinstall": "node -e \"const fs=require('fs');['package-lock.json','yarn.lock'].forEach(f=>{try{fs.unlinkSync(f)}catch(e){}});if(!process.env.npm_config_user_agent.includes('pnpm')){console.error('\\x1b[31mERROR: KIU Admission Portal requires pnpm instead of npm/yarn\\x1b[0m');process.exit(1)}\"",
     "build": "pnpm run typecheck && pnpm -r --filter \"!@workspace/mockup-sandbox\" --if-present run build",
     "typecheck": "pnpm -r --filter \"./apps/**\" --filter \"./lib/**\" --filter \"!@workspace/mockup-sandbox\" --if-present run typecheck",
     "test:api": "cd apps/flask-api && python -m pytest tests/ -q",
@@ -15,5 +22,16 @@
   "devDependencies": {
     "typescript": "~5.9.2",
     "prettier": "^3.8.1"
-  }
+  },
+  "keywords": [
+    "kiu",
+    "admission",
+    "education",
+    "university",
+    "nche",
+    "student",
+    "portal",
+    "career",
+    "placement"
+  ]
 }

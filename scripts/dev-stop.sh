@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Stop Docker-based dev stack. Usage: ./scripts/dev-stop.sh (from repo root)
+# KIU Admission Portal - Stop Docker Development Environment
+# Stops KIU Database, Redis, API, and Frontend services
+# Usage: from KIU repo root → ./scripts/dev-stop.sh
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
@@ -16,6 +18,6 @@ else
   exit 1
 fi
 
-echo "Stopping development environment..."
+echo "Stopping KIU Admission Portal development environment..."
 "${COMPOSE_CMD[@]}" -f "$COMPOSE_FILE" down
-echo "Stopped."
+echo "KIU development environment stopped."

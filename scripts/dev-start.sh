@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Unix/Linux/macOS — start Docker-based dev stack (DB + Redis + API + Vite).
-# Usage: from repo root → ./scripts/dev-start.sh
+# KIU Admission Portal - Unix/Linux/macOS Docker Development Startup
+# Starts KIU Database, Redis, API, and Frontend for Kampala International University
+# Usage: from KIU repo root → ./scripts/dev-start.sh
 
 set -euo pipefail
 
@@ -11,7 +12,8 @@ cd "$ROOT_DIR"
 COMPOSE_FILE="scripts/docker-compose.dev.yml"
 
 echo "=========================================="
-echo "KIU Admission Portal - Dev Environment"
+echo "KIU Admission Portal - Development Environment"
+echo "Kampala International University - Digital Admissions"
 echo "=========================================="
 echo
 

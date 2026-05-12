@@ -1,9 +1,10 @@
 # KIU Admission Portal - Development Docker Compose
+# Official Kampala International University development environment
 # Cross-platform development environment (Windows, macOS, Linux)
-# Uses MySQL + Redis for consistent database behavior across platforms
+# Uses MySQL + Redis for consistent KIU database behavior across platforms
 
 services:
-  # MySQL Database (consistent across all platforms)
+  # KIU MySQL Database (consistent across all platforms)
   db:
     image: mysql:8.0
     container_name: kiu-mysql-dev
@@ -25,7 +26,7 @@ services:
       - kiu-network
     command: --default-authentication-plugin=mysql_native_password
 
-  # Redis Cache (optional, falls back to memory if not running)
+  # KIU Redis Cache (optional, falls back to memory if not running)
   redis:
     image: redis:7-alpine
     container_name: kiu-redis-dev
@@ -41,7 +42,7 @@ services:
     networks:
       - kiu-network
 
-  # Flask API Backend
+  # KIU Flask API Backend
   api:
     image: kiu-api-dev
     build:
@@ -54,13 +55,13 @@ services:
     environment:
       FLASK_ENV: development
       DATABASE_URL: mysql+pymysql://kiu_dev:kiu_dev_password@db:3306/kiu_portal_dev
-      JWT_SECRET: dev-jwt-secret-change-in-production
-      SECRET_KEY: dev-secret-key-change-in-production
+      JWT_SECRET: dev-jwt-secret-change-in-kiu-production
+      SECRET_KEY: dev-secret-key-change-in-kiu-production
       CORS_ORIGINS: "http://localhost:5173,http://localhost:3000,http://host.docker.internal:5173"
       REDIS_URL: redis://redis:6379
       SEED_DATABASE: "true"
       LOG_LEVEL: DEBUG
-      PYTHONUNBUFFERED: "1"  # For better Windows console output
+      PYTHONUNBUFFERED: "1"  # For better KIU Windows console output
     ports:
       - "5001:5001"
     volumes:
@@ -83,7 +84,7 @@ services:
     stdin_open: true
     tty: true
 
-  # Frontend Development Server
+  # KIU Frontend Development Server
   frontend:
     image: node:20-slim
     container_name: kiu-frontend-dev

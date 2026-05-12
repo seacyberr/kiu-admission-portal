@@ -16,8 +16,11 @@ from routes.auth import get_current_user
 logger = logging.getLogger(__name__)
 from services.qualification_service import UgandaQualificationService
 
-# Maintain backward compatibility
+# KIU Admission Portal - Maintain backward compatibility
 UgandaQualificationChecker = UgandaQualificationService
+
+# KIU Admission Blueprint
+admission_bp = Blueprint('admission', __name__, url_prefix='/api/admission')
 from utils.error_handlers import (
     handle_kiu_error, validate_json_payload, ValidationError, 
     NotFoundError, ConflictError, sanitize_input, validate_phone,

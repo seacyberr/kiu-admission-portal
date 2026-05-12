@@ -1,5 +1,5 @@
-# Multi-stage Dockerfile for KIU Admission Portal
-# Production-ready container for Flask API + React Frontend
+# Production Dockerfile for KIU Admission Portal
+# Simplified version without workspace dependencies
 
 # ==========================================
 # Stage 1: Build Frontend
@@ -12,26 +12,22 @@ WORKDIR /app/frontend
 RUN npm install -g pnpm
 
 # Copy package files
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY apps/kiu-portal/package.json ./apps/kiu-portal/
+COPY apps/kiu-portal/package.prod.json ./package.json
 COPY lib/api-client-react/package.json ./lib/api-client-react/
+COPY lib/api-client-react/src ./lib/api-client-react/src
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
-# Copy frontend source (exclude node_modules)
-COPY apps/kiu-portal/src ./apps/kiu-portal/src
-COPY apps/kiu-portal/public ./apps/kiu-portal/public
-COPY apps/kiu-portal/index.html ./apps/kiu-portal/
-COPY apps/kiu-portal/vite.config.ts ./apps/kiu-portal/
-COPY apps/kiu-portal/tsconfig.json ./apps/kiu-portal/
-COPY lib/api-client-react/src ./lib/api-client-react/src
-COPY lib/api-client-react/package.json ./lib/api-client-react/
-COPY lib/api-client-react/tsconfig.json ./lib/api-client-react/
-COPY tsconfig.base.json tsconfig.json ./
+# Copy frontend source
+COPY apps/kiu-portal/src ./src
+COPY apps/kiu-portal/public ./public
+COPY apps/kiu-portal/index.html ./
+COPY apps/kiu-portal/vite.config.ts ./
+COPY apps/kiu-portal/tsconfig.prod.json ./tsconfig.json
 
 # Build frontend
-RUN pnpm --filter @workspace/kiu-portal build
+RUN pnpm build
 
 # ==========================================
 # Stage 2: Python API
@@ -66,7 +62,7 @@ EXPOSE 5001
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5001/api/healthz || exit 1
 
-# Run the application
+# Run application
 CMD ["python", "run.py"]
 
 # ==========================================
@@ -94,7 +90,7 @@ COPY apps/flask-api/ ./api/
 RUN mkdir -p /app/api/uploads/certificates /app/api/logs
 
 # Copy built frontend
-COPY --from=frontend-builder /app/apps/kiu-portal/dist /var/www/html
+COPY --from=frontend-builder /app/frontend/dist /var/www/html
 
 # Copy nginx configuration
 COPY docker/nginx.conf /etc/nginx/sites-available/default

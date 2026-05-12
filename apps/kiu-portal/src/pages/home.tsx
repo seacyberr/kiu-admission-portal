@@ -3,6 +3,10 @@ import { Button } from '@/components/ui/shared';
 import { motion } from 'framer-motion';
 import { GraduationCap, BookOpen, ChevronRight, Award, LineChart } from 'lucide-react';
 
+/**
+ * KIU Admission Portal - Home Page
+ * Landing page for Kampala International University admission system
+ */
 export default function Home() {
   return (
     <div className="w-full">
@@ -45,10 +49,10 @@ export default function Home() {
           >
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/20 backdrop-blur-md border border-accent/30 text-accent font-semibold text-sm">
               <Award className="w-4 h-4" />
-              <span>Excellence in Higher Education</span>
+              <span>Excellence at KIU - Higher Education</span>
             </div>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-display font-bold text-white leading-[1.1]">
-              Shape Your Future at <span className="text-accent">KIU</span>
+              Shape Your Future at <span className="text-accent">Kampala International University</span>
             </h1>
             <p className="text-lg md:text-xl text-white/80 max-w-2xl leading-relaxed">
               Apply to KIU. Track your admission. Plan your career. Everything in one place.
@@ -72,8 +76,8 @@ export default function Home() {
       <section className="py-24 bg-background relative z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Apply. Study. Graduate.</h2>
-            <p className="text-muted-foreground text-lg">From first application to first job, we've got you covered.</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Apply to KIU. Study at KIU. Graduate from KIU.</h2>
+            <p className="text-muted-foreground text-lg">From first KIU application to first KIU job, we've got you covered.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
@@ -86,7 +90,7 @@ export default function Home() {
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 text-primary">
                 <BookOpen className="w-8 h-8" />
               </div>
-              <h3 className="text-2xl font-bold mb-3">For New Students</h3>
+              <h3 className="text-2xl font-bold mb-3">For New KIU Students</h3>
               <p className="text-muted-foreground mb-8">
                 Undergraduate, Diploma, Masters, or PhD — find your program and apply online. Upload documents, check UNEB requirements, track your status in real time.
               </p>

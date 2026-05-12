@@ -1,4 +1,8 @@
-"""KIU Portal API - Main application factory."""
+"""KIU Admission Portal API - Official Kampala International University Backend Services.
+
+This module provides the main Flask application factory for the KIU Admission Portal,
+handling student applications, authentication, programme management, and career services.
+"""
 import logging
 import os
 import sys

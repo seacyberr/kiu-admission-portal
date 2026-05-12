@@ -9,6 +9,10 @@ import { useTheme } from '../context/ThemeProvider';
 import { NotificationsDropdown } from './notifications-dropdown';
 import { PageProgressBar } from './page-progress-bar';
 
+/**
+ * KIU Admission Portal - Main Layout Component
+ * Provides navigation, theme switching, and user management for Kampala International University
+ */
 export function Layout({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
