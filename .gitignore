@@ -1,0 +1,69 @@
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+# compiled output
+dist
+tmp
+out-tsc
+*.tsbuildinfo
+.expo
+.expo-shared
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+
+# dependencies
+node_modules
+.pnpm-store
+venv
+.venv
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# testing
+test-results
+playwright-report
+coverage
+
+# System Files
+.DS_Store
+Thumbs.db
+
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+
+# Replit
+.cache/
+.local/
+.replit
+.replitignore
+replit.md
+replitignore
+.git.tar
+
+# Environment variables
+.env
+
+# Flask uploaded files (must persist on the server, not in git)
+apps/flask-api/uploads/
+
+# Flask instance directory (contains local database files)
+apps/flask-api/instance/
+
+# Test files (root directory only)
+/test_*.py
+/test_*.sh

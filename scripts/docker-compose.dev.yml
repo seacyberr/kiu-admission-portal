@@ -1,0 +1,122 @@
+# KIU Admission Portal - Development Docker Compose
+# Cross-platform development environment (Windows, macOS, Linux)
+# Uses MySQL + Redis for consistent database behavior across platforms
+
+services:
+  # MySQL Database (consistent across all platforms)
+  db:
+    image: mysql:8.0
+    container_name: kiu-mysql-dev
+    environment:
+      MYSQL_ROOT_PASSWORD: root_dev_password
+      MYSQL_DATABASE: kiu_portal_dev
+      MYSQL_USER: kiu_dev
+      MYSQL_PASSWORD: kiu_dev_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_dev_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kiu-network
+    command: --default-authentication-plugin=mysql_native_password
+
+  # Redis Cache (optional, falls back to memory if not running)
+  redis:
+    image: redis:7-alpine
+    container_name: kiu-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    networks:
+      - kiu-network
+
+  # Flask API Backend
+  api:
+    image: kiu-api-dev
+    build:
+      context: ./apps/flask-api
+      dockerfile: Dockerfile.dev
+    container_name: kiu-api-dev
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    environment:
+      FLASK_ENV: development
+      DATABASE_URL: mysql+pymysql://kiu_dev:kiu_dev_password@db:3306/kiu_portal_dev
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      SECRET_KEY: dev-secret-key-change-in-production
+      CORS_ORIGINS: "http://localhost:5173,http://localhost:3000,http://host.docker.internal:5173"
+      REDIS_URL: redis://redis:6379
+      SEED_DATABASE: "true"
+      LOG_LEVEL: DEBUG
+      PYTHONUNBUFFERED: "1"  # For better Windows console output
+    ports:
+      - "5001:5001"
+    volumes:
+      # Mount for hot-reloading (handle Windows path issues)
+      - ./apps/flask-api:/app:cached
+      # Separate volume for Python packages to avoid Windows permission issues
+      - api_venv:/app/venv
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - kiu-network
+    # Use reload for auto-restart on code changes
+    command: >
+      sh -c "pip install -r requirements.txt &&
+             python3 -c 'from app import create_app, db; app = create_app(); ctx = app.app_context(); ctx.push(); db.create_all()' &&
+             flask run --host=0.0.0.0 --port=5001 --reload"
+    stdin_open: true
+    tty: true
+
+  # Frontend Development Server
+  frontend:
+    image: node:20-slim
+    container_name: kiu-frontend-dev
+    working_dir: /workspace/apps/kiu-portal
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    environment:
+      VITE_API_URL: http://localhost:5001/api
+      CHOKIDAR_USEPOLLING: "true"  # For Windows file watching
+      WATCHPACK_POLLING: "true"    # Alternative polling for Windows
+    network_mode: host
+    volumes:
+      - .:/workspace:cached
+      - frontend_node_modules:/workspace/apps/kiu-portal/node_modules
+      - frontend_vite_cache:/workspace/apps/kiu-portal/node_modules/.vite
+      - /workspace/node_modules
+    command: >
+      sh -c "cd /workspace &&
+             npm install -g pnpm &&
+             pnpm install &&
+             cd apps/kiu-portal &&
+             pnpm dev --host 0.0.0.0"
+    depends_on:
+      - api
+
+volumes:
+  mysql_data:
+  redis_data:
+  api_venv:
+  frontend_node_modules:
+  frontend_vite_cache:
+
+networks:
+  kiu-network:
+    driver: bridge

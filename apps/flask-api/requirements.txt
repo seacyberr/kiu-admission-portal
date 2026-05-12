@@ -1,0 +1,58 @@
+# KIU Admission Portal - Python Dependencies
+# Python: 3.11+
+# Works on Windows, macOS, and Linux
+
+# Core Flask & Extensions (cross-platform)
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Cors==5.0.0
+Flask-Bcrypt==1.0.1
+Flask-Limiter==3.5.0
+Flask-Caching==2.1.0
+Werkzeug==3.0.3
+
+# Database (SQLite works everywhere, PyMySQL for MySQL)
+SQLAlchemy==2.0.36
+PyMySQL==1.1.1
+alembic==1.14.0
+
+# Caching & Rate Limiting (Optional Redis - falls back to memory)
+redis==5.0.1
+limits==3.13.0
+
+# Authentication & Security
+flask-jwt-extended==4.6.0
+PyJWT==2.10.0
+cryptography==44.0.0
+bcrypt==4.2.1
+email-validator==2.2.0
+
+# Data Serialization
+marshmallow==3.23.1
+marshmallow-sqlalchemy==1.1.0
+jsonschema==4.26.0
+
+# Monitoring & Logging (Production features)
+sentry-sdk==1.40.0
+structlog==24.4.0
+prometheus-client==0.19.0
+blinker==1.7.0
+
+# Configuration
+python-dotenv==1.0.1
+
+# HTTP & Networking
+requests==2.32.3
+urllib3==2.2.3
+
+# Utilities
+click==8.1.7
+phonenumbers==8.13.51
+python-dateutil==2.9.0
+
+# Testing
+pytest==8.3.4
+
+# Production Server (platform-specific)
+gunicorn==23.0.0; sys_platform != 'win32'
+waitress==3.0.2; sys_platform == 'win32'

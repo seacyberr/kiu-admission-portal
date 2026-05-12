@@ -1,0 +1,152 @@
+# KIU Admission Portal - Docker Compose Configuration
+# Production-ready setup with database, API, and frontend
+
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: kiu-mysql
+    environment:
+      MYSQL_DATABASE: kiu_portal
+      MYSQL_USER: kiu_user
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kiu-network
+
+  # Flask API Backend
+  api:
+    build:
+      context: ./apps/flask-api
+      dockerfile: Dockerfile
+    container_name: kiu-api
+    environment:
+      FLASK_ENV: production
+      DATABASE_URL: mysql+pymysql://kiu_user:${DB_PASSWORD}@db:3306/kiu_portal
+      JWT_SECRET: ${JWT_SECRET}
+      SECRET_KEY: ${SECRET_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      REDIS_URL: redis://redis:6379
+      # SMTP Configuration
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
+      # Sentry
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    ports:
+      - "5001:5001"
+    volumes:
+      - api_logs:/app/logs
+      - api_uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/api/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - kiu-network
+    restart: unless-stopped
+
+  # Frontend (React/Vite)
+  frontend:
+    build:
+      context: ./apps/kiu-portal
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: kiu-frontend
+    environment:
+      VITE_API_URL: /api
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - kiu-network
+    restart: unless-stopped
+
+  # Redis Cache with persistence and connection pooling
+  redis:
+    image: redis:7-alpine
+    container_name: kiu-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - kiu-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: kiu-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - api_uploads:/var/www/uploads:ro
+    depends_on:
+      - api
+      - frontend
+    networks:
+      - kiu-network
+    restart: unless-stopped
+
+  # Database Backup Service
+  backup:
+    image: mysql:8.0
+    container_name: kiu-backup
+    environment:
+      MYSQL_HOST: db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: kiu_portal
+      BACKUP_DIR: /backups
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup_mysql.sh:/scripts/backup.sh:ro
+    command: >
+      sh -c "echo '0 2 * * * /scripts/backup.sh' | crontab - && crond -f"
+    depends_on:
+      - db
+    networks:
+      - kiu-network
+
+volumes:
+  mysql_data:
+  api_logs:
+  api_uploads:
+  redis_data:
+
+networks:
+  kiu-network:
+    driver: bridge

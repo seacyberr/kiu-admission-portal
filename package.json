@@ -1,0 +1,19 @@
+{
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "preinstall": "node -e \"const fs=require('fs');['package-lock.json','yarn.lock'].forEach(f=>{try{fs.unlinkSync(f)}catch(e){}});if(!process.env.npm_config_user_agent.includes('pnpm')){console.error('\\x1b[31mERROR: Use pnpm instead of npm/yarn\\x1b[0m');process.exit(1)}\"",
+    "build": "pnpm run typecheck && pnpm -r --filter \"!@workspace/mockup-sandbox\" --if-present run build",
+    "typecheck": "pnpm -r --filter \"./apps/**\" --filter \"./lib/**\" --filter \"!@workspace/mockup-sandbox\" --if-present run typecheck",
+    "test:api": "cd apps/flask-api && python -m pytest tests/ -q",
+    "dev:portal": "pnpm --filter @workspace/kiu-portal dev",
+    "dev:api": "cd apps/flask-api && python run.py",
+    "setup": "pnpm install && cd apps/flask-api && pip install -r requirements.txt"
+  },
+  "private": true,
+  "devDependencies": {
+    "typescript": "~5.9.2",
+    "prettier": "^3.8.1"
+  }
+}

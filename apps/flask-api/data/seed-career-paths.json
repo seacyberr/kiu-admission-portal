@@ -1,0 +1,74 @@
+{
+  "careerPaths": [
+    {
+      "title": "Medical Doctor / Physician",
+      "description": "Diagnose and treat patients across various specialties.",
+      "relatedPrograms": ["MBChB", "BPharm", "BPH"],
+      "skills": ["Clinical Diagnosis", "Patient Care", "Medical Ethics"],
+      "potentialRoles": ["General Practitioner", "Surgeon", "Pediatrician"],
+      "averageSalaryRange": "UGX 2,500,000 – 15,000,000/month",
+      "growthOutlook": "High",
+      "industryField": "Healthcare"
+    },
+    {
+      "title": "Pharmacist",
+      "description": "Dispense medications and ensure pharmaceutical safety.",
+      "relatedPrograms": ["BPharm"],
+      "skills": ["Pharmacology", "Drug Safety", "Patient Counseling"],
+      "potentialRoles": ["Hospital Pharmacist", "Community Pharmacist"],
+      "averageSalaryRange": "UGX 1,500,000 – 6,000,000/month",
+      "growthOutlook": "High",
+      "industryField": "Healthcare"
+    },
+    {
+      "title": "Nurse / Midwife",
+      "description": "Provide patient care and support maternal health.",
+      "relatedPrograms": ["BNSc"],
+      "skills": ["Patient Care", "Clinical Skills", "Midwifery"],
+      "potentialRoles": ["Registered Nurse", "Midwife", "Nurse Manager"],
+      "averageSalaryRange": "UGX 1,000,000 – 4,000,000/month",
+      "growthOutlook": "High",
+      "industryField": "Healthcare"
+    },
+    {
+      "title": "Lawyer / Legal Counsel",
+      "description": "Represent clients and provide legal advice.",
+      "relatedPrograms": ["LLB", "DLAW"],
+      "skills": ["Legal Research", "Advocacy", "Drafting"],
+      "potentialRoles": ["Advocate", "Corporate Counsel", "Magistrate"],
+      "averageSalaryRange": "UGX 2,000,000 – 12,000,000/month",
+      "growthOutlook": "Stable",
+      "industryField": "Law"
+    },
+    {
+      "title": "Business Manager / Entrepreneur",
+      "description": "Lead teams and build enterprises.",
+      "relatedPrograms": ["BBA", "BCom"],
+      "skills": ["Leadership", "Strategic Planning", "Marketing"],
+      "potentialRoles": ["Business Manager", "CEO", "Operations Manager"],
+      "averageSalaryRange": "UGX 1,800,000 – 10,000,000/month",
+      "growthOutlook": "High",
+      "industryField": "Business"
+    },
+    {
+      "title": "Software Engineer / Developer",
+      "description": "Build and maintain software applications.",
+      "relatedPrograms": ["BSc IT", "BSc CS", "BSc SE"],
+      "skills": ["Python", "JavaScript", "SQL", "Git"],
+      "potentialRoles": ["Software Developer", "Full Stack Developer", "DevOps Engineer"],
+      "averageSalaryRange": "UGX 1,500,000 – 6,000,000/month",
+      "growthOutlook": "Very High",
+      "industryField": "Technology"
+    },
+    {
+      "title": "Teacher / Education Professional",
+      "description": "Teach and mentor students.",
+      "relatedPrograms": ["BEd Sec", "BEd Pri"],
+      "skills": ["Curriculum Development", "Classroom Management"],
+      "potentialRoles": ["Secondary Teacher", "Primary Teacher", "Lecturer"],
+      "averageSalaryRange": "UGX 700,000 – 3,500,000/month",
+      "growthOutlook": "Stable",
+      "industryField": "Education"
+    }
+  ]
+}

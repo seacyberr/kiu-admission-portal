@@ -1,0 +1,86 @@
+# Docker Compose for Testing Environment
+# Usage: docker-compose -f docker-compose.test.yml up --build
+
+services:
+  # MySQL Database for testing
+  mysql:
+    image: mysql:8.0
+    container_name: kiu-test-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: testroot123
+      MYSQL_DATABASE: kiu_test
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass123
+    ports:
+      - "3307:3306"  # Use 3307 to avoid conflicts with local MySQL
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - mysql_test_data:/var/lib/mysql
+
+  # Redis for caching/testing
+  redis:
+    image: redis:7-alpine
+    container_name: kiu-test-redis
+    ports:
+      - "6380:6379"  # Use 6380 to avoid conflicts
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Flask API Backend
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api.test
+    container_name: kiu-test-api
+    environment:
+      FLASK_ENV: testing
+      DATABASE_URL: mysql+pymysql://testuser:testpass123@mysql:3306/kiu_test
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: test-secret-key-for-testing-only
+      JWT_ACCESS_TOKEN_HOURS: 8
+    ports:
+      - "5001:5001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./apps/flask-api:/app
+    command: >
+      sh -c "python -m pytest tests/ -v --tb=short && 
+             flask run --host=0.0.0.0 --port=5001"
+
+  # Frontend with Playwright Tests
+  frontend:
+    build:
+      context: ./apps/kiu-portal
+      dockerfile: Dockerfile.test
+    container_name: kiu-test-frontend
+    environment:
+      - CI=true
+      - PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+    ports:
+      - "5173:5173"
+      - "9323:9323"  # Playwright report port
+    depends_on:
+      - api
+    volumes:
+      - ./apps/kiu-portal:/app
+      - playwright-report:/app/playwright-report
+    command: >
+      sh -c "npm run dev &
+             sleep 30 &&
+             npx playwright test --reporter=html &&
+             npx playwright show-report --host 0.0.0.0"
+
+volumes:
+  mysql_test_data:
+  playwright-report:

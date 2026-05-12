@@ -1,0 +1,53 @@
+{
+  "uheqf_levels": [
+    {
+      "level": 2,
+      "name": "O-Level (UCE)",
+      "description": "Ordinary Level Certificate. A prerequisite for A-Level and some diploma programs.",
+      "requirements": "At least 5 passes at the same sitting",
+      "pathways": ["A-Level", "HEC", "Diploma"]
+    },
+    {
+      "level": 3,
+      "name": "A-Level (UACE)",
+      "description": "Advanced Level Certificate. Standard entry for Bachelor's degrees.",
+      "requirements": "2 Principal Passes OR 1 Principal + 2 Subsidiary Passes in relevant subjects",
+      "pathways": ["HEC", "Diploma", "Bachelor's Degree"]
+    },
+    {
+      "level": 4,
+      "name": "Higher Education Certificate (HEC)",
+      "description": "One-year bridging program for students who don't meet direct entry requirements.",
+      "requirements": "1 Principal Pass OR 2 Subsidiary Passes at A-Level",
+      "pathways": ["Diploma", "Bachelor's Degree"]
+    },
+    {
+      "level": 5,
+      "name": "Diploma",
+      "description": "Practical focused qualification with 70-75% practical content.",
+      "requirements": "1 Principal + 2 Subsidiary Passes at A-Level",
+      "pathways": ["Bachelor's Degree"]
+    },
+    {
+      "level": 7,
+      "name": "Bachelor's Degree",
+      "description": "Undergraduate degree qualification.",
+      "requirements": "Entry via Direct (A-Level), Diploma Holders, or HEC routes",
+      "pathways": ["Master's Degree"]
+    },
+    {
+      "level": 8,
+      "name": "Master's Degree",
+      "description": "Postgraduate qualification offered as Plan A (Coursework & Dissertation) or Plan B (Coursework & Project).",
+      "requirements": "Bachelor's Degree",
+      "pathways": ["PhD"]
+    },
+    {
+      "level": 9,
+      "name": "PhD",
+      "description": "Doctor of Philosophy, highest academic qualification.",
+      "requirements": "Master's degree (Level 8)",
+      "pathways": []
+    }
+  ]
+}
