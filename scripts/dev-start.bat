@@ -1,6 +1,6 @@
 @echo off
-REM Windows development environment startup script
-REM Usage: scripts\dev-start.bat
+REM Windows — Docker dev stack (DB + Redis + API + Vite). Run from anywhere.
+cd /d "%~dp0.."
 
 echo ==========================================
 echo KIU Admission Portal - Dev Environment
@@ -39,7 +39,7 @@ if %errorlevel%==0 (
 )
 
 echo [1/4] Building and starting services...
-%COMPOSE_CMD% -f docker-compose.dev.yml up --build -d
+%COMPOSE_CMD% -f scripts\docker-compose.dev.yml up --build -d
 
 if errorlevel 1 (
     echo ERROR: Failed to start services!
@@ -52,12 +52,11 @@ echo [2/4] Waiting for database to be ready...
 timeout /t 10 /nobreak >nul
 
 echo.
-echo [3/4] Running database migrations...
-%COMPOSE_CMD% -f docker-compose.dev.yml exec -T api python -c "from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()"
+echo [3/4] Ensuring DB tables...
+%COMPOSE_CMD% -f scripts\docker-compose.dev.yml exec -T api python -c "from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()"
 
 echo.
-echo [4/4] Seeding database (if needed)...
-%COMPOSE_CMD% -f docker-compose.dev.yml exec -T api python -c "from scripts.seed_data import seed_programs; seed_programs()" 2>nul || echo Seed data skipped or already exists
+echo [4/4] Done (seed runs inside API container when SEED_DATABASE=true).
 
 echo.
 echo ==========================================
@@ -71,9 +70,9 @@ echo   - MySQL:    localhost:3307
 echo   - Redis:    localhost:6379
 echo.
 echo Useful commands:
-echo   - View logs:   %COMPOSE_CMD% -f docker-compose.dev.yml logs -f
-echo   - Stop all:    %COMPOSE_CMD% -f docker-compose.dev.yml down
-echo   - Restart API: %COMPOSE_CMD% -f docker-compose.dev.yml restart api
+echo   - View logs:   %COMPOSE_CMD% -f scripts\docker-compose.dev.yml logs -f
+echo   - Stop all:    %COMPOSE_CMD% -f scripts\docker-compose.dev.yml down
+echo   - Restart API: %COMPOSE_CMD% -f scripts\docker-compose.dev.yml restart api
 echo.
 echo Database credentials (dev only):
 echo   - User: kiu_dev / kiu_dev_password

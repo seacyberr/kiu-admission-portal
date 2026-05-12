@@ -13,7 +13,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./database_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ../database_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
     ports:
       - "3306:3306"
     healthcheck:
@@ -27,7 +27,7 @@ services:
   # Flask API Backend
   api:
     build:
-      context: ./apps/flask-api
+      context: ../apps/flask-api
       dockerfile: Dockerfile
     container_name: kiu-api
     environment:
@@ -68,7 +68,7 @@ services:
   # Frontend (React/Vite)
   frontend:
     build:
-      context: ./apps/kiu-portal
+      context: ../apps/kiu-portal
       dockerfile: Dockerfile
       args:
         VITE_API_URL: /api
@@ -112,7 +112,7 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx.conf:/etc/nginx/nginx.conf:ro
       - api_uploads:/var/www/uploads:ro
     depends_on:
       - api
@@ -120,26 +120,6 @@ services:
     networks:
       - kiu-network
     restart: unless-stopped
-
-  # Database Backup Service
-  backup:
-    image: mysql:8.0
-    container_name: kiu-backup
-    environment:
-      MYSQL_HOST: db
-      MYSQL_USER: root
-      MYSQL_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: kiu_portal
-      BACKUP_DIR: /backups
-    volumes:
-      - ./backups:/backups
-      - ./scripts/backup_mysql.sh:/scripts/backup.sh:ro
-    command: >
-      sh -c "echo '0 2 * * * /scripts/backup.sh' | crontab - && crond -f"
-    depends_on:
-      - db
-    networks:
-      - kiu-network
 
 volumes:
   mysql_data:

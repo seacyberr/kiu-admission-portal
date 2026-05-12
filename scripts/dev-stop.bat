@@ -1,5 +1,6 @@
 @echo off
-REM Windows development environment stop script
+REM Stop Docker dev stack
+cd /d "%~dp0.."
 
 echo Stopping development environment...
 where docker >nul 2>&1
@@ -23,7 +24,7 @@ if %errorlevel%==0 (
     )
 )
 
-%COMPOSE_CMD% -f docker-compose.dev.yml down
+%COMPOSE_CMD% -f scripts\docker-compose.dev.yml down
 
 echo.
 echo Development environment stopped.

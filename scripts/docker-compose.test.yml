@@ -36,8 +36,8 @@ services:
   # Flask API Backend
   api:
     build:
-      context: .
-      dockerfile: Dockerfile.api.test
+      context: ..
+      dockerfile: scripts/Dockerfile.api.test
     container_name: kiu-test-api
     environment:
       FLASK_ENV: testing
@@ -53,7 +53,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - ./apps/flask-api:/app
+      - ../apps/flask-api:/app
     command: >
       sh -c "python -m pytest tests/ -v --tb=short && 
              flask run --host=0.0.0.0 --port=5001"
@@ -61,7 +61,7 @@ services:
   # Frontend with Playwright Tests
   frontend:
     build:
-      context: ./apps/kiu-portal
+      context: ../apps/kiu-portal
       dockerfile: Dockerfile.test
     container_name: kiu-test-frontend
     environment:
@@ -73,7 +73,7 @@ services:
     depends_on:
       - api
     volumes:
-      - ./apps/kiu-portal:/app
+      - ../apps/kiu-portal:/app
       - playwright-report:/app/playwright-report
     command: >
       sh -c "npm run dev &

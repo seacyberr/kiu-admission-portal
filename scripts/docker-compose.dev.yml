@@ -45,7 +45,7 @@ services:
   api:
     image: kiu-api-dev
     build:
-      context: ./apps/flask-api
+      context: ../apps/flask-api
       dockerfile: Dockerfile.dev
     container_name: kiu-api-dev
     dns:
@@ -65,7 +65,7 @@ services:
       - "5001:5001"
     volumes:
       # Mount for hot-reloading (handle Windows path issues)
-      - ./apps/flask-api:/app:cached
+      - ../apps/flask-api:/app:cached
       # Separate volume for Python packages to avoid Windows permission issues
       - api_venv:/app/venv
     depends_on:
@@ -92,12 +92,14 @@ services:
       - 8.8.8.8
       - 8.8.4.4
     environment:
+      # Browser on host calls API published on localhost:5001
       VITE_API_URL: http://localhost:5001/api
       CHOKIDAR_USEPOLLING: "true"  # For Windows file watching
       WATCHPACK_POLLING: "true"    # Alternative polling for Windows
-    network_mode: host
+    ports:
+      - "5173:5173"
     volumes:
-      - .:/workspace:cached
+      - ..:/workspace:cached
       - frontend_node_modules:/workspace/apps/kiu-portal/node_modules
       - frontend_vite_cache:/workspace/apps/kiu-portal/node_modules/.vite
       - /workspace/node_modules
@@ -106,7 +108,7 @@ services:
              npm install -g pnpm &&
              pnpm install &&
              cd apps/kiu-portal &&
-             pnpm dev --host 0.0.0.0"
+             pnpm dev --host 0.0.0.0 --port 5173"
     depends_on:
       - api
 

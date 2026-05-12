@@ -47,6 +47,17 @@ admission_bp = Blueprint("admission", __name__)
 
 ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png"}
 
+# Maps multipart field `type` → AdmissionApplication column (avoids mismatched suffixes).
+CERT_UPLOAD_FIELDS = {
+    "olevel": "olevel_certificate_path",
+    "alevel": "alevel_certificate_path",
+    "diploma": "diploma_certificate_path",
+    "hec": "hec_certificate_path",
+    "national_certificate": "national_certificate_path",
+    "bachelors": "bachelors_degree_path",
+    "masters": "masters_degree_path",
+}
+
 # ── UNEB Grading System ──────────────────────────────────────────────────────
 VALID_OLEVEL_GRADES = [
     "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "F",  # new curriculum
@@ -337,6 +348,7 @@ def create_application():
 
 
 @admission_bp.route("/applications/<int:app_id>/certificate", methods=["POST"])
+@jwt_required()
 @handle_kiu_error
 def upload_certificate(app_id):
     user, error = get_current_user()
@@ -350,8 +362,9 @@ def upload_certificate(app_id):
         raise ValidationError("Access denied")
 
     cert_type = request.form.get("type", "olevel")
-    if cert_type not in ("olevel", "alevel", "diploma", "hec"):
-        raise ValidationError("type must be 'olevel', 'alevel', 'diploma', or 'hec'", "type", cert_type)
+    if cert_type not in CERT_UPLOAD_FIELDS:
+        allowed = ", ".join(sorted(CERT_UPLOAD_FIELDS.keys()))
+        raise ValidationError(f"type must be one of: {allowed}", "type", cert_type)
 
     if "file" not in request.files:
         raise ValidationError("No file provided")
@@ -381,7 +394,7 @@ def upload_certificate(app_id):
         url_path = f"/api/uploads/certificates/{secure_filename(unique_name)}"
         
         with atomic_transaction():
-            setattr(application, f"{cert_type}_certificate_path", url_path)
+            setattr(application, CERT_UPLOAD_FIELDS[cert_type], url_path)
             # Auto-committed on success
         
         # Log successful certificate upload (outside transaction)

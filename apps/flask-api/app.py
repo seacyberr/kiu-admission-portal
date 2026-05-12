@@ -31,7 +31,8 @@ except ModuleNotFoundError:
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_caching import Cache
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+from werkzeug.utils import secure_filename
 from models import db, bcrypt
 from config import get_config
 from seed import seed_database
@@ -295,22 +296,21 @@ def create_app():
         return jsonify(health_data), 200
 
     @app.route("/api/cache/stats")
+    @jwt_required()
     def cache_stats():
-        """Get cache statistics (admin only)"""
+        """Get cache statistics (admin only)."""
         from utils.caching import cache_manager
-        from flask_jwt_extended import jwt_required, get_jwt_identity
-        
-        # Simple auth check - verify JWT and role
+        from models import User
+
+        identity = get_jwt_identity()
         try:
-            jwt_required()(lambda: None)()  # Apply jwt_required
-            user_id = get_jwt_identity()
-            from models import User
-            user = User.query.get(user_id)
-            if not user or user.role != "admin":
-                return jsonify({"error": "Forbidden", "message": "Admin access required"}), 403
-        except Exception:
-            return jsonify({"error": "Unauthorized", "message": "Valid admin token required"}), 401
-        
+            uid = int(identity) if identity is not None else None
+        except (TypeError, ValueError):
+            uid = None
+        user = User.query.get(uid) if uid is not None else None
+        if not user or user.role != "admin":
+            return jsonify({"error": "Forbidden", "message": "Admin access required"}), 403
+
         stats = cache_manager.get_stats()
         return jsonify({
             "status": "success",
@@ -319,16 +319,24 @@ def create_app():
 
     # Certificate file serving
     @app.route("/api/uploads/certificates/<path:filename>")
+    @jwt_required()
     def serve_certificate(filename):
         from routes.auth import get_current_user
         from models import AdmissionApplication
         from sqlalchemy import or_
 
+        # Reject path traversal / unexpected path shapes (<path:> allows slashes).
+        if "\\" in filename or filename.startswith(".") or os.path.basename(filename) != filename:
+            return jsonify({"error": "Bad request", "message": "Invalid filename"}), 400
+        safe_name = secure_filename(filename)
+        if not safe_name or safe_name != filename:
+            return jsonify({"error": "Bad request", "message": "Invalid filename"}), 400
+
         user, error = get_current_user()
         if error:
             return jsonify({"error": "Unauthorized", "message": error}), 401
 
-        path_fragment = f"/api/uploads/certificates/{filename}"
+        path_fragment = f"/api/uploads/certificates/{safe_name}"
         application = (
             AdmissionApplication.query
             .filter(or_(
@@ -336,6 +344,9 @@ def create_app():
                 AdmissionApplication.alevel_certificate_path == path_fragment,
                 AdmissionApplication.diploma_certificate_path == path_fragment,
                 AdmissionApplication.hec_certificate_path == path_fragment,
+                AdmissionApplication.national_certificate_path == path_fragment,
+                AdmissionApplication.bachelors_degree_path == path_fragment,
+                AdmissionApplication.masters_degree_path == path_fragment,
             ))
             .first()
         )
@@ -344,7 +355,7 @@ def create_app():
         if user.role != "admin" and application.user_id != user.id:
             return jsonify({"error": "Forbidden", "message": "Access denied"}), 403
 
-        return send_from_directory(os.path.join(config.UPLOAD_FOLDER, "certificates"), filename)
+        return send_from_directory(os.path.join(config.UPLOAD_FOLDER, "certificates"), safe_name)
 
     # Error handlers
     @app.errorhandler(404)
